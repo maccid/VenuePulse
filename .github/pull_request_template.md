@@ -4,7 +4,7 @@
 
 ## Cómo se ha probado
 
-- [ ] `dotnet test src/VenuePulse.slnx` en verde (unit + arquitectura + integración)
+- [ ] `dotnet test services/VenuePulse.slnx` en verde (unit + arquitectura + integración)
 - [ ] `docker-compose up` levanta todo y el flujo de compra funciona de extremo a extremo
 - [ ] Frontend afectado: `npm run build` sin errores de tipos
 

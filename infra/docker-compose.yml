@@ -1,7 +1,7 @@
 name: venuepulse
 
 # Contexto de build relativo a este fichero (infra/docker-compose.yml): ".." es la raíz del
-# repo — mantiene infra/ separado de src/ (backend) y frontend/ (ver README de estructura).
+# repo — mantiene infra/ separado de services/ (backend) y ui/ (frontend) (ver README de estructura).
 #
 # Nomenclatura de servicios (para que `docker ps` / Docker Desktop agrupe visualmente por tipo):
 #   sin prefijo -> infraestructura de terceros (postgres, mongo, rabbitmq, jaeger)
@@ -74,7 +74,7 @@ services:
     container_name: venuepulse-api-ticketing
     build:
       context: ..
-      dockerfile: src/Services/Ticketing/Api/Dockerfile
+      dockerfile: services/Ticketing/Api/Dockerfile
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -91,7 +91,7 @@ services:
     container_name: venuepulse-api-accesscontrol
     build:
       context: ..
-      dockerfile: src/Services/AccessControl/Api/Dockerfile
+      dockerfile: services/AccessControl/Api/Dockerfile
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -111,7 +111,7 @@ services:
     container_name: venuepulse-api-checkin
     build:
       context: ..
-      dockerfile: src/Services/CheckIn/Api/Dockerfile
+      dockerfile: services/CheckIn/Api/Dockerfile
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -132,13 +132,13 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------------------
-  # Frontends (React) — nombre de carpeta real en frontend/apps/<app>, sin el prefijo web-
+  # Frontends (React) — nombre de carpeta real en ui/<app>, sin el prefijo web-
   # ---------------------------------------------------------------------------------------
   web-shell:
     container_name: venuepulse-web-shell
     build:
       context: ..
-      dockerfile: frontend/apps/shell/Dockerfile
+      dockerfile: ui/shell/Dockerfile
     expose:
       - "80"
 
@@ -146,7 +146,7 @@ services:
     container_name: venuepulse-web-ticket-checkout
     build:
       context: ..
-      dockerfile: frontend/apps/ticket-checkout/Dockerfile
+      dockerfile: ui/ticket-checkout/Dockerfile
     expose:
       - "80"
 
@@ -154,7 +154,7 @@ services:
     container_name: venuepulse-web-venue-ops
     build:
       context: ..
-      dockerfile: frontend/apps/venue-ops/Dockerfile
+      dockerfile: ui/venue-ops/Dockerfile
     expose:
       - "80"
 
