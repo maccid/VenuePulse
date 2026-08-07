@@ -52,16 +52,16 @@ pipeline {
 
         stage('Build de imágenes Docker') {
             steps {
-                sh 'docker build -f src/Services/Ticketing/Api/Dockerfile -t venuepulse-ticketing-api:${BUILD_NUMBER} .'
-                sh 'docker build -f src/Services/AccessControl/Api/Dockerfile -t venuepulse-accesscontrol-api:${BUILD_NUMBER} .'
-                sh 'docker build -f src/Services/CheckIn/Api/Dockerfile -t venuepulse-checkin-api:${BUILD_NUMBER} .'
+                sh 'docker build -f src/Services/Ticketing/Api/Dockerfile -t venuepulse-api-ticketing:${BUILD_NUMBER} .'
+                sh 'docker build -f src/Services/AccessControl/Api/Dockerfile -t venuepulse-api-accesscontrol:${BUILD_NUMBER} .'
+                sh 'docker build -f src/Services/CheckIn/Api/Dockerfile -t venuepulse-api-checkin:${BUILD_NUMBER} .'
             }
         }
 
         stage('Guard: .ia nunca en la imagen') {
             steps {
                 sh '''
-                    for image in ticketing-api accesscontrol-api checkin-api; do
+                    for image in api-ticketing api-accesscontrol api-checkin; do
                         docker save venuepulse-${image}:${BUILD_NUMBER} | tar -tv | grep -i "\\.ia" && exit 1 || true
                     done
                 '''

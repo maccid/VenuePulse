@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ticketing-api
+  name: api-ticketing
   namespace: venuepulse
 spec:
   replicas: 2
   selector:
-    matchLabels: { app: ticketing-api }
+    matchLabels: { app: api-ticketing }
   template:
     metadata:
-      labels: { app: ticketing-api }
+      labels: { app: api-ticketing }
     spec:
       containers:
-        - name: ticketing-api
-          image: ghcr.io/OWNER/venuepulse-ticketing-api:latest
+        - name: api-ticketing
+          image: ghcr.io/OWNER/venuepulse-api-ticketing:latest
           ports:
             - containerPort: 8080
           env:
@@ -34,10 +34,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ticketing-api
+  name: api-ticketing
   namespace: venuepulse
 spec:
-  selector: { app: ticketing-api }
+  selector: { app: api-ticketing }
   ports:
     - port: 8080
       targetPort: 8080

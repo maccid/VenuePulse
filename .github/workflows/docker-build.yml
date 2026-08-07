@@ -14,22 +14,22 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: ticketing-api
+          - name: api-ticketing
             dockerfile: src/Services/Ticketing/Api/Dockerfile
             context: .
-          - name: accesscontrol-api
+          - name: api-accesscontrol
             dockerfile: src/Services/AccessControl/Api/Dockerfile
             context: .
-          - name: checkin-api
+          - name: api-checkin
             dockerfile: src/Services/CheckIn/Api/Dockerfile
             context: .
-          - name: shell
+          - name: web-shell
             dockerfile: frontend/apps/shell/Dockerfile
             context: .
-          - name: ticket-checkout
+          - name: web-ticket-checkout
             dockerfile: frontend/apps/ticket-checkout/Dockerfile
             context: .
-          - name: venue-ops
+          - name: web-venue-ops
             dockerfile: frontend/apps/venue-ops/Dockerfile
             context: .
     steps:
