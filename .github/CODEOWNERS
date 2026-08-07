@@ -1,0 +1,7 @@
+# Gobernanza de repos (ver README): revisión obligatoria antes de fusionar en las rutas críticas.
+# En un equipo real esto listaría personas/equipos; aquí queda documentada la intención.
+
+/src/Core/                      @tech-lead
+/src/Services/CheckIn/          @tech-lead
+/infra/                         @tech-lead
+/.github/                       @tech-lead
