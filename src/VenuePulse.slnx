@@ -1,0 +1,60 @@
+<Solution>
+  <Folder Name="/ArchitectureTests/">
+    <Project Path="ArchitectureTests/VenuePulse.ArchitectureTests.csproj" />
+  </Folder>
+  <Folder Name="/Core/">
+    <Project Path="Core/VenuePulse.Core/VenuePulse.Core.csproj" />
+  </Folder>
+  <Folder Name="/Services/" />
+  <Folder Name="/Services/AccessControl/" />
+  <Folder Name="/Services/AccessControl/Api/">
+    <Project Path="Services/AccessControl/Api/VenuePulse.AccessControl.Api.csproj" />
+  </Folder>
+  <Folder Name="/Services/AccessControl/Application/">
+    <Project Path="Services/AccessControl/Application/VenuePulse.AccessControl.Application.csproj" />
+  </Folder>
+  <Folder Name="/Services/AccessControl/Domain/">
+    <Project Path="Services/AccessControl/Domain/VenuePulse.AccessControl.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Services/AccessControl/Infrastructure/">
+    <Project Path="Services/AccessControl/Infrastructure/VenuePulse.AccessControl.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Services/AccessControl/Tests/">
+    <Project Path="Services/AccessControl/Tests/VenuePulse.AccessControl.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Services/CheckIn/" />
+  <Folder Name="/Services/CheckIn/Api/">
+    <Project Path="Services/CheckIn/Api/VenuePulse.CheckIn.Api.csproj" />
+  </Folder>
+  <Folder Name="/Services/CheckIn/Application/">
+    <Project Path="Services/CheckIn/Application/VenuePulse.CheckIn.Application.csproj" />
+  </Folder>
+  <Folder Name="/Services/CheckIn/Domain/">
+    <Project Path="Services/CheckIn/Domain/VenuePulse.CheckIn.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Services/CheckIn/Infrastructure/">
+    <Project Path="Services/CheckIn/Infrastructure/VenuePulse.CheckIn.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Services/CheckIn/IntegrationTests/">
+    <Project Path="Services/CheckIn/IntegrationTests/VenuePulse.CheckIn.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/Services/CheckIn/Tests/">
+    <Project Path="Services/CheckIn/Tests/VenuePulse.CheckIn.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Services/Ticketing/" />
+  <Folder Name="/Services/Ticketing/Api/">
+    <Project Path="Services/Ticketing/Api/VenuePulse.Ticketing.Api.csproj" />
+  </Folder>
+  <Folder Name="/Services/Ticketing/Application/">
+    <Project Path="Services/Ticketing/Application/VenuePulse.Ticketing.Application.csproj" />
+  </Folder>
+  <Folder Name="/Services/Ticketing/Domain/">
+    <Project Path="Services/Ticketing/Domain/VenuePulse.Ticketing.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Services/Ticketing/Infrastructure/">
+    <Project Path="Services/Ticketing/Infrastructure/VenuePulse.Ticketing.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Services/Ticketing/Tests/">
+    <Project Path="Services/Ticketing/Tests/VenuePulse.Ticketing.Tests.csproj" />
+  </Folder>
+</Solution>
