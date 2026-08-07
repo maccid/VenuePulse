@@ -1,0 +1,22 @@
+# CheckIn es el servicio con más carga transaccional (orquesta la Saga) — el candidato a
+# autoscaling horizontal. Escrito y válido, pero NO validado con carga real (ver README:
+# tabla de qué es real vs documentado, y sección "qué NO se construyó").
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: checkin-api
+  namespace: venuepulse
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: checkin-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

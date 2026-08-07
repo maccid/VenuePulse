@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shell
+  namespace: venuepulse
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: shell } }
+  template:
+    metadata: { labels: { app: shell } }
+    spec:
+      containers:
+        - name: shell
+          image: ghcr.io/OWNER/venuepulse-shell:latest
+          ports: [{ containerPort: 80 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: shell, namespace: venuepulse }
+spec:
+  selector: { app: shell }
+  ports: [{ port: 80, targetPort: 80 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-checkout
+  namespace: venuepulse
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: ticket-checkout } }
+  template:
+    metadata: { labels: { app: ticket-checkout } }
+    spec:
+      containers:
+        - name: ticket-checkout
+          image: ghcr.io/OWNER/venuepulse-ticket-checkout:latest
+          ports: [{ containerPort: 80 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: ticket-checkout, namespace: venuepulse }
+spec:
+  selector: { app: ticket-checkout }
+  ports: [{ port: 80, targetPort: 80 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: venue-ops
+  namespace: venuepulse
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: venue-ops } }
+  template:
+    metadata: { labels: { app: venue-ops } }
+    spec:
+      containers:
+        - name: venue-ops
+          image: ghcr.io/OWNER/venuepulse-venue-ops:latest
+          ports: [{ containerPort: 80 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: venue-ops, namespace: venuepulse }
+spec:
+  selector: { app: venue-ops }
+  ports: [{ port: 80, targetPort: 80 }]
