@@ -12,14 +12,14 @@ pipeline {
     stages {
         stage('Restaurar y compilar backend') {
             steps {
-                sh 'dotnet restore src/VenuePulse.slnx'
-                sh 'dotnet build src/VenuePulse.slnx --no-restore -c Release'
+                sh 'dotnet restore services/VenuePulse.slnx'
+                sh 'dotnet build services/VenuePulse.slnx --no-restore -c Release'
             }
         }
 
         stage('Tests backend (unit + arquitectura + integración)') {
             steps {
-                sh 'dotnet test src/VenuePulse.slnx --no-build -c Release --logger "trx" --results-directory TestResults'
+                sh 'dotnet test services/VenuePulse.slnx --no-build -c Release --logger "trx" --results-directory TestResults'
             }
             post {
                 always {
@@ -39,7 +39,7 @@ pipeline {
                 stages {
                     stage('npm ci + lint + build') {
                         steps {
-                            dir("frontend/apps/${APP}") {
+                            dir("ui/${APP}") {
                                 sh 'npm ci'
                                 sh 'npm run lint'
                                 sh 'npm run build'
@@ -52,9 +52,9 @@ pipeline {
 
         stage('Build de imágenes Docker') {
             steps {
-                sh 'docker build -f src/Services/Ticketing/Api/Dockerfile -t venuepulse-api-ticketing:${BUILD_NUMBER} .'
-                sh 'docker build -f src/Services/AccessControl/Api/Dockerfile -t venuepulse-api-accesscontrol:${BUILD_NUMBER} .'
-                sh 'docker build -f src/Services/CheckIn/Api/Dockerfile -t venuepulse-api-checkin:${BUILD_NUMBER} .'
+                sh 'docker build -f services/Ticketing/Api/Dockerfile -t venuepulse-api-ticketing:${BUILD_NUMBER} .'
+                sh 'docker build -f services/AccessControl/Api/Dockerfile -t venuepulse-api-accesscontrol:${BUILD_NUMBER} .'
+                sh 'docker build -f services/CheckIn/Api/Dockerfile -t venuepulse-api-checkin:${BUILD_NUMBER} .'
             }
         }
 

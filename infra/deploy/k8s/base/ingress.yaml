@@ -1,4 +1,4 @@
-# Mismo esquema de rutas que frontend/nginx/nginx.conf (docker-compose), aquí como Ingress —
+# Mismo esquema de rutas que infra/nginx/nginx.conf (docker-compose), aquí como Ingress —
 # requiere un ingress-nginx-controller instalado en el clúster AKS.
 apiVersion: networking.k8s.io/v1
 kind: Ingress

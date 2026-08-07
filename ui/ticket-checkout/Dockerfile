@@ -2,10 +2,10 @@
 # Contexto de build: la raíz del repo (ver infra/docker-compose.yml).
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY frontend/.npmrc ./
-COPY frontend/apps/ticket-checkout/package.json frontend/apps/ticket-checkout/package-lock.json* ./
+COPY ui/.npmrc ./
+COPY ui/ticket-checkout/package.json ui/ticket-checkout/package-lock.json* ./
 RUN npm install
-COPY frontend/apps/ticket-checkout/ ./
+COPY ui/ticket-checkout/ ./
 RUN npm run build
 
 FROM nginx:alpine
