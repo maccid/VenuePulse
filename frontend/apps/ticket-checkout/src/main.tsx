@@ -41,9 +41,12 @@ class TicketCheckoutElement extends HTMLElement {
 
 customElements.define('ticket-checkout-app', TicketCheckoutElement)
 
-// Modo standalone para desarrollo aislado (`npm run dev`, sin depender de shell): si existe
-// #root en el HTML, monta una instancia de ejemplo directamente.
-const standaloneRoot = document.getElementById('root')
+// Modo standalone para desarrollo aislado (`npm run dev`, sin depender de shell): usa un id
+// propio (NUNCA "root") para no colisionar con el #root de `shell` cuando este bundle se carga
+// como script remoto dentro de otra app — si usara "root", este bloque vaciaría y sustituiría
+// el DOM ya renderizado de `shell` por un <ticket-checkout-app> vacío (bug real detectado en
+// pruebas manuales: pantalla en blanco con event-id="" tras cargar el catálogo).
+const standaloneRoot = document.getElementById('ticket-checkout-standalone-root')
 if (standaloneRoot) {
   standaloneRoot.innerHTML = ''
   const element = document.createElement('ticket-checkout-app')
