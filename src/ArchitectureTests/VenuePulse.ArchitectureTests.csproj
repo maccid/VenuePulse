@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Services\Ticketing\Application\VenuePulse.Ticketing.Application.csproj" />
+    <ProjectReference Include="..\Services\CheckIn\Domain\VenuePulse.CheckIn.Domain.csproj" />
+    <ProjectReference Include="..\Services\CheckIn\Application\VenuePulse.CheckIn.Application.csproj" />
+    <ProjectReference Include="..\Services\CheckIn\Infrastructure\VenuePulse.CheckIn.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
