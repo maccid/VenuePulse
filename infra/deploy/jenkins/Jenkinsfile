@@ -1,0 +1,71 @@
+// Replica los mismos stages que .github/workflows/*.yml, para demostrar conocimiento de sintaxis
+// Jenkins/enterprise — NO se ejecuta en este repo (no hay infraestructura Jenkins disponible),
+// ver la tabla "qué es real vs documentado" del README.
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Restaurar y compilar backend') {
+            steps {
+                sh 'dotnet restore src/VenuePulse.slnx'
+                sh 'dotnet build src/VenuePulse.slnx --no-restore -c Release'
+            }
+        }
+
+        stage('Tests backend (unit + arquitectura + integración)') {
+            steps {
+                sh 'dotnet test src/VenuePulse.slnx --no-build -c Release --logger "trx" --results-directory TestResults'
+            }
+            post {
+                always {
+                    junit 'TestResults/*.trx'
+                }
+            }
+        }
+
+        stage('Build y test frontend') {
+            matrix {
+                axes {
+                    axis {
+                        name: 'APP'
+                        values 'shell', 'ticket-checkout', 'venue-ops'
+                    }
+                }
+                stages {
+                    stage('npm ci + lint + build') {
+                        steps {
+                            dir("frontend/apps/${APP}") {
+                                sh 'npm ci'
+                                sh 'npm run lint'
+                                sh 'npm run build'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build de imágenes Docker') {
+            steps {
+                sh 'docker build -f src/Services/Ticketing/Api/Dockerfile -t venuepulse-ticketing-api:${BUILD_NUMBER} .'
+                sh 'docker build -f src/Services/AccessControl/Api/Dockerfile -t venuepulse-accesscontrol-api:${BUILD_NUMBER} .'
+                sh 'docker build -f src/Services/CheckIn/Api/Dockerfile -t venuepulse-checkin-api:${BUILD_NUMBER} .'
+            }
+        }
+
+        stage('Guard: .ia nunca en la imagen') {
+            steps {
+                sh '''
+                    for image in ticketing-api accesscontrol-api checkin-api; do
+                        docker save venuepulse-${image}:${BUILD_NUMBER} | tar -tv | grep -i "\\.ia" && exit 1 || true
+                    done
+                '''
+            }
+        }
+    }
+}
