@@ -1,0 +1,6 @@
+@VenuePulse.AccessControl.Api_HostAddress = http://localhost:5199
+
+GET {{VenuePulse.AccessControl.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
