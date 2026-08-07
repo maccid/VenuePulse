@@ -1,0 +1,35 @@
+name: CI Frontend
+
+on:
+  push:
+    branches: [main]
+    paths: ["frontend/**", ".github/workflows/ci-frontend.yml"]
+  pull_request:
+    paths: ["frontend/**", ".github/workflows/ci-frontend.yml"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [shell, ticket-checkout, venue-ops]
+    defaults:
+      run:
+        working-directory: frontend/apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/apps/${{ matrix.app }}/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (incluye el chequeo de tipos con tsc)
+        run: npm run build
