@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build ejecutado con el contexto en la raíz del repo: docker build -f services/Ticketing/Api/Dockerfile .
-# Nunca se usa "COPY . ." — solo las rutas que este servicio realmente necesita (ver ADR 0007
-# y docs/architecture/adr/0007-ia-nunca-en-docker.md: .ia/ jamás se referencia, así que jamás puede entrar aquí).
+# Nunca se usa "COPY . ." — solo las rutas explícitas que este servicio realmente necesita.
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src

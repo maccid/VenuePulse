@@ -1,5 +1,5 @@
 # Defensa en profundidad: ninguna ruta de aquí debe poder llegar nunca a una imagen Docker,
-# independientemente de lo que copie cada Dockerfile (ver docs/architecture/adr/0007-ia-nunca-en-docker.md).
+# independientemente de lo que copie cada Dockerfile.
 .ia/
 .claude/
 .git/
