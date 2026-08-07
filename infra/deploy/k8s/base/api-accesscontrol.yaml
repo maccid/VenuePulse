@@ -1,33 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: checkin-api
+  name: api-accesscontrol
   namespace: venuepulse
 spec:
   replicas: 2
   selector:
-    matchLabels: { app: checkin-api }
+    matchLabels: { app: api-accesscontrol }
   template:
     metadata:
-      labels: { app: checkin-api }
+      labels: { app: api-accesscontrol }
     spec:
       containers:
-        - name: checkin-api
-          image: ghcr.io/OWNER/venuepulse-checkin-api:latest
+        - name: api-accesscontrol
+          image: ghcr.io/OWNER/venuepulse-api-accesscontrol:latest
           ports:
             - containerPort: 8080
           env:
-            - name: ConnectionStrings__CheckInDb
-              valueFrom: { secretKeyRef: { name: venuepulse-db-secrets, key: checkin-connection-string } }
+            - name: ConnectionStrings__AccessControlDb
+              valueFrom: { secretKeyRef: { name: venuepulse-db-secrets, key: accesscontrol-connection-string } }
             - name: RabbitMq__ConnectionString
               valueFrom: { secretKeyRef: { name: venuepulse-broker-secrets, key: rabbitmq-connection-string } }
-            - name: Mongo__ConnectionString
-              valueFrom: { secretKeyRef: { name: venuepulse-broker-secrets, key: mongo-connection-string } }
             - name: Observability__OtlpEndpoint
               value: "http://jaeger-collector.observability:4317"
           resources:
-            requests: { cpu: "150m", memory: "192Mi" }
-            limits: { cpu: "750m", memory: "384Mi" }
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
           readinessProbe:
             httpGet: { path: /health, port: 8080 }
             initialDelaySeconds: 5
@@ -38,10 +36,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: checkin-api
+  name: api-accesscontrol
   namespace: venuepulse
 spec:
-  selector: { app: checkin-api }
+  selector: { app: api-accesscontrol }
   ports:
     - port: 8080
       targetPort: 8080

@@ -14,25 +14,25 @@ spec:
         paths:
           - path: /ticket-checkout(/|$)(.*)
             pathType: ImplementationSpecific
-            backend: { service: { name: ticket-checkout, port: { number: 80 } } }
+            backend: { service: { name: web-ticket-checkout, port: { number: 80 } } }
           - path: /venue-ops(/|$)(.*)
             pathType: ImplementationSpecific
-            backend: { service: { name: venue-ops, port: { number: 80 } } }
+            backend: { service: { name: web-venue-ops, port: { number: 80 } } }
           - path: /api/ticketing(/|$)(.*)
             pathType: ImplementationSpecific
-            backend: { service: { name: ticketing-api, port: { number: 8080 } } }
+            backend: { service: { name: api-ticketing, port: { number: 8080 } } }
           - path: /api/access-control(/|$)(.*)
             pathType: ImplementationSpecific
-            backend: { service: { name: accesscontrol-api, port: { number: 8080 } } }
+            backend: { service: { name: api-accesscontrol, port: { number: 8080 } } }
           - path: /api/checkin(/|$)(.*)
             pathType: ImplementationSpecific
-            backend: { service: { name: checkin-api, port: { number: 8080 } } }
+            backend: { service: { name: api-checkin, port: { number: 8080 } } }
           - path: /hubs/occupancy
             pathType: Exact
-            backend: { service: { name: accesscontrol-api, port: { number: 8080 } } }
+            backend: { service: { name: api-accesscontrol, port: { number: 8080 } } }
           - path: /hubs/tickets
             pathType: Exact
-            backend: { service: { name: checkin-api, port: { number: 8080 } } }
+            backend: { service: { name: api-checkin, port: { number: 8080 } } }
           - path: /
             pathType: Prefix
-            backend: { service: { name: shell, port: { number: 80 } } }
+            backend: { service: { name: web-shell, port: { number: 80 } } }

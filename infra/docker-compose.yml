@@ -2,9 +2,20 @@ name: venuepulse
 
 # Contexto de build relativo a este fichero (infra/docker-compose.yml): ".." es la raíz del
 # repo — mantiene infra/ separado de src/ (backend) y frontend/ (ver README de estructura).
+#
+# Nomenclatura de servicios (para que `docker ps` / Docker Desktop agrupe visualmente por tipo):
+#   sin prefijo -> infraestructura de terceros (postgres, mongo, rabbitmq, jaeger)
+#   api-*       -> backends propios (.NET)
+#   web-*       -> frontends propios (React)
+#   gateway     -> único punto de entrada del navegador
 services:
+
+  # ---------------------------------------------------------------------------------------
+  # Infraestructura
+  # ---------------------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
+    container_name: venuepulse-postgres
     environment:
       POSTGRES_USER: venuepulse
       POSTGRES_PASSWORD: venuepulse
@@ -22,6 +33,7 @@ services:
 
   mongo:
     image: mongo:7
+    container_name: venuepulse-mongo
     ports:
       - "27017:27017"
     volumes:
@@ -34,6 +46,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    container_name: venuepulse-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -47,13 +60,18 @@ services:
   # abrir http://localhost:16686 tras una compra para ver el trace completo cruzando los 3 servicios.
   jaeger:
     image: jaegertracing/all-in-one:1.60
+    container_name: venuepulse-jaeger
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
       - "16686:16686"
       - "4317:4317"
 
-  ticketing-api:
+  # ---------------------------------------------------------------------------------------
+  # Backends (.NET)
+  # ---------------------------------------------------------------------------------------
+  api-ticketing:
+    container_name: venuepulse-api-ticketing
     build:
       context: ..
       dockerfile: src/Services/Ticketing/Api/Dockerfile
@@ -69,7 +87,8 @@ services:
       postgres:
         condition: service_healthy
 
-  accesscontrol-api:
+  api-accesscontrol:
+    container_name: venuepulse-api-accesscontrol
     build:
       context: ..
       dockerfile: src/Services/AccessControl/Api/Dockerfile
@@ -88,7 +107,8 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  checkin-api:
+  api-checkin:
+    container_name: venuepulse-api-checkin
     build:
       context: ..
       dockerfile: src/Services/CheckIn/Api/Dockerfile
@@ -111,42 +131,52 @@ services:
       mongo:
         condition: service_healthy
 
-  shell:
+  # ---------------------------------------------------------------------------------------
+  # Frontends (React) — nombre de carpeta real en frontend/apps/<app>, sin el prefijo web-
+  # ---------------------------------------------------------------------------------------
+  web-shell:
+    container_name: venuepulse-web-shell
     build:
       context: ..
       dockerfile: frontend/apps/shell/Dockerfile
     expose:
       - "80"
 
-  ticket-checkout:
+  web-ticket-checkout:
+    container_name: venuepulse-web-ticket-checkout
     build:
       context: ..
       dockerfile: frontend/apps/ticket-checkout/Dockerfile
     expose:
       - "80"
 
-  venue-ops:
+  web-venue-ops:
+    container_name: venuepulse-web-venue-ops
     build:
       context: ..
       dockerfile: frontend/apps/venue-ops/Dockerfile
     expose:
       - "80"
 
+  # ---------------------------------------------------------------------------------------
+  # Gateway
+  # ---------------------------------------------------------------------------------------
   # Único punto de entrada del navegador: compone las 3 apps React y hace de reverse proxy
   # hacia los 3 backends + los hubs de SignalR (ver ADR 0004 sobre micro frontends).
-  nginx:
+  gateway:
+    container_name: venuepulse-gateway
     image: nginx:alpine
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "8080:80"
     depends_on:
-      - shell
-      - ticket-checkout
-      - venue-ops
-      - ticketing-api
-      - accesscontrol-api
-      - checkin-api
+      - web-shell
+      - web-ticket-checkout
+      - web-venue-ops
+      - api-ticketing
+      - api-accesscontrol
+      - api-checkin
 
 volumes:
   postgres-data:
