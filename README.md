@@ -50,6 +50,8 @@ referencia como contexto de build — así queda claro qué es aplicación y qu�
 docker compose -f infra/docker-compose.yml up --build
 ```
 
+- Rebuild selectivo por capas: `docker compose up --build` solo reconstruye las imágenes cuyo
+  código cambió, el resto reutiliza la cache.
 - `http://localhost:8080` — app pública (catálogo + aforo en vivo + comprar entrada)
 - `http://localhost:8080/venue-ops/` — panel de operaciones (escanear entradas, aforo por zona)
 - `http://localhost:16686` — Jaeger (trazas distribuidas)
