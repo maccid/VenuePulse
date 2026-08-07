@@ -25,6 +25,12 @@
     <ProjectReference Include="..\Services\CheckIn\Domain\VenuePulse.CheckIn.Domain.csproj" />
     <ProjectReference Include="..\Services\CheckIn\Application\VenuePulse.CheckIn.Application.csproj" />
     <ProjectReference Include="..\Services\CheckIn\Infrastructure\VenuePulse.CheckIn.Infrastructure.csproj" />
+    <ProjectReference Include="..\Core\VenuePulse.Core\VenuePulse.Core.csproj" />
+    <ProjectReference Include="..\Services\Ticketing\Domain\VenuePulse.Ticketing.Domain.csproj" />
+    <ProjectReference Include="..\Services\Ticketing\Infrastructure\VenuePulse.Ticketing.Infrastructure.csproj" />
+    <ProjectReference Include="..\Services\AccessControl\Domain\VenuePulse.AccessControl.Domain.csproj" />
+    <ProjectReference Include="..\Services\AccessControl\Application\VenuePulse.AccessControl.Application.csproj" />
+    <ProjectReference Include="..\Services\AccessControl\Infrastructure\VenuePulse.AccessControl.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
