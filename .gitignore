@@ -1,0 +1,22 @@
+## .NET
+bin/
+obj/
+*.user
+.vs/
+
+## Node / frontend
+node_modules/
+dist/
+.vite/
+coverage/
+
+## Infra local
+*.env
+.env.*
+
+## Herramientas locales
+.claude/
+
+## OS
+.DS_Store
+Thumbs.db
