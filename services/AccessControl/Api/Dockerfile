@@ -17,6 +17,8 @@ COPY services/AccessControl/ AccessControl/
 RUN dotnet publish AccessControl/Api/VenuePulse.AccessControl.Api.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+# curl para el healthcheck de docker-compose (la imagen aspnet no lo trae: Ubuntu 24.04)
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app .
 EXPOSE 8080

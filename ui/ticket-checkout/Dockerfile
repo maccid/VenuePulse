@@ -4,7 +4,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 COPY ui/.npmrc ./
 COPY ui/ticket-checkout/package.json ui/ticket-checkout/package-lock.json* ./
-RUN npm install
+RUN npm ci
 COPY ui/ticket-checkout/ ./
 RUN npm run build
 

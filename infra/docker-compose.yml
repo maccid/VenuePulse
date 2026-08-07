@@ -8,6 +8,9 @@ name: venuepulse
 #   api-*       -> backends propios (.NET)
 #   web-*       -> frontends propios (React)
 #   gateway     -> único punto de entrada del navegador
+#
+# Rebuild selectivo: `docker compose up --build` solo reconstruye las imágenes cuyo contexto
+# cambió (cache por capas) — no hace falta perfiles para eso.
 services:
 
   # ---------------------------------------------------------------------------------------
@@ -86,6 +89,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   api-accesscontrol:
     container_name: venuepulse-api-accesscontrol
@@ -106,6 +115,12 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   api-checkin:
     container_name: venuepulse-api-checkin
@@ -130,6 +145,12 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # ---------------------------------------------------------------------------------------
   # Frontends (React) — nombre de carpeta real en ui/<app>, sin el prefijo web-
