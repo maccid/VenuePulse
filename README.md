@@ -39,7 +39,6 @@ services/   Backend .NET — 3 microservicios + librería compartida Core (Venue
 ui/         3 apps React independientes (shell, ticket-checkout, venue-ops)
 infra/      docker-compose, manifiestos K8s, Jenkinsfile, guía de Azure, Nginx de composición
 docs/       ADRs, AI-USAGE.md, demo-script.md
-.ia/        Metodología de trabajo con IA del autor (local, ver .dockerignore — nunca en Docker)
 ```
 
 Separación deliberada: `infra/` no depende de `services/` ni `ui/` a nivel de código, solo los

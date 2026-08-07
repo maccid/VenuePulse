@@ -74,9 +74,6 @@ sobre-prometan (ver la tabla "qué es real vs documentado" del README).
 
 ## Buenas prácticas aplicadas
 
-- **Nunca until se copió código del `core` privado del autor** (`olix.core`) ni de su
-  metodología de trabajo (`.ia/`) — solo se usó como referencia de patrón arquitectónico de
-  alto nivel, ya observado sin leer código propietario (ver contexto del proceso).
 - **Nada se aceptó sin ejecutar**: cada servicio se compiló y sus tests se corrieron realmente
   antes de darlo por completado — no hay código "generado y asumido correcto".
 - **Las librerías con licencia comercial reciente** (MediatR, FluentAssertions) se evaluaron
