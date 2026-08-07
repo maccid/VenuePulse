@@ -1,0 +1,38 @@
+# Mismo esquema de rutas que frontend/nginx/nginx.conf (docker-compose), aquí como Ingress —
+# requiere un ingress-nginx-controller instalado en el clúster AKS.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: venuepulse
+  namespace: venuepulse
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /ticket-checkout(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: { service: { name: ticket-checkout, port: { number: 80 } } }
+          - path: /venue-ops(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: { service: { name: venue-ops, port: { number: 80 } } }
+          - path: /api/ticketing(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: { service: { name: ticketing-api, port: { number: 8080 } } }
+          - path: /api/access-control(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: { service: { name: accesscontrol-api, port: { number: 8080 } } }
+          - path: /api/checkin(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: { service: { name: checkin-api, port: { number: 8080 } } }
+          - path: /hubs/occupancy
+            pathType: Exact
+            backend: { service: { name: accesscontrol-api, port: { number: 8080 } } }
+          - path: /hubs/tickets
+            pathType: Exact
+            backend: { service: { name: checkin-api, port: { number: 8080 } } }
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: shell, port: { number: 80 } } }

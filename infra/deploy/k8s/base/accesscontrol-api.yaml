@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accesscontrol-api
+  namespace: venuepulse
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: accesscontrol-api }
+  template:
+    metadata:
+      labels: { app: accesscontrol-api }
+    spec:
+      containers:
+        - name: accesscontrol-api
+          image: ghcr.io/OWNER/venuepulse-accesscontrol-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ConnectionStrings__AccessControlDb
+              valueFrom: { secretKeyRef: { name: venuepulse-db-secrets, key: accesscontrol-connection-string } }
+            - name: RabbitMq__ConnectionString
+              valueFrom: { secretKeyRef: { name: venuepulse-broker-secrets, key: rabbitmq-connection-string } }
+            - name: Observability__OtlpEndpoint
+              value: "http://jaeger-collector.observability:4317"
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: accesscontrol-api
+  namespace: venuepulse
+spec:
+  selector: { app: accesscontrol-api }
+  ports:
+    - port: 8080
+      targetPort: 8080
