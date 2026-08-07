@@ -28,3 +28,11 @@ Métricas agregadas con Prometheus/Grafana (dashboards de series temporales) —
 paso natural una vez hay trazas, pero no se construye aquí para no diluir el foco del MVP. En
 Azure, este mismo código de instrumentación exportaría a Azure Monitor/Application Insights
 cambiando solo el endpoint OTLP (ver `infra/deploy/azure/README.md`).
+
+**Agregador de logs (tipo Seq)**: descartado deliberadamente para este MVP, con el mismo
+criterio que Redis y Prometheus/Grafana — para 3 servicios, `docker compose logs -f` más las
+trazas de Jaeger (que ya correlacionan la actividad entre servicios para una compra) cubren el
+caso de uso real sin añadir una pieza de infraestructura más. Serilog escribe a consola con
+`TraceId`/`SpanId` como campos, suficiente para cruzar un log puntual con su trace en Jaeger si
+hiciera falta. Si el volumen de logs creciera más allá de lo que un `grep` razonable puede
+cubrir, sería el siguiente paso natural (documentado, no construido).

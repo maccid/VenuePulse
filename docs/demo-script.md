@@ -38,9 +38,14 @@ Abrir:
 
 ## 3. Trazas distribuidas (1 minuto)
 
-1. Abrir Jaeger, buscar el servicio `VenuePulse.CheckIn`.
-2. Abrir el trace de la última compra y mostrar los spans cruzando los 3 servicios con sus
-   duraciones — "esto es lo primero que miraría si algo fuera lento en producción".
+1. Abrir Jaeger, buscar el servicio `VenuePulse.AccessControl` (es donde más spans se agregan)
+   y localizar el trace largo (~25-30 spans) de la última compra.
+2. Mostrar los spans cruzando `CheckIn` (HTTP + Outbox + Saga) y `AccessControl` (reserva y
+   confirmación de zona) con sus duraciones — "esto es lo primero que miraría si algo fuera
+   lento en producción". Señalar que `Ticketing` **no** aparece en este trace a propósito: solo
+   interviene en la fase de catálogo (el fan ya trae el `eventId`/`ticketTypeId` elegidos), sin
+   llamada síncrona en el momento de comprar — ver ADR 0006. Es un buen ejemplo de no forzar
+   acoplamiento solo para que la traza "se vea mejor".
 
 ## 4. Arquitectura y pruebas (2 minutos)
 
@@ -75,14 +80,21 @@ Si preguntan por el test de integración de la Saga: es completamente honesto de
 el desarrollo hubo un problema de fiabilidad específico del arnés de test (Testcontainers +
 `WebApplicationFactory` compitiendo por recursos en una máquina cargada) en el camino de
 compensación, documentado en el ADR 0009, y que el camino de compensación **sí** se ha
-verificado manualmente contra `docker-compose` real (ver checklist más abajo). Es un ejemplo
-real de saber diagnosticar sin fingir que todo salió perfecto a la primera.
+verificado manualmente contra `docker-compose` real (ver checklist más abajo): confirmado que
+no era un bug real, sino ruido específico del arnés de test. Es un ejemplo real de saber
+diagnosticar sin fingir que todo salió perfecto a la primera.
 
-## Checklist de verificación manual pendiente antes de la entrevista
+## Checklist de verificación manual (verificado contra docker-compose real)
 
-- [ ] `docker compose -f infra/docker-compose.yml up --build` levanta los 9 contenedores sin
-      errores.
-- [ ] Camino feliz completo (compra → confirmación → check-in → aforo sube) funciona en el
-      navegador.
-- [ ] Camino de compensación (simular fallo → rechazo → aforo NO sube) funciona en el navegador.
-- [ ] Jaeger muestra el trace conectado de una compra completa.
+- [x] `docker compose -f infra/docker-compose.yml up --build` levanta los 11 contenedores sin
+      errores (`api-ticketing`, `api-accesscontrol`, `api-checkin`, `web-shell`,
+      `web-ticket-checkout`, `web-venue-ops`, `gateway`, `postgres`, `mongo`, `rabbitmq`,
+      `jaeger`).
+- [x] Camino feliz completo (compra → confirmación en <1s → check-in → aforo sube) verificado
+      contra la API real: `confirmedSold`/`checkedIn` de la zona pasan de 0 a 1.
+- [x] Camino de compensación (simular fallo → rechazo `PaymentFailed` → aforo NO sube) verificado
+      contra la API real: la zona se queda en `confirmedSold: 0`.
+- [x] Jaeger muestra el trace conectado de una compra completa (~28 spans, CheckIn +
+      AccessControl vía Outbox/Saga/RabbitMQ) y de la compensación.
+- [ ] Repetir el camino feliz y el de compensación una vez más **desde el navegador** (no solo
+      vía API) para confirmar el timeline visual de la Saga por SignalR antes de la entrevista.
