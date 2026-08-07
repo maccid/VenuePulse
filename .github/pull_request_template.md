@@ -10,6 +10,6 @@
 
 ## Checklist
 
-- [ ] No hay `COPY . .` en ningún Dockerfile tocado (ver ADR 0007)
+- [ ] No hay `COPY . .` en ningún Dockerfile tocado
 - [ ] Si se añade un evento/comando nuevo, está en `VenuePulse.Core.Messaging.Contracts`
 - [ ] Si se toca la Saga, el camino de compensación tiene test de integración
