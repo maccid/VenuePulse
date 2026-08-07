@@ -12,7 +12,7 @@ técnica, no solo una promesa, de que esa carpeta nunca puede acabar en una imag
 1. **`.dockerignore`** en la raíz excluye explícitamente `.ia/`, `.claude/`, `.git/`, `docs/`,
    `infra/deploy/`, `**/node_modules/`, etc.
 2. **Ningún Dockerfile hace `COPY . .`** desde la raíz del repo. Cada uno copia solo rutas
-   explícitas (`src/Core/**`, `src/Services/<Servicio>/**`, `frontend/apps/<app>/**`) — así,
+   explícitas (`services/Core/**`, `services/<Servicio>/**`, `ui/<app>/**`) — así,
    aunque el `.dockerignore` tuviera un fallo, `.ia` no puede entrar porque nunca se referencia
    por ruta en ningún `COPY`.
 3. **Guard automatizado en CI** (`docker-build.yml`): tras construir cada una de las 6

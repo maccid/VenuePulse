@@ -4,7 +4,7 @@ obj/
 *.user
 .vs/
 
-## Node / frontend
+## Node / ui
 node_modules/
 dist/
 .vite/

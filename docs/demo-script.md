@@ -50,7 +50,7 @@ Abrir:
 ## 4. Arquitectura y pruebas (2 minutos)
 
 ```bash
-dotnet test src/VenuePulse.slnx
+dotnet test services/VenuePulse.slnx
 ```
 
 Señalar: tests de dominio, tests de la Saga con el harness in-memory de MassTransit (camino

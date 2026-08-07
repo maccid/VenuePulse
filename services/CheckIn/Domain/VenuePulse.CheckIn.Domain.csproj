@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Core\VenuePulse.Core\VenuePulse.Core.csproj" />
+    <ProjectReference Include="..\..\Core\VenuePulse.Core.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -4,10 +4,10 @@
 
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY frontend/.npmrc ./
-COPY frontend/apps/shell/package.json frontend/apps/shell/package-lock.json* ./
+COPY ui/.npmrc ./
+COPY ui/shell/package.json ui/shell/package-lock.json* ./
 RUN npm install
-COPY frontend/apps/shell/ ./
+COPY ui/shell/ ./
 RUN npm run build
 
 FROM nginx:alpine

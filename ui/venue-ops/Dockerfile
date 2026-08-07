@@ -2,10 +2,10 @@
 # Contexto de build: la raíz del repo (ver infra/docker-compose.yml).
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY frontend/.npmrc ./
-COPY frontend/apps/venue-ops/package.json frontend/apps/venue-ops/package-lock.json* ./
+COPY ui/.npmrc ./
+COPY ui/venue-ops/package.json ui/venue-ops/package-lock.json* ./
 RUN npm install
-COPY frontend/apps/venue-ops/ ./
+COPY ui/venue-ops/ ./
 RUN npm run build
 
 FROM nginx:alpine

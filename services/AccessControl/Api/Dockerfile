@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1
+# Build ejecutado con el contexto en la raíz del repo: docker build -f services/AccessControl/Api/Dockerfile .
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY services/Directory.Build.props services/Directory.Packages.props ./
+COPY services/Core/VenuePulse.Core.csproj Core/
+COPY services/AccessControl/Domain/VenuePulse.AccessControl.Domain.csproj AccessControl/Domain/
+COPY services/AccessControl/Application/VenuePulse.AccessControl.Application.csproj AccessControl/Application/
+COPY services/AccessControl/Infrastructure/VenuePulse.AccessControl.Infrastructure.csproj AccessControl/Infrastructure/
+COPY services/AccessControl/Api/VenuePulse.AccessControl.Api.csproj AccessControl/Api/
+RUN dotnet restore AccessControl/Api/VenuePulse.AccessControl.Api.csproj
+
+COPY services/Core/ Core/
+COPY services/AccessControl/ AccessControl/
+RUN dotnet publish AccessControl/Api/VenuePulse.AccessControl.Api.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "VenuePulse.AccessControl.Api.dll"]
