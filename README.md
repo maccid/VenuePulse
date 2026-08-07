@@ -35,14 +35,14 @@ dominio (`VenuePulse`, `Ticketing`, `AccessControl`, `CheckIn`) son inventados p
 ## Estructura del repositorio
 
 ```
-src/        Backend .NET — 3 microservicios + librería compartida VenuePulse.Core
-frontend/   3 apps React independientes (shell, ticket-checkout, venue-ops)
+services/   Backend .NET — 3 microservicios + librería compartida Core (VenuePulse.Core)
+ui/         3 apps React independientes (shell, ticket-checkout, venue-ops)
 infra/      docker-compose, manifiestos K8s, Jenkinsfile, guía de Azure, Nginx de composición
 docs/       ADRs, AI-USAGE.md, demo-script.md
 .ia/        Metodología de trabajo con IA del autor (local, ver .dockerignore — nunca en Docker)
 ```
 
-Separación deliberada: `infra/` no depende de `src/` ni `frontend/` a nivel de código, solo los
+Separación deliberada: `infra/` no depende de `services/` ni `ui/` a nivel de código, solo los
 referencia como contexto de build — así queda claro qué es aplicación y qué es despliegue.
 
 ## Arrancar la demo
@@ -76,7 +76,7 @@ No prometer de más es parte del ejercicio. Tabla honesta:
 ## Tests
 
 ```bash
-dotnet test src/VenuePulse.slnx
+dotnet test services/VenuePulse.slnx
 ```
 
 Pirámide deliberada: tests de dominio (invariantes), tests de la Saga con el harness in-memory
