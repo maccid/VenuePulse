@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type { TicketStatus, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
 import { SagaTimeline } from './SagaTimeline'
+import PurchaseForm from './components/PurchaseForm'
 import './App.css'
 
 interface Props {
@@ -91,39 +92,20 @@ export default function App({ eventId, holder }: Props) {
 
   return (
     <div className="ticket-checkout">
-      <h3>Comprar entrada</h3>
+      <h3 className="ticket-checkout__title">Comprar entrada</h3>
 
-      <label>
-        Tipo de entrada
-        <select value={ticketTypeId} onChange={(e) => setTicketTypeId(e.target.value)} disabled={isPurchasing}>
-          {ticketTypes.map((t) => (
-            <option key={t.id} value={t.id}>{t.name} — {t.price.toFixed(2)} €</option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Zona / puerta de acceso
-        <select value={zoneId} onChange={(e) => setZoneId(e.target.value)} disabled={isPurchasing}>
-          {zones.map((z) => (
-            <option key={z.zoneId} value={z.zoneId}>{z.name} ({z.capacity - z.confirmedSold} libres)</option>
-          ))}
-        </select>
-      </label>
-
-      <label className="checkbox-field">
-        <input
-          type="checkbox"
-          checked={simulateFailure}
-          onChange={(e) => setSimulateFailure(e.target.checked)}
-          disabled={isPurchasing}
-        />
-        Simular fallo de pago (dispara la compensación real de la Saga)
-      </label>
-
-      <button onClick={handlePurchase} disabled={isPurchasing || !ticketTypeId || !zoneId}>
-        {isPurchasing ? 'Procesando…' : 'Comprar entrada'}
-      </button>
+      <PurchaseForm
+        ticketTypes={ticketTypes}
+        zones={zones}
+        ticketTypeId={ticketTypeId}
+        zoneId={zoneId}
+        simulateFailure={simulateFailure}
+        disabled={isPurchasing}
+        onTicketTypeChange={setTicketTypeId}
+        onZoneChange={setZoneId}
+        onSimulateFailureChange={setSimulateFailure}
+        onSubmit={handlePurchase}
+      />
 
       {status !== 'Idle' && (
         <div className="saga-panel">
