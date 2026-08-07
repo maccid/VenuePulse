@@ -1,0 +1,6 @@
+@VenuePulse.Ticketing.Api_HostAddress = http://localhost:5101
+
+GET {{VenuePulse.Ticketing.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
