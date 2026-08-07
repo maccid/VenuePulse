@@ -43,6 +43,18 @@ igualmente válidas), se bajó a **MassTransit 8.5.10** (última release de la s
 madura y probada en producción). Esto restauró la fiabilidad del camino feliz de forma
 consistente.
 
+## Verificación cruzada posterior contra `docker-compose` real
+
+Antes de la entrevista se ejecutaron ambos caminos directamente contra el `docker-compose`
+completo (sin Testcontainers ni `WebApplicationFactory` de por medio): el camino feliz confirma
+en menos de 1 segundo y el camino de compensación libera el aforo reservado correctamente
+(`confirmedSold` de la zona se queda en 0). Esto confirma la hipótesis: el problema de
+fiabilidad del test era específico del arnés (recursos compartidos entre Testcontainers y el
+`WebApplicationFactory` en proceso), no un defecto real de la Saga ni de MassTransit 8.5.10. Se
+decide **no** volver a MassTransit 9.2.0 pese a esta confirmación: 8.5.10 es la última release
+madura de la serie 8, no hay ninguna necesidad funcional de estar en una versión recién
+publicada, y hacerlo ahora solo reintroduce un riesgo ya evitado sin ningún beneficio real.
+
 ## Por qué se documenta esto
 
 Es exactamente el tipo de evidencia que la oferta pide sobre "IA como acelerador validado por

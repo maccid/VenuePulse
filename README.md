@@ -71,7 +71,7 @@ No prometer de más es parte del ejercicio. Tabla honesta:
 | Manifiestos K8s/Kustomize (`infra/deploy/k8s`) | Escritos y válidos, **no desplegados** a AKS real |
 | `Jenkinsfile` (`infra/deploy/jenkins`) | Escrito, **no ejecutado** |
 | Topología Azure (`infra/deploy/azure/README.md`) | **Documentada**, no aprovisionada |
-| Test de integración de la Saga contra Testcontainers reales | Camino feliz **verificado**; camino de compensación con un problema de fiabilidad específico del arnés de test, documentado en [ADR 0009](docs/architecture/adr/0009-masstransit-mongo-debugging.md) — verificación cruzada pendiente contra `docker-compose` real |
+| Test de integración de la Saga contra Testcontainers reales | Camino feliz **verificado**; camino de compensación con un problema de fiabilidad específico del arnés de test, documentado en [ADR 0009](docs/architecture/adr/0009-masstransit-mongo-debugging.md) — **verificado por separado contra `docker-compose` real**: ambos caminos funcionan correctamente, confirmando que no era un defecto de la Saga |
 
 ## Tests
 
