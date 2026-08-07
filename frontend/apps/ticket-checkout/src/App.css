@@ -1,0 +1,144 @@
+/* Todo escopado bajo .ticket-checkout a propósito: este componente vive en light DOM dentro
+   de la página de shell (sin Shadow DOM, ver ADR 0004), así que nunca toca :root/body/h1... */
+.ticket-checkout {
+  --tc-text: #2b2b33;
+  --tc-muted: #6b6375;
+  --tc-border: #e5e4e7;
+  --tc-accent: #1d6f5c;
+  --tc-accent-bg: rgba(29, 111, 92, 0.1);
+  --tc-danger: #b3261e;
+  --tc-danger-bg: rgba(179, 38, 30, 0.08);
+
+  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--tc-text);
+  background: white;
+  border: 1px solid var(--tc-border);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.ticket-checkout h3 {
+  margin: 0;
+}
+
+.ticket-checkout label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--tc-muted);
+}
+
+.ticket-checkout select {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--tc-border);
+  border-radius: 6px;
+}
+
+.ticket-checkout .checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.ticket-checkout button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  background: var(--tc-accent);
+  color: white;
+}
+
+.ticket-checkout button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saga-panel {
+  border-top: 1px solid var(--tc-border);
+  padding-top: 14px;
+}
+
+.saga-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.saga-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--tc-muted);
+}
+
+.saga-step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--tc-border);
+  flex-shrink: 0;
+}
+
+.saga-step--active .saga-step-dot {
+  background: var(--tc-accent);
+  animation: pulse 1s infinite;
+}
+
+.saga-step--active {
+  color: var(--tc-text);
+  font-weight: 600;
+}
+
+.saga-step--done .saga-step-dot {
+  background: var(--tc-accent);
+}
+
+.saga-step--done {
+  color: var(--tc-text);
+}
+
+.saga-step--failed .saga-step-dot {
+  background: var(--tc-danger);
+}
+
+.saga-step--failed {
+  color: var(--tc-danger);
+  font-weight: 600;
+}
+
+.saga-rejection-reason {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  background: var(--tc-danger-bg);
+  color: var(--tc-danger);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.ticket-id-hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--tc-muted);
+}
+
+.ticket-id-hint code {
+  background: var(--tc-accent-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
