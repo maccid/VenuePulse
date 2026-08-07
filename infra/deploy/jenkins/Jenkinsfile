@@ -58,7 +58,7 @@ pipeline {
             }
         }
 
-        stage('Guard: .ia nunca en la imagen') {
+        stage('Guard: sin ficheros de desarrollo local en la imagen') {
             steps {
                 sh '''
                     for image in api-ticketing api-accesscontrol api-checkin; do
