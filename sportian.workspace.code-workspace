@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "worktrees/venuepulse-zone-event-scoping"
+    }
+  ],
+  "settings": {
+    "workbench.startupEditor": "none"
+  }
+}

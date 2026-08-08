@@ -1,6 +1,6 @@
 <Solution>
-  <Folder Name="/ArchitectureTests/">
-    <Project Path="ArchitectureTests/VenuePulse.ArchitectureTests.csproj" />
+  <Folder Name="/Architecture.Tests/">
+    <Project Path="Architecture.Tests/VenuePulse.Architecture.Tests.csproj" />
   </Folder>
   <Folder Name="/Core/">
     <Project Path="Core/VenuePulse.Core.csproj" />

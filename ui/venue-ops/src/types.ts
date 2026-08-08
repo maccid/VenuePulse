@@ -14,3 +14,5 @@ export interface ZoneOccupancy {
   confirmedSold: number
   checkedIn: number
 }
+
+export type ScanResult = { kind: 'idle' } | { kind: 'ok' } | { kind: 'error'; message: string }
