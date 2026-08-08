@@ -22,20 +22,14 @@ public sealed class Event : Entity<Guid>
 
     public Event(Guid id, string name, string venueName, DateTimeOffset startsAtUtc) : base(id)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El evento necesita un nombre.", nameof(name));
-        if (string.IsNullOrWhiteSpace(venueName))
-            throw new ArgumentException("El evento necesita un recinto.", nameof(venueName));
-
-        Name = name;
-        VenueName = venueName;
+        Name = Guard.AgainstNullOrWhiteSpace(name, nameof(name), "El evento necesita un nombre.");
+        VenueName = Guard.AgainstNullOrWhiteSpace(venueName, nameof(venueName), "El evento necesita un recinto.");
         StartsAtUtc = startsAtUtc;
     }
 
     public TicketType AddTicketType(Guid id, string name, decimal price, string? description)
     {
-        if (price <= 0)
-            throw new ArgumentException("El precio de una entrada debe ser positivo.", nameof(price));
+        Guard.AgainstNonPositive(price, nameof(price), "El precio de una entrada debe ser positivo.");
 
         var ticketType = new TicketType(id, Id, name, price, description);
         _ticketTypes.Add(ticketType);
