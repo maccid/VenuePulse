@@ -8,6 +8,27 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
 > `C:\Users\miguel.cidgarcia\.claude\plans\clever-percolating-cat.md` (solo accesible desde
 > Claude Code), pero **este fichero es el que deben leer ambas IAs** antes de tocar código.
 
+## Reparto en oleadas (ronda 2, tras Bloque 1/5/6/7)
+
+Objetivo: maximizar paralelismo real sin que las dos IAs toquen el mismo servicio (riesgo de
+choque de migraciones EF) a la vez. 8 no depende de nada pendiente; 9/11/10 dependen de 8.
+
+- **Oleada 1 (en paralelo desde ya)**:
+  - Claude Code → Bloque 2 (`CheckIn`), después Bloque 4 (`Core`, aditivo) y luego Bloque 3
+    (`AccessControl`) — este último solo tras que opencode haya mergeado su parte de
+    `AccessControl` del Bloque 8, para no pisar migraciones.
+  - opencode → Bloque 8 (`Ticketing`+`AccessControl`+`venue-ops`), el bloque grande y
+    prioritario.
+- **Oleada 2 (tras merge de Bloque 8 a `develop`)**:
+  - opencode → Bloque 11 (`occupancy-prediction`).
+  - Claude Code → Bloque 9 (`dynamic-pricing`).
+- **Sin asignar / recorte si falta tiempo**: Bloque 10 (opcional), verificación manual E2E
+  (al cierre, no paralelizable).
+
+Reserva de números de ADR para evitar colisión entre ramas paralelas (siguiente tras 0009):
+`0010` → Bloque 2 (Claude Code), `0011` → Bloque 3 (Claude Code), `0012` → Bloque 11 (opencode,
+si aplica). Si opencode necesita uno antes, que anote aquí el número que toma.
+
 ## En curso
 
 - [x] **Bloque 1 — `fix/zone-event-scoping`** (Claude Code): `EventId` en `Zone` vía `EventCreated`
@@ -23,16 +44,18 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
   Verificado en real con `docker compose up --build`: 2 eventos → 6 zonas (3 por evento, `eventId`
   correcto), compra de entrada real confirma `confirmedSold` en la zona correcta. Tests unitarios
   + arquitectura en verde (23). Sin ADR nuevo (ya justificado en KNOWN-ISSUES.md).
-- [ ] **Bloque 2 — `feature/saga-timeout`** (Claude Code): timeout en el estado `Reserving` de
+- [ ] **Bloque 2 — `feature/saga-timeout`** (Claude Code, Oleada 1): timeout en el estado `Reserving` de
   `TicketPurchaseSaga` — si `AccessControl` no responde en N segundos, transición a `Rejected`
   ("ReservationTimedOut") en vez de quedarse colgada para siempre. Test nuevo en
   `TicketPurchaseSagaTests.cs`. ADR pequeño.
-- [ ] **Bloque 3 — `feature/accesscontrol-inbox`** (Claude Code, después del Bloque 1): Inbox real
+- [ ] **Bloque 3 — `feature/accesscontrol-inbox`** (Claude Code, Oleada 1 — tras que opencode
+  mergee su parte de `AccessControl` del Bloque 8, para no pisar migraciones EF del mismo
+  servicio): Inbox real
   (`ProcessedMessages` keyed por `EventId`) en `AccessControl` — hoy no tiene, pese a que
   `ARCHITECTURE.md` dice que Outbox/Inbox garantiza "exactamente una vez" (solo cierto en
   `CheckIn`). Sin esto, una redelivery de RabbitMQ duplica reservas/check-ins reales. ADR nuevo
   (siguiente número tras 0009).
-- [ ] **Bloque 4 — `feature/core-shared-patterns`** (Claude Code): ampliar `VenuePulse.Core` con
+- [ ] **Bloque 4 — `feature/core-shared-patterns`** (Claude Code, Oleada 1): ampliar `VenuePulse.Core` con
   interceptor EF Core de auditoría, paginación genérica y guard clauses — inspiración de alto
   nivel de `olix.workspace` (nunca código/nombres literales, ver `.ia/PRODUCT-VISION.md`).
   Evaluar con cuidado si se mezcla con `Result` o se sustituye en algún punto. ADR nuevo.
@@ -46,7 +69,7 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
   (ADR 0004), sin librerías UI nuevas. Las 3 apps compilan y lintean limpio. **Verificación
   pendiente**: `dotnet test` — 2 tests de integración de `CheckIn` (Testcontainers) fallan por
   timeout de infraestructura, no por este cambio (solo toca `ui/`); lo revisa Claude Code.
-- [ ] **Bloque 8 — `feature/simulation-engine`** (sin asignar): motor de simulación **controlable**
+- [ ] **Bloque 8 — `feature/simulation-engine`** (opencode, Oleada 1): motor de simulación **controlable**
   para dar vida al demo y alimentar futuras predicciones. Dos señales separadas — hoy el demo las
   confunde porque convergen: la venta incrementa `ConfirmedSold` y el torniquete `CheckedIn`, y sin
   dimensión temporal ni no-shows ambos parecen lo mismo:
@@ -58,19 +81,22 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
   presentador debe poder dirigir el flujo. **Depende del Bloque 1** (zonas por evento): sin
   `EventId` en `Zone`, ventas y aforo de todos los eventos se mezclan en los mismos contadores.
   Es la fuente de datos para el **Bloque 11** (predicción de ocupación).
-- [ ] **Bloque 11 — `feature/occupancy-prediction`** (sin asignar): predicción de ocupación con
+- [ ] **Bloque 11 — `feature/occupancy-prediction`** (opencode, Oleada 2 — tras merge del Bloque 8):
+  predicción de ocupación con
   modelo estadístico honesto (regresión / exponential smoothing sobre datos que el propio sistema
   genera vía Bloque 8), **no** "ML mágico". Predice la **curva de llegada + no-shows sobre
   `ConfirmedSold`** — la métrica que de verdad opera un estadio ("¿cuántos pasarán el torniquete y
   cuándo?"), no las ventas. Es el pilar del smart venue que encaja con la demo y la prioridad #1
   de esta ronda de mejoras. Nuevo servicio/endpoint + gráfica en `venue-ops`. ADR nuevo.
-- [ ] **Bloque 9 — `feature/dynamic-pricing`** (sin asignar): precio de un `TicketType` ajustado
+- [ ] **Bloque 9 — `feature/dynamic-pricing`** (Claude Code, Oleada 2 — tras merge del Bloque 8):
+  precio de un `TicketType` ajustado
   por demanda con heurísticas transparentes (ej. ocupación del sector > X% → sube un escalón;
   demanda baja → baja), **no** ML entrenado. Depende del Bloque 8 (sin demanda simulada no hay
   señal). Visible en el checkout (el precio cambia en vivo con la ocupación). Evaluar ADR pequeño.
   **Recomendado sobre el Bloque 10 si el tiempo aprieta**: se demuestra en 30 segundos y es
   defendible sin datos reales.
-- [ ] **Bloque 10 — `feature/fraud-detection`** (sin asignar, **OPCIONAL / candidato a recorte**):
+- [ ] **Bloque 10 — `feature/fraud-detection`** (sin asignar, **OPCIONAL / candidato a recorte,
+  solo si sobra tiempo tras la Oleada 2**):
   detección de fraude/reventa con heurísticas (misma IP comprando N entradas en T segundos, misma
   tarjeta en muchos nombres), con el simulador inyectando patrones y un detector que los marca y
   alerta. Con datos sintéticos no hay labels — solo defendible como reglas explícitas, no ML. Es el
