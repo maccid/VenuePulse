@@ -21,6 +21,7 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
     public Event<ZoneSlotReservationFailed> SlotReservationFailed { get; private set; } = null!;
     public Event<ZoneSlotConfirmed> SlotConfirmed { get; private set; } = null!;
     public Event<ZoneSlotReleased> SlotReleased { get; private set; } = null!;
+    public Event<ReservationTimedOut> TimedOut { get; private set; } = null!;
 
     public TicketPurchaseSaga()
     {
@@ -31,6 +32,7 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
         Event(() => SlotReservationFailed, x => x.CorrelateById(m => m.Message.CorrelationId));
         Event(() => SlotConfirmed, x => x.CorrelateById(m => m.Message.CorrelationId));
         Event(() => SlotReleased, x => x.CorrelateById(m => m.Message.CorrelationId));
+        Event(() => TimedOut, x => x.CorrelateById(m => m.Message.CorrelationId));
 
         Initially(
             When(PurchaseRequested)
@@ -60,6 +62,15 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
             When(SlotReservationFailed)
                 .Then(context => context.Saga.RejectionReason = context.Message.Reason)
                 .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Message.Reason))
+                .TransitionTo(Rejected)
+                .Finalize(),
+            // AccessControl no respondió a tiempo (ver ADR 0010) — se rechaza en vez de dejar la
+            // Saga colgada en Reserving para siempre. Riesgo aceptado: si SlotReserved llega
+            // justo después de este timeout, la Saga ya está finalizada y ese aforo reservado no
+            // se libera solo (mismo tipo de trade-off ya aceptado en KNOWN-ISSUES.md).
+            When(TimedOut)
+                .Then(context => context.Saga.RejectionReason = "ReservationTimedOut")
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "ReservationTimedOut"))
                 .TransitionTo(Rejected)
                 .Finalize());
 

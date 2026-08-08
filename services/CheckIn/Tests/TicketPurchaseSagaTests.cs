@@ -70,6 +70,27 @@ public class TicketPurchaseSagaTests
     }
 
     [Fact]
+    public async Task Timeout_de_reserva_rechaza_la_compra_sin_confirmar_ni_liberar()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: false));
+        (await harness.Published.Any<ReserveZoneSlot>()).Should().BeTrue();
+
+        // AccessControl nunca responde — el watchdog (fuera de la Saga, ver ADR 0010) publica
+        // ReservationTimedOut tras el deadline.
+        await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
+
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "ReservationTimedOut")).Should().BeTrue();
+        (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeFalse();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Zona_llena_rechaza_directamente_sin_llegar_a_reservar_pago()
     {
         var (provider, harness) = await StartHarnessAsync();
