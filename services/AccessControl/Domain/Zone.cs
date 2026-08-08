@@ -35,14 +35,10 @@ public sealed class Zone : Entity<Guid>
 
     public Zone(Guid id, Guid eventId, string name, int capacity) : base(id)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("La zona necesita un nombre.", nameof(name));
-        if (capacity <= 0)
-            throw new ArgumentException("El aforo debe ser positivo.", nameof(capacity));
+        Name = Guard.AgainstNullOrWhiteSpace(name, nameof(name), "La zona necesita un nombre.");
+        Capacity = Guard.AgainstNonPositive(capacity, nameof(capacity), "El aforo debe ser positivo.");
 
         EventId = eventId;
-        Name = name;
-        Capacity = capacity;
     }
 
     public void ReserveSlot()

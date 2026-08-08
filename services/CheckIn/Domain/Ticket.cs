@@ -1,5 +1,6 @@
 namespace VenuePulse.CheckIn.Domain;
 
+using VenuePulse.Core.Data;
 using VenuePulse.Core.Domain;
 
 /// <summary>
@@ -7,7 +8,7 @@ using VenuePulse.Core.Domain;
 /// AccessControl. Aquí sí hay asimetría lectura/escritura real, por eso este es el único
 /// servicio con CQRS (ver ADR 0003).
 /// </summary>
-public sealed class Ticket : Entity<Guid>
+public sealed class Ticket : Entity<Guid>, IAuditable
 {
     public Guid EventId { get; private set; }
     public Guid TicketTypeId { get; private set; }
@@ -15,7 +16,11 @@ public sealed class Ticket : Entity<Guid>
     public string Holder { get; private set; } = string.Empty;
     public TicketStatus Status { get; private set; }
     public string? RejectionReason { get; private set; }
+
+    /// <summary>Rellenados por <see cref="AuditingSaveChangesInterceptor"/> al guardar — ver ADR 0011.</summary>
     public DateTimeOffset CreatedAtUtc { get; private set; }
+    public DateTimeOffset? UpdatedAtUtc { get; private set; }
+
     public DateTimeOffset? ConfirmedAtUtc { get; private set; }
     public DateTimeOffset? CheckedInAtUtc { get; private set; }
 
@@ -26,15 +31,12 @@ public sealed class Ticket : Entity<Guid>
 
     public Ticket(Guid id, Guid eventId, Guid ticketTypeId, Guid zoneId, string holder) : base(id)
     {
-        if (string.IsNullOrWhiteSpace(holder))
-            throw new ArgumentException("La entrada necesita un titular.", nameof(holder));
+        Holder = Guard.AgainstNullOrWhiteSpace(holder, nameof(holder), "La entrada necesita un titular.");
 
         EventId = eventId;
         TicketTypeId = ticketTypeId;
         ZoneId = zoneId;
-        Holder = holder;
         Status = TicketStatus.Pending;
-        CreatedAtUtc = DateTimeOffset.UtcNow;
     }
 
     public void Confirm()

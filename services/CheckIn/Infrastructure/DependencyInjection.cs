@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Infrastructure.Consumers;
 using VenuePulse.CheckIn.Infrastructure.Sagas;
+using VenuePulse.Core.Data;
 using VenuePulse.Core.Messaging;
 
 public static class DependencyInjection
@@ -13,7 +14,8 @@ public static class DependencyInjection
     public static IServiceCollection AddCheckInInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<CheckInDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("CheckInDb")));
+            options.UseNpgsql(configuration.GetConnectionString("CheckInDb"))
+                .AddInterceptors(new AuditingSaveChangesInterceptor()));
 
         services.AddScoped<ITicketRepository, TicketRepository>();
 
