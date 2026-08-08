@@ -33,7 +33,7 @@ jobs:
             dockerfile: frontend/apps/venue-ops/Dockerfile
             context: .
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Construir imagen
         run: docker build -f ${{ matrix.dockerfile }} -t venuepulse-${{ matrix.name }}:ci ${{ matrix.context }}
@@ -61,7 +61,7 @@ jobs:
   validate-k8s-manifests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validar manifiestos K8s (sintaxis, sin desplegar — ver infra/deploy/README)
         uses: azure/setup-kubectl@v4
       - run: kubectl apply --dry-run=client -f infra/deploy/k8s/base/
