@@ -1,3 +1,4 @@
+using MassTransit;
 using VenuePulse.Core.Observability;
 using VenuePulse.Ticketing.Infrastructure;
 
@@ -28,7 +29,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<TicketingDbContext>();
-    await TicketingDbSeeder.SeedAsync(dbContext);
+    var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+    await TicketingDbSeeder.SeedAsync(dbContext, publishEndpoint);
 }
 
 if (app.Environment.IsDevelopment())
