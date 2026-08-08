@@ -27,7 +27,7 @@ choque de migraciones EF) a la vez. 8 no depende de nada pendiente; 9/11/10 depe
 
 Reserva de números de ADR para evitar colisión entre ramas paralelas (siguiente tras 0009):
 `0010` → Bloque 2 (Claude Code), `0011` → Bloque 3 (Claude Code), `0012` → Bloque 11 (opencode,
-si aplica). Si opencode necesita uno antes, que anote aquí el número que toma.
+si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver `docs/architecture/adr/0013-...md`).**
 
 ## En curso
 
@@ -57,7 +57,8 @@ si aplica). Si opencode necesita uno antes, que anote aquí el número que toma.
   (siguiente número tras 0009).
 - [ ] **Bloque 4 — `feature/core-shared-patterns`** (Claude Code, Oleada 1): ampliar `VenuePulse.Core` con
   interceptor EF Core de auditoría, paginación genérica y guard clauses — inspiración de alto
-  nivel de `olix.workspace` (nunca código/nombres literales, ver `.ia/PRODUCT-VISION.md`).
+  nivel de patrones (nunca código/nombres literales de otros proyectos privados, ver
+  `.ia/PRODUCT-VISION.md`).
   Evaluar con cuidado si se mezcla con `Result` o se sustituye en algún punto. ADR nuevo.
 - [x] **Bloque 5 — `feature/ui-visual-refresh`** (opencode): aplicar la skill `frontend-design` a
   `shell`/`ticket-checkout`/`venue-ops` — hoy cada app es un único `App.tsx` monolítico sin
@@ -69,7 +70,7 @@ si aplica). Si opencode necesita uno antes, que anote aquí el número que toma.
   (ADR 0004), sin librerías UI nuevas. Las 3 apps compilan y lintean limpio. **Verificación
   pendiente**: `dotnet test` — 2 tests de integración de `CheckIn` (Testcontainers) fallan por
   timeout de infraestructura, no por este cambio (solo toca `ui/`); lo revisa Claude Code.
-- [ ] **Bloque 8 — `feature/simulation-engine`** (opencode, Oleada 1): motor de simulación **controlable**
+- [x] **Bloque 8 — `feature/simulation-engine`** (opencode, Oleada 1): motor de simulación **controlable**
   para dar vida al demo y alimentar futuras predicciones. Dos señales separadas — hoy el demo las
   confunde porque convergen: la venta incrementa `ConfirmedSold` y el torniquete `CheckedIn`, y sin
   dimensión temporal ni no-shows ambos parecen lo mismo:
@@ -81,6 +82,14 @@ si aplica). Si opencode necesita uno antes, que anote aquí el número que toma.
   presentador debe poder dirigir el flujo. **Depende del Bloque 1** (zonas por evento): sin
   `EventId` en `Zone`, ventas y aforo de todos los eventos se mezclan en los mismos contadores.
   Es la fuente de datos para el **Bloque 11** (predicción de ocupación).
+  **Implementado en rama `feature/simulation-engine`**: motor singleton en `AccessControl` (fases
+  `Sales`/`Arrivals`, curvas `p²` y `1-(1-p)³`, worker `SimulationTickWorker` 500ms), endpoints
+  `api/simulation/events/{id}/start|stop|reset|status`, tabla `occupancy_snapshots` (serie temporal
+  con tiempo simulado para el Bloque 11, migración `AddOccupancySnapshots`), métodos simulados en
+  `Zone` (`RecordSimulatedSales`/`RecordSimulatedCheckIns`/`ResetCounters`), panel de control en
+  `venue-ops` (`SimulationPanel` + no-shows visibles en `ZoneGauge`). `Ticketing` intacto: `venue-ops`
+  trae `EventStartsAtUtc` del catálogo. ADR 0013. Tests unitarios del motor/curvas/Zone en verde
+  (24). **Verificación pendiente**: `dotnet test` completo + `docker compose up --build` end-to-end.
 - [ ] **Bloque 11 — `feature/occupancy-prediction`** (opencode, Oleada 2 — tras merge del Bloque 8):
   predicción de ocupación con
   modelo estadístico honesto (regresión / exponential smoothing sobre datos que el propio sistema
@@ -118,9 +127,9 @@ si aplica). Si opencode necesita uno antes, que anote aquí el número que toma.
   selectivo por capas. **Se evaluaron perfiles `api`/`ui` y se descartaron** (sobreingeniería para
   una demo: `up --build` ya solo reconstruye lo que cambió y el orden lo cubren
   `depends_on`+healthchecks); se revisó y mantuvo el nginx.conf original sin `resolver`.
-  Contexto adicional: comparado con el gateway de `olix` (YARP puro) — en VenuePulse
+  Contexto adicional: comparado con un gateway (YARP puro) — en VenuePulse
   nginx además compone los estáticos de los micro frontends (ADR 0004); revisar YARP vs nginx
-  quedó apuntado en `services.olix/.ia/TODO.md`, no aquí.
+  quedó apuntado en el TODO local del proyecto de referencia, no aquí.
 - [ ] Verificar manualmente desde el navegador (no solo API) el camino feliz y el de
   compensación, con el timeline de la Saga por SignalR — único ítem sin marcar en el checklist
   de `docs/demo-script.md`.

@@ -1,5 +1,16 @@
 # Incidencias conocidas — VenuePulse
 
+## Referencias a `olix` eliminadas del contexto de trabajo (LIMPIADO EN feature/simulation-engine)
+
+Se ha quitado la palabra "olix" de `.ia/PRODUCT-VISION.md` y `.ia/TODO.md` (la única mención
+remanente en `feature/simulation-engine`). El objetivo es que el proyecto no mencione por nombre
+el proyecto privado de referencia — se habla de "otros proyectos privados del autor" sin nombrarlo.
+
+**Pendiente en `develop`** (fuera del alcance de esta rama): `docs/architecture/adr/0011-core-shared-patterns.md:9`
+(línea creada por Claude Code en `feature/core-shared-patterns`, mergeada a `develop`) todavía
+cita `olix.workspace` por nombre. Queda anotado aquí para que quien lo mergee/trabaje esa rama lo
+limpie — no se toca desde `feature/simulation-engine` para no chocar con esa rama paralela.
+
 ## Aforo no vinculado a un evento concreto (RESUELTO)
 
 **Síntoma**: dos eventos distintos en el mismo recinto compartían el mismo contador de aforo
