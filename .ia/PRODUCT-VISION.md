@@ -27,9 +27,8 @@ analítica de datos avanzada, IoT/WiFi del recinto.
 | **Event** (Ticketing) | Partido o concierto que se celebra en el recinto. Tiene `TicketType`s. |
 | **TicketType** | Tipo de entrada de un Event (precio, descripción) — p.ej. "General", "VIP". |
 | **Ticket** (CheckIn) | Entrada emitida a un fan para un `Event`+`TicketType`+`Zone` concretos. |
-| **Zone** (AccessControl) | Puerta/zona física del recinto con aforo máximo. **No** tiene relación con
-  ningún `Event` — ver `.ia/KNOWN-ISSUES.md` sobre el aforo compartido entre eventos y su fix
-  event-driven en curso. |
+| **Zone** (AccessControl) | Puerta/zona física del recinto con aforo máximo, vinculada a un
+  `EventId` concreto (aprovisionada vía `EventCreated` — ver `.ia/KNOWN-ISSUES.md`). |
 | **Saga** (`TicketPurchaseSaga`) | Orquestador de la compra: reserva de zona → pago (mockeado)
   → confirmación o compensación. Vive en `CheckIn`, persistida en MongoDB. |
 | **Outbox/Inbox** | Patrón transaccional de MassTransit para publicar eventos en la misma
