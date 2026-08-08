@@ -30,9 +30,16 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
   interceptor EF Core de auditoría, paginación genérica y guard clauses — inspiración de alto
   nivel de `olix.workspace` (nunca código/nombres literales, ver `.ia/PRODUCT-VISION.md`).
   Evaluar con cuidado si se mezcla con `Result` o se sustituye en algún punto. ADR nuevo.
-- [ ] **Bloque 5 — `feature/ui-visual-refresh`** (opencode): aplicar la skill `frontend-design` a
+- [x] **Bloque 5 — `feature/ui-visual-refresh`** (opencode): aplicar la skill `frontend-design` a
   `shell`/`ticket-checkout`/`venue-ops` — hoy cada app es un único `App.tsx` monolítico sin
-  componentización ni sistema de diseño. Sin ADR.
+  componentización ni sistema de diseño. Sin ADR. **Implementado en rama**
+  `feature/ui-visual-refresh`: `App.tsx` roto en componentes (shell: `SiteHeader`/
+  `OccupancyWidget`/`EventCatalog`/`EventCard`/`CheckoutPanel`; ticket-checkout: `PurchaseForm`;
+  venue-ops: `SiteHeader`/`ScanPanel`/`ZoneGauge`/`ZonesDashboard`), tokens de diseño `--vp-*`
+  (tipografía, espacio, radio, sombra), CSS de ticket-checkout escopado bajo `.ticket-checkout`
+  (ADR 0004), sin librerías UI nuevas. Las 3 apps compilan y lintean limpio. **Verificación
+  pendiente**: `dotnet test` — 2 tests de integración de `CheckIn` (Testcontainers) fallan por
+  timeout de infraestructura, no por este cambio (solo toca `ui/`); lo revisa Claude Code.
 - [ ] **Bloque 8 — `feature/simulation-engine`** (sin asignar): motor de simulación **controlable**
   para dar vida al demo y alimentar futuras predicciones. Dos señales separadas — hoy el demo las
   confunde porque convergen: la venta incrementa `ConfirmedSold` y el torniquete `CheckedIn`, y sin
