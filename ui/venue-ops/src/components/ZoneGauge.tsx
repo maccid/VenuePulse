@@ -6,6 +6,7 @@ interface Props {
 
 export default function ZoneGauge({ zone }: Props) {
   const pct = zone.capacity > 0 ? Math.round((zone.checkedIn / zone.capacity) * 100) : 0
+  const noShows = Math.max(0, zone.confirmedSold - zone.checkedIn)
 
   return (
     <div className="card zone-gauge">
@@ -19,7 +20,10 @@ export default function ZoneGauge({ zone }: Props) {
         </span>
         <span className="zone-gauge__pct">{pct}%</span>
       </p>
-      <p className="zone-meta">{zone.confirmedSold} entradas vendidas</p>
+      <p className="zone-meta">
+        {zone.confirmedSold} entradas vendidas
+        {noShows > 0 && <em className="zone-meta__no-shows"> · {noShows} no-shows</em>}
+      </p>
     </div>
   )
 }

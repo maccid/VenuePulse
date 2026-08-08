@@ -4,6 +4,7 @@ import type { EventSummary, ScanResult, ZoneOccupancy } from './types'
 import SiteHeader from './components/SiteHeader'
 import ScanPanel from './components/ScanPanel'
 import ZonesDashboard from './components/ZonesDashboard'
+import SimulationPanel from './components/SimulationPanel'
 import './App.css'
 
 export default function App() {
@@ -61,6 +62,8 @@ export default function App() {
     return { kind: 'error', message: body.error ?? 'No se pudo hacer el check-in' }
   }
 
+  const selectedEvent = events.find((ev) => ev.id === selectedEventId)
+
   return (
     <div className="venue-ops">
       <SiteHeader />
@@ -73,6 +76,14 @@ export default function App() {
           ))}
         </select>
       </label>
+
+      {selectedEvent && selectedEventId !== null && (
+        <SimulationPanel
+          eventId={selectedEventId}
+          eventStartsAtUtc={selectedEvent.startsAtUtc}
+          onSimulationEnded={() => loadZones(selectedEventId)}
+        />
+      )}
 
       <ScanPanel onScan={scanTicket} />
 
