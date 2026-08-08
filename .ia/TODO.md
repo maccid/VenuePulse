@@ -44,10 +44,17 @@ si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver `docs/architecture
   Verificado en real con `docker compose up --build`: 2 eventos → 6 zonas (3 por evento, `eventId`
   correcto), compra de entrada real confirma `confirmedSold` en la zona correcta. Tests unitarios
   + arquitectura en verde (23). Sin ADR nuevo (ya justificado en KNOWN-ISSUES.md).
-- [ ] **Bloque 2 — `feature/saga-timeout`** (Claude Code, Oleada 1): timeout en el estado `Reserving` de
-  `TicketPurchaseSaga` — si `AccessControl` no responde en N segundos, transición a `Rejected`
-  ("ReservationTimedOut") en vez de quedarse colgada para siempre. Test nuevo en
-  `TicketPurchaseSagaTests.cs`. ADR pequeño.
+- [x] **Bloque 2 — `feature/saga-timeout`** (Claude Code, Oleada 1): timeout en el estado `Reserving`
+  de `TicketPurchaseSaga` — si `AccessControl` no responde en `Saga:ReservationTimeoutSeconds`
+  (30s por defecto), transición a `Rejected` ("ReservationTimedOut") en vez de quedarse colgada
+  para siempre. **Implementado sin `IMessageScheduler`** (Quartz/RabbitMQ delayed-exchange
+  descartados por añadir infraestructura sin necesidad real — ver ADR 0010): watchdog en memoria
+  (`ReservationTimeoutTracker` + `ReservationWatchdogConsumer` + `ReservationTimeoutMonitor`
+  como `BackgroundService`) en `CheckIn.Infrastructure.Sagas`, nuevo evento
+  `ReservationTimedOut` en `Core.Messaging.Contracts`. Test nuevo en `TicketPurchaseSagaTests.cs`
+  (9/9 en verde). ADR 0010. Riesgo aceptado documentado: no sobrevive a reinicio del servicio ni
+  a una carrera con `ZoneSlotReserved` tardío (mismo tipo de trade-off que Bloque 1 en
+  KNOWN-ISSUES.md).
 - [ ] **Bloque 3 — `feature/accesscontrol-inbox`** (Claude Code, Oleada 1 — tras que opencode
   mergee su parte de `AccessControl` del Bloque 8, para no pisar migraciones EF del mismo
   servicio): Inbox real
@@ -55,11 +62,22 @@ si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver `docs/architecture
   `ARCHITECTURE.md` dice que Outbox/Inbox garantiza "exactamente una vez" (solo cierto en
   `CheckIn`). Sin esto, una redelivery de RabbitMQ duplica reservas/check-ins reales. ADR nuevo
   (siguiente número tras 0009).
-- [ ] **Bloque 4 — `feature/core-shared-patterns`** (Claude Code, Oleada 1): ampliar `VenuePulse.Core` con
-  interceptor EF Core de auditoría, paginación genérica y guard clauses — inspiración de alto
+- [x] **Bloque 4 — `feature/core-shared-patterns`** (Claude Code, Oleada 1): ampliar `VenuePulse.Core`
+  con interceptor EF Core de auditoría, paginación genérica y guard clauses — inspiración de alto
   nivel de patrones (nunca código/nombres literales de otros proyectos privados, ver
-  `.ia/PRODUCT-VISION.md`).
-  Evaluar con cuidado si se mezcla con `Result` o se sustituye en algún punto. ADR nuevo.
+  `.ia/PRODUCT-VISION.md`). **No se
+  mezcla con `Result`**: `Guard` sigue lanzando excepción (invariantes de entrada al agregado,
+  igual que el código que sustituye), `Result` se queda para fallos de negocio esperables (ver
+  ADR 0011). `Guard` adoptado en los 3 dominios (`Ticket`/`Event`/`Zone`, cambio mecánico sin
+  migraciones). **Paginación (`PagedResult<T>`+`ToPagedResultAsync`) y auditoría
+  (`IAuditable`+`AuditingSaveChangesInterceptor`) adoptadas solo en `CheckIn`** en esta ronda —
+  a propósito, para no chocar con `feature/simulation-engine` (Bloque 8) tocando
+  `Ticketing`/`AccessControl` en paralelo, ni romper el contrato de `GET /api/tickets?holder=`
+  que ya consumen `shell`/`venue-ops` en real. Migración `AddTicketUpdatedAtUtc` en `CheckIn`.
+  Tests nuevos con EF Core InMemory (`CoreSharedPatternsTests.cs`, sin Postgres real). Todo en
+  verde: CheckIn 12/12, Ticketing 3/3, AccessControl 5/5, Architecture 7/7. ADR 0011. Candidatos
+  para la próxima ronda: adoptar auditoría/paginación en `Event`/`Zone` cuando el Bloque 8
+  mergee.
 - [x] **Bloque 5 — `feature/ui-visual-refresh`** (opencode): aplicar la skill `frontend-design` a
   `shell`/`ticket-checkout`/`venue-ops` — hoy cada app es un único `App.tsx` monolítico sin
   componentización ni sistema de diseño. Sin ADR. **Implementado en rama**
