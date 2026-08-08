@@ -19,11 +19,6 @@ export default function App() {
       .then(setEvents)
       .catch(() => setEvents([]))
 
-    fetch('/api/access-control/api/zones')
-      .then((r) => r.json())
-      .then(setZones)
-      .catch(() => setZones([]))
-
     const connection = new signalR.HubConnectionBuilder()
       .withUrl('/hubs/occupancy')
       .withAutomaticReconnect()
@@ -40,11 +35,21 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (selectedEventId === null) {
+      setZones([])
+      return
+    }
+
+    fetch(`/api/access-control/api/zones?eventId=${selectedEventId}`)
+      .then((r) => r.json())
+      .then(setZones)
+      .catch(() => setZones([]))
+  }, [selectedEventId])
+
   return (
     <div className="shell">
       <SiteHeader />
-
-      <OccupancyWidget zones={zones} />
 
       {selectedEventId === null ? (
         <EventCatalog
@@ -54,11 +59,15 @@ export default function App() {
           onSelectEvent={setSelectedEventId}
         />
       ) : (
-        <CheckoutPanel
-          eventId={selectedEventId}
-          holder={holder}
-          onBack={() => setSelectedEventId(null)}
-        />
+        <>
+          <OccupancyWidget zones={zones} />
+
+          <CheckoutPanel
+            eventId={selectedEventId}
+            holder={holder}
+            onBack={() => setSelectedEventId(null)}
+          />
+        </>
       )}
     </div>
   )

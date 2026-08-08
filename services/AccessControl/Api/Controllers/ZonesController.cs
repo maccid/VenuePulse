@@ -8,9 +8,11 @@ using VenuePulse.AccessControl.Application;
 public sealed class ZonesController(IZoneService zoneService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<ZoneOccupancyDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyCollection<ZoneOccupancyDto>>> GetAll(
+        [FromQuery] Guid? eventId,
+        CancellationToken cancellationToken)
     {
-        var zones = await zoneService.GetAllOccupancyAsync(cancellationToken);
+        var zones = await zoneService.GetAllOccupancyAsync(eventId, cancellationToken);
         return Ok(zones);
     }
 

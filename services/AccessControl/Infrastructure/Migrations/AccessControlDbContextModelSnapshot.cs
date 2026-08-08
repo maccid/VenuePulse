@@ -37,6 +37,9 @@ namespace VenuePulse.AccessControl.Infrastructure.Migrations
                     b.Property<int>("ConfirmedSold")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -46,6 +49,11 @@ namespace VenuePulse.AccessControl.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("EventId", "Name")
+                        .IsUnique();
 
                     b.ToTable("zones", (string)null);
                 });

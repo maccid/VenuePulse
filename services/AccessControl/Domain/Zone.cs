@@ -8,6 +8,10 @@ using VenuePulse.Core.Domain;
 /// </summary>
 public sealed class Zone : Entity<Guid>
 {
+    /// <summary>Event al que pertenece esta zona — ver .ia/KNOWN-ISSUES.md sobre el aforo
+    /// compartido entre eventos que este campo resuelve.</summary>
+    public Guid EventId { get; private set; }
+
     public string Name { get; private set; } = string.Empty;
 
     /// <summary>Aforo máximo de venta (no de ocupación física instantánea).</summary>
@@ -29,13 +33,14 @@ public sealed class Zone : Entity<Guid>
         // EF Core
     }
 
-    public Zone(Guid id, string name, int capacity) : base(id)
+    public Zone(Guid id, Guid eventId, string name, int capacity) : base(id)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("La zona necesita un nombre.", nameof(name));
         if (capacity <= 0)
             throw new ArgumentException("El aforo debe ser positivo.", nameof(capacity));
 
+        EventId = eventId;
         Name = name;
         Capacity = capacity;
     }
