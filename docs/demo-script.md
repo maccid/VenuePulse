@@ -1,4 +1,4 @@
-# Guion de demo para la entrevista
+# Guion de demo
 
 Objetivo: en ~15 minutos, mostrar el sistema funcionando de verdad y en ~10 minutos adicionales
 pedir a Claude Code que amplíe algo en vivo, narrando el momento de revisión del código
@@ -74,7 +74,7 @@ más honesto de "validación de código generado por IA": el motivo de rechazo, 
 integración con Testcontainers y la comprobación de que no rompe el camino feliz existente son
 el momento de revisar el diff con criterio, no de aceptarlo a ciegas.
 
-## Nota de honestidad para la entrevista
+## Nota de honestidad
 
 Si preguntan por el test de integración de la Saga: es completamente honesto decir que durante
 el desarrollo hubo un problema de fiabilidad específico del arnés de test (Testcontainers +
@@ -97,4 +97,4 @@ diagnosticar sin fingir que todo salió perfecto a la primera.
 - [x] Jaeger muestra el trace conectado de una compra completa (~28 spans, CheckIn +
       AccessControl vía Outbox/Saga/RabbitMQ) y de la compensación.
 - [ ] Repetir el camino feliz y el de compensación una vez más **desde el navegador** (no solo
-      vía API) para confirmar el timeline visual de la Saga por SignalR antes de la entrevista.
+      vía API) para confirmar el timeline visual de la Saga por SignalR antes de la demo.

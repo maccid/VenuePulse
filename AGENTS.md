@@ -16,7 +16,7 @@ Lee estos archivos antes de tocar cualquier código:
 
 > `.ia/`, `CLAUDE.md` y este fichero son contexto de trabajo local para cualquier agente IA
 > (Claude Code u otro) — no forman parte de lo que se muestra o entrega. `docs/` es la
-> documentación humana visible en la entrevista (ADRs, `AI-USAGE.md`, `demo-script.md`).
+> documentación humana visible (ADRs, `AI-USAGE.md`, `demo-script.md`).
 
 ## Modos de trabajo
 

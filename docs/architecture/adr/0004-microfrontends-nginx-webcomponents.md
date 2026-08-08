@@ -26,7 +26,7 @@ un remoto) hay que elegir entre Module Federation (Webpack/Vite) o una composici
 
 Con un único remoto, la complejidad operativa de Module Federation (versión de React como
 singleton compartido, resolución de `remoteEntry`, plugin específico de Webpack/Vite) tiene
-retorno decreciente frente al riesgo de fricción antes de la entrevista. Queda documentada como
+retorno decreciente frente al riesgo de fricción antes de la demo. Queda documentada como
 alternativa **evaluada y conscientemente pospuesta**, no desconocida — con un roadmap claro
 si el número de remotos creciera.
 

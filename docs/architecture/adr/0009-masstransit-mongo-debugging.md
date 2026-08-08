@@ -45,7 +45,7 @@ consistente.
 
 ## Verificación cruzada posterior contra `docker-compose` real
 
-Antes de la entrevista se ejecutaron ambos caminos directamente contra el `docker-compose`
+Antes de la presentación se ejecutaron ambos caminos directamente contra el `docker-compose`
 completo (sin Testcontainers ni `WebApplicationFactory` de por medio): el camino feliz confirma
 en menos de 1 segundo y el camino de compensación libera el aforo reservado correctamente
 (`confirmedSold` de la zona se queda en 0). Esto confirma la hipótesis: el problema de

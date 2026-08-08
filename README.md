@@ -1,11 +1,10 @@
 # VenuePulse
 
-Demo técnica construida para un proceso de selección en **Sportian** (Smart Venues) —
-digitalización de estadios: experiencia del fan (ticketing) y operaciones del recinto (control
-de accesos y aforo en tiempo real).
+Demo técnica de digitalización de estadios (smart venues): experiencia del fan (ticketing) y
+operaciones del recinto (control de accesos y aforo en tiempo real).
 
-No es un proyecto de apuestas ni tiene relación con ninguna marca real: los nombres del
-dominio (`VenuePulse`, `Ticketing`, `AccessControl`, `CheckIn`) son inventados para esta demo.
+No tiene relación con ninguna marca real: los nombres del dominio (`VenuePulse`, `Ticketing`,
+`AccessControl`, `CheckIn`) son inventados para esta demo.
 
 ## Qué demuestra
 
@@ -91,6 +90,6 @@ de integración con Testcontainers (Postgres+RabbitMQ+MongoDB reales).
 
 Fuera de alcance, documentado como roadmap con motivo: pasarela de pago real (el "pago" es un
 paso mockeado dentro de la Saga, por diseño), IdentityServer/Azure AD B2C, videovigilancia y
-analítica de datos avanzada (pilares de Smart Venues no cubiertos por decisión consciente de
+analítica de datos avanzada (pilares del smart venue no cubiertos por decisión consciente de
 alcance), métricas agregadas con Prometheus/Grafana, Module Federation, autoscaling validado
 con carga real. El objetivo fue profundidad y capacidad de defensa sobre amplitud de checklist.

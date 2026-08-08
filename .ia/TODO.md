@@ -55,14 +55,14 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
   - **Torniquete**: el día del evento, genera check-ins en las horas previas siguiendo una curva de
     llegada con ~5-10% de no-shows → `CheckedIn` < `ConfirmedSold`.
   Controlable desde `venue-ops` (toggle/intensidad), no caos autónomo — en el demo en vivo el
-  entrevistador debe poder dirigir el flujo. **Depende del Bloque 1** (zonas por evento): sin
+  presentador debe poder dirigir el flujo. **Depende del Bloque 1** (zonas por evento): sin
   `EventId` en `Zone`, ventas y aforo de todos los eventos se mezclan en los mismos contadores.
   Es la fuente de datos para el **Bloque 11** (predicción de ocupación).
 - [ ] **Bloque 11 — `feature/occupancy-prediction`** (sin asignar): predicción de ocupación con
   modelo estadístico honesto (regresión / exponential smoothing sobre datos que el propio sistema
   genera vía Bloque 8), **no** "ML mágico". Predice la **curva de llegada + no-shows sobre
   `ConfirmedSold`** — la métrica que de verdad opera un estadio ("¿cuántos pasarán el torniquete y
-  cuándo?"), no las ventas. Es el pilar de Smart Venues que encaja con la demo y la prioridad #1
+  cuándo?"), no las ventas. Es el pilar del smart venue que encaja con la demo y la prioridad #1
   de esta ronda de mejoras. Nuevo servicio/endpoint + gráfica en `venue-ops`. ADR nuevo.
 - [ ] **Bloque 9 — `feature/dynamic-pricing`** (sin asignar): precio de un `TicketType` ajustado
   por demanda con heurísticas transparentes (ej. ocupación del sector > X% → sube un escalón;
@@ -74,7 +74,7 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
   detección de fraude/reventa con heurísticas (misma IP comprando N entradas en T segundos, misma
   tarjeta en muchos nombres), con el simulador inyectando patrones y un detector que los marca y
   alerta. Con datos sintéticos no hay labels — solo defendible como reglas explícitas, no ML. Es el
-  más débil para la entrevista ("¿cómo sabes que es fraude si lo has generado tú?"). Depende del
+  más débil para defender ("¿cómo sabes que es fraude si lo has generado tú?"). Depende del
   Bloque 8.
 - [x] **Bloque 6 — `chore/architecture-tests-location`** (opencode): `services/ArchitectureTests`
   necesita cargar ensamblados de los 3 servicios + Core, así que vivir fuera de un servicio es
@@ -108,9 +108,9 @@ los tests de los 3 servicios (ADR 0008 se cumple); el modelo `Zone` (`Capacity`/
 ## Pendiente de decidir (ver `docs/ROADMAP.md`)
 
 - [ ] Rellenar `.ia/` con más detalle si aparecen huecos durante el desarrollo en vivo de la
-  entrevista.
-- [ ] Definir mecanismo de exportación "código sin `.git/` ni `.ia/`" para la entrega real al
-  entrevistador (distinto de repartir solo el Docker, que era el plan inicial).
+  demo.
+- [ ] Definir mecanismo de exportación "código sin `.git/` ni `.ia/`" para la entrega real
+  (distinto de repartir solo el Docker, que era el plan inicial).
 
 ## Hecho
 

@@ -8,7 +8,7 @@ using Event = VenuePulse.Ticketing.Domain.Event;
 /// <summary>
 /// Datos de partida para que "docker-compose up" deje la demo lista sin pasos manuales.
 ///
-/// Los dos eventos comparten el MISMO recinto físico (Estadio Santiago Bernabéu) a propósito
+/// Los dos eventos comparten el MISMO recinto físico (Estadio Central) a propósito
 /// — es una demo de un único recinto — pero cada uno tiene su propio aforo por zona: al
 /// sembrarse aquí, cada `Event` publica `EventCreated` (Add -> Publish -> SaveChanges, mismo
 /// patrón que <see cref="VenuePulse.CheckIn.Application.Commands.PurchaseTicketCommand"/>) y
@@ -17,7 +17,7 @@ using Event = VenuePulse.Ticketing.Domain.Event;
 /// </summary>
 public static class TicketingDbSeeder
 {
-    private const string Venue = "Estadio Santiago Bernabéu";
+    private const string Venue = "Estadio Central";
 
     public static async Task SeedAsync(
         TicketingDbContext dbContext,
@@ -31,7 +31,7 @@ public static class TicketingDbSeeder
 
         var derbi = new Event(
             Guid.NewGuid(),
-            "Real Madrid - Barcelona",
+            "Derbi de la ciudad",
             Venue,
             DateTimeOffset.UtcNow.AddDays(7));
         derbi.AddTicketType(Guid.NewGuid(), "General", 45.00m, "Grada general, sin asiento numerado");
