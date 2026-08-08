@@ -20,7 +20,10 @@ services/       Backend .NET
   Ticketing/      Sin CQRS — catálogo de eventos y tipos de entrada
   AccessControl/  Sin CQRS — zonas/puertas, aforo
   CheckIn/        CON CQRS (MediatR) — Ticket + Saga de compra
-  ArchitectureTests/  ArchUnitNET, falla el build si se viola una regla de capas
+  Architecture.Tests/  Tooling transversal, NO un servicio — ArchUnitNET sobre los ensamblados
+                reales de los 3 servicios + Core; falla el build si se viola una regla de capas.
+                Vive bajo services/ solo por comodidad de rutas relativas a los proyectos que
+                analiza (ver `.ia/RULES.md`).
 ui/             3 apps React independientes: shell, ticket-checkout (micro frontend), venue-ops
 infra/          docker-compose, K8s (Kustomize), Jenkinsfile, Nginx, guía Azure — todo separado
                 de services/ y ui/, sin dependencias de código en ningún sentido
