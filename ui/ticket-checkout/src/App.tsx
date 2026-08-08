@@ -29,7 +29,7 @@ export default function App({ eventId, holder }: Props) {
       })
       .catch(() => setTicketTypes([]))
 
-    fetch('/api/access-control/api/zones')
+    fetch(`/api/access-control/api/zones?eventId=${eventId}`)
       .then((r) => r.json())
       .then((z: ZoneOccupancy[]) => {
         setZones(z)
@@ -55,6 +55,25 @@ export default function App({ eventId, holder }: Props) {
     })
 
     connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
+
+    return () => {
+      connection.stop()
+    }
+  }, [])
+
+  useEffect(() => {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl('/hubs/occupancy')
+      .withAutomaticReconnect()
+      .build()
+
+    // El hub emite para todas las zonas de todos los eventos; solo aplica si ya está en nuestra
+    // lista (cargada con ?eventId=), así la actualización queda scoped al evento sin filtrar aquí.
+    connection.on('occupancyChanged', (updated: ZoneOccupancy) => {
+      setZones((prev) => prev.map((z) => (z.zoneId === updated.zoneId ? updated : z)))
+    })
+
+    connection.start().catch((err) => console.error('No se pudo conectar al hub de aforo', err))
 
     return () => {
       connection.stop()
@@ -106,7 +125,7 @@ export default function App({ eventId, holder }: Props) {
         Zona / puerta de acceso
         <select value={zoneId} onChange={(e) => setZoneId(e.target.value)} disabled={isPurchasing}>
           {zones.map((z) => (
-            <option key={z.zoneId} value={z.zoneId}>{z.name} ({z.capacity - z.confirmedSold} libres)</option>
+            <option key={z.zoneId} value={z.zoneId}>{z.name} ({z.availableToSell} libres)</option>
           ))}
         </select>
       </label>

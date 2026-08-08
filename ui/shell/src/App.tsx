@@ -15,11 +15,6 @@ export default function App() {
       .then(setEvents)
       .catch(() => setEvents([]))
 
-    fetch('/api/access-control/api/zones')
-      .then((r) => r.json())
-      .then(setZones)
-      .catch(() => setZones([]))
-
     const connection = new signalR.HubConnectionBuilder()
       .withUrl('/hubs/occupancy')
       .withAutomaticReconnect()
@@ -36,6 +31,18 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (selectedEventId === null) {
+      setZones([])
+      return
+    }
+
+    fetch(`/api/access-control/api/zones?eventId=${selectedEventId}`)
+      .then((r) => r.json())
+      .then(setZones)
+      .catch(() => setZones([]))
+  }, [selectedEventId])
+
   const totalCapacity = zones.reduce((sum, z) => sum + z.capacity, 0)
   const totalCheckedIn = zones.reduce((sum, z) => sum + z.checkedIn, 0)
 
@@ -45,25 +52,6 @@ export default function App() {
         <h1>VenuePulse</h1>
         <p className="tagline">Ticketing y aforo en tiempo real del recinto</p>
       </header>
-
-      <section className="occupancy-widget" aria-label="Aforo en vivo del recinto">
-        <h2>Aforo en vivo</h2>
-        <div className="occupancy-bar">
-          <div
-            className="occupancy-fill"
-            style={{ width: totalCapacity > 0 ? `${(totalCheckedIn / totalCapacity) * 100}%` : '0%' }}
-          />
-        </div>
-        <p>{totalCheckedIn} / {totalCapacity} personas dentro del recinto</p>
-        <ul className="zone-list">
-          {zones.map((z) => (
-            <li key={z.zoneId}>
-              <span>{z.name}</span>
-              <span>{z.checkedIn} / {z.capacity}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
 
       {selectedEventId === null ? (
         <section className="events">
@@ -85,12 +73,33 @@ export default function App() {
           </ul>
         </section>
       ) : (
-        <section className="checkout-panel">
-          <button className="back-link" onClick={() => setSelectedEventId(null)}>← Volver al catálogo</button>
-          {/* Micro frontend independiente: su propio bundle, su propio fetch de tipos de entrada
-              y zonas, montado aquí como Web Component (ver ADR 0004). */}
-          <ticket-checkout-app event-id={selectedEventId} holder={holder} />
-        </section>
+        <>
+          <section className="occupancy-widget" aria-label="Aforo en vivo del evento">
+            <h2>Aforo en vivo</h2>
+            <div className="occupancy-bar">
+              <div
+                className="occupancy-fill"
+                style={{ width: totalCapacity > 0 ? `${(totalCheckedIn / totalCapacity) * 100}%` : '0%' }}
+              />
+            </div>
+            <p>{totalCheckedIn} / {totalCapacity} personas dentro para este evento</p>
+            <ul className="zone-list">
+              {zones.map((z) => (
+                <li key={z.zoneId}>
+                  <span>{z.name}</span>
+                  <span>{z.checkedIn} / {z.capacity}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="checkout-panel">
+            <button className="back-link" onClick={() => setSelectedEventId(null)}>← Volver al catálogo</button>
+            {/* Micro frontend independiente: su propio bundle, su propio fetch de tipos de entrada
+                y zonas, montado aquí como Web Component (ver ADR 0004). */}
+            <ticket-checkout-app event-id={selectedEventId} holder={holder} />
+          </section>
+        </>
       )}
     </div>
   )

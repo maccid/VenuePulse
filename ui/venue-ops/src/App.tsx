@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import type { ZoneOccupancy } from './types'
+import type { EventSummary, ZoneOccupancy } from './types'
 import './App.css'
 
 type ScanResult = { kind: 'idle' } | { kind: 'ok' } | { kind: 'error'; message: string }
 
 export default function App() {
+  const [events, setEvents] = useState<EventSummary[]>([])
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
   const [ticketId, setTicketId] = useState('')
   const [scanResult, setScanResult] = useState<ScanResult>({ kind: 'idle' })
 
   useEffect(() => {
-    loadZones()
+    fetch('/api/ticketing/api/events')
+      .then((r) => r.json())
+      .then((evs: EventSummary[]) => {
+        setEvents(evs)
+        if (evs[0]) setSelectedEventId(evs[0].id)
+      })
+      .catch(() => setEvents([]))
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl('/hubs/occupancy')
@@ -29,8 +37,17 @@ export default function App() {
     }
   }, [])
 
-  function loadZones() {
-    fetch('/api/access-control/api/zones')
+  useEffect(() => {
+    if (selectedEventId === null) {
+      setZones([])
+      return
+    }
+
+    loadZones(selectedEventId)
+  }, [selectedEventId])
+
+  function loadZones(eventId: string) {
+    fetch(`/api/access-control/api/zones?eventId=${eventId}`)
       .then((r) => r.json())
       .then(setZones)
       .catch(() => setZones([]))
@@ -56,6 +73,14 @@ export default function App() {
       <header>
         <h1>VenuePulse · Operaciones</h1>
         <p className="tagline">Escaneo de torniquete y aforo en tiempo real por puerta</p>
+        <label className="event-selector">
+          Evento
+          <select value={selectedEventId ?? ''} onChange={(e) => setSelectedEventId(e.target.value)}>
+            {events.map((ev) => (
+              <option key={ev.id} value={ev.id}>{ev.name}</option>
+            ))}
+          </select>
+        </label>
       </header>
 
       <section className="scan-panel">
