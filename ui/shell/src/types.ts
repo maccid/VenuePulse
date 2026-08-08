@@ -7,8 +7,10 @@ export interface EventSummary {
 
 export interface ZoneOccupancy {
   zoneId: string
+  eventId: string
   name: string
   capacity: number
+  availableToSell: number
   confirmedSold: number
   checkedIn: number
 }
