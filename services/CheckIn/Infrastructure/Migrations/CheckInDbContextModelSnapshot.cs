@@ -225,6 +225,9 @@ namespace VenuePulse.CheckIn.Infrastructure.Migrations
                     b.Property<Guid>("TicketTypeId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("ZoneId")
                         .HasColumnType("uuid");
 
