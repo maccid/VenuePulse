@@ -38,8 +38,8 @@ analítica de datos avanzada, IoT/WiFi del recinto.
 
 ## Restricciones de propiedad intelectual (importante para cualquier agente)
 
-- **Nunca** copiar código, namespaces o nombres literales de `olix.workspace` (proyecto privado
-  del autor, usado solo como inspiración de patrón arquitectónico de alto nivel).
+- **Nunca** copiar código, namespaces ni nombres literales de otros proyectos privados del autor:
+  solo inspiración de patrón arquitectónico de alto nivel.
 - **Nunca** referenciar marcas reales, ligas reales, estadios reales ni nombres de empresas
   dentro del código o los namespaces — el proyecto se llama `VenuePulse` a propósito y es marca
   blanca, reutilizable para otras demos.

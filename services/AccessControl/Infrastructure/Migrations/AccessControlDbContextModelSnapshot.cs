@@ -57,6 +57,34 @@ namespace VenuePulse.AccessControl.Infrastructure.Migrations
 
                     b.ToTable("zones", (string)null);
                 });
+
+            modelBuilder.Entity("VenuePulse.AccessControl.Domain.ZoneOccupancySnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CheckedIn")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ConfirmedSold")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("RecordedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ZoneId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId", "RecordedAtUtc");
+
+                    b.ToTable("occupancy_snapshots", (string)null);
+                });
 #pragma warning restore 612, 618
         }
     }
