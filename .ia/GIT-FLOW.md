@@ -20,13 +20,21 @@ git merge --no-ff fix/mi-cambio -m "merge: fix/mi-cambio -> develop"
 ```
 
 Para trabajar varias tareas en paralelo sin bloquear la copia principal ni pisarte cambios entre
-ramas, usar `git worktree` en vez de cambiar de rama en la misma carpeta:
+ramas, usar `git worktree` en vez de cambiar de rama en la misma carpeta. Los worktrees se crean
+**dentro del repo** en `worktrees/<rama>` (carpeta gitignoreada) para que VSCode los muestre:
 
 ```bash
-git worktree add ../venuepulse-fix-mi-cambio fix/mi-cambio
-cd ../venuepulse-fix-mi-cambio
+git worktree add worktrees/venuepulse-fix-mi-cambio fix/mi-cambio
+cd worktrees/venuepulse-fix-mi-cambio
 # trabajar aquí; la copia principal en sportian.workspace sigue intacta en su rama
-git worktree remove ../venuepulse-fix-mi-cambio
+```
+
+Cada worktree aparece como raíz propia en `sportian.workspace.code-workspace` (multi-root), así
+VSCode muestra su rama y Source Control independientes. Al crear o eliminar un worktree, añadir o
+quitar su carpeta en ese fichero. Limpieza:
+
+```bash
+git worktree remove worktrees/venuepulse-fix-mi-cambio
 git branch -d fix/mi-cambio   # tras el merge
 ```
 
