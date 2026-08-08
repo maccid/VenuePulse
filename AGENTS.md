@@ -51,19 +51,17 @@ merges `--no-ff`).
 
 **Regla:** cada cambio no trivial va en su propia rama corta con nombre descriptivo
 (`feature/<algo>` o `fix/<algo>`), nunca directo sobre `main`. Para trabajar en varias tareas a
-la vez sin bloquear la copia principal, usa `git worktree`. Los worktrees viven **dentro del repo**
-en `worktrees/<rama>` (gitignoreado) y se registran en `sportian.workspace.code-workspace` para que
-VSCode los muestre como raíz propia:
+la vez sin bloquear la copia principal, usa `git worktree`:
 
 ```bash
 git checkout develop
 git checkout -b fix/mi-cambio
-git worktree add worktrees/venuepulse-fix-mi-cambio fix/mi-cambio
-cd worktrees/venuepulse-fix-mi-cambio
+git worktree add ../venuepulse-fix-mi-cambio fix/mi-cambio
+cd ../venuepulse-fix-mi-cambio
 # trabajar aquí sin tocar la copia principal
 git checkout develop   # (en la copia principal)
 git merge --no-ff fix/mi-cambio -m "merge: fix/mi-cambio -> develop"
-git worktree remove worktrees/venuepulse-fix-mi-cambio
+git worktree remove ../venuepulse-fix-mi-cambio
 git branch -d fix/mi-cambio
 ```
 

@@ -17,9 +17,6 @@ coverage/
 ## Herramientas locales
 .claude/
 
-## Git worktrees locales (viven dentro del repo para verlos en VSCode)
-worktrees/
-
 ## OS
 .DS_Store
 Thumbs.db
