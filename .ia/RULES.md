@@ -3,8 +3,10 @@
 ## Capas (Clean Architecture por servicio)
 
 `Domain` → `Application` → `Infrastructure` → `Api`. Nunca al revés. Las reglas están
-verificadas automáticamente por `services/ArchitectureTests` (ArchUnitNET) — si rompes una capa,
-el build falla, no es solo una convención de estilo.
+verificadas automáticamente por `services/Architecture.Tests` (ArchUnitNET) — si rompes una capa,
+el build falla, no es solo una convención de estilo. Esa carpeta es **tooling transversal, no un
+servicio**: no participa en el dominio, existe solo para validar la arquitectura de los 3
+servicios + Core, y se mantiene bajo `services/` por comodidad de rutas relativas.
 
 - `Domain` no referencia `Infrastructure` ni `Application` de ningún servicio.
 - Solo `CheckIn.Application` puede referenciar `MediatR`. `Ticketing` y `AccessControl` no.

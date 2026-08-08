@@ -36,6 +36,8 @@ dominio (`VenuePulse`, `Ticketing`, `AccessControl`, `CheckIn`) son inventados p
 
 ```
 services/   Backend .NET — 3 microservicios + librería compartida Core (VenuePulse.Core)
+            Incluye Architecture.Tests/ (ArchUnitNET): tooling transversal que valida las reglas
+            de capas sobre los ensamblados reales, no es un servicio más
 ui/         3 apps React independientes (shell, ticket-checkout, venue-ops)
 infra/      docker-compose, manifiestos K8s, Jenkinsfile, guía de Azure, Nginx de composición
 docs/       ADRs, AI-USAGE.md, demo-script.md
