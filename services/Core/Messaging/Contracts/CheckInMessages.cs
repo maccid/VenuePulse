@@ -11,3 +11,9 @@ public sealed record TicketPurchaseConfirmed(Guid CorrelationId) : IntegrationEv
 
 /// <summary>Publicado por la Saga tras una compensación (aforo lleno o "pago" simulado fallido).</summary>
 public sealed record TicketPurchaseRejected(Guid CorrelationId, string Reason) : IntegrationEvent;
+
+/// <summary>
+/// Publicado por <c>ReservationTimeoutMonitor</c> cuando una reserva lleva demasiado tiempo en
+/// <c>Reserving</c> sin respuesta de AccessControl — ver ADR 0010.
+/// </summary>
+public sealed record ReservationTimedOut(Guid CorrelationId, Guid ZoneId) : IntegrationEvent;
