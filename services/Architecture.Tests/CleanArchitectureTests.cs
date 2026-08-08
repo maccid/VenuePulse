@@ -1,4 +1,4 @@
-namespace VenuePulse.ArchitectureTests;
+namespace VenuePulse.Architecture.Tests;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Loader;
