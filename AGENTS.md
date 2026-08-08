@@ -51,9 +51,11 @@ merges `--no-ff`).
 
 **Regla:** cada cambio no trivial va en su propia rama corta con nombre descriptivo
 (`feature/<algo>` o `fix/<algo>`), nunca directo sobre `main`. Para trabajar en varias tareas a
-la vez sin bloquear la copia principal, usa `git worktree`. Los worktrees viven **fuera del repo**
-como hermanos de `sportian.workspace` (`../venuepulse-<rama>`) y se registran en
-`venuepulse.code-workspace` (multi-root) para que VSCode muestre cada rama con su Source Control:
+la vez sin bloquear la copia principal, usa `git worktree`. El repo vive en
+`sportian.workspace/venuepulse/` y los worktrees viven **fuera del repo**, como hermanos de la
+carpeta `venuepulse` (`../venuepulse-<rama>`); el workspace multi-root
+`sportian.workspace/venuepulse.code-workspace` (fichero local, no versionado) los muestra todos en
+VSCode con su Source Control:
 
 ```bash
 git checkout develop
