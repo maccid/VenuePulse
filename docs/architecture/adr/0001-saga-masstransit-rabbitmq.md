@@ -5,14 +5,14 @@
 Comprar una entrada implica coordinar dos servicios distintos (reservar aforo en
 `AccessControl`, "cobrar" en `CheckIn`) con consistencia eventual, y necesita poder
 **compensar** una reserva de aforo ya hecha si el paso siguiente falla — el caso de uso
-central que la oferta de Sportian pide poder defender (Saga/Outbox/Pub-Sub).
+central que este proyecto busca demostrar (Saga/Outbox/Pub-Sub).
 
 ## Decisión
 
 - **Patrón**: Saga orquestada (no coreografiada) — `TicketPurchaseSaga`, una state machine de
   MassTransit, vive en `CheckIn` porque es el dueño del agregado transaccional (`Ticket`).
 - **Broker**: RabbitMQ, no Azure Service Bus. Corre 100% local vía Docker sin coste ni
-  credenciales de Azure — crítico para que la demo sea reproducible el día de la entrevista.
+  credenciales de Azure — crítico para que la demo sea reproducible en cualquier entorno.
   MassTransit abstrae el transporte: pasar a Azure Service Bus en producción es cambiar
   `UsingRabbitMq` por `UsingAzureServiceBus` en la configuración, no tocar la Saga ni los
   consumidores (ver `infra/deploy/azure/README.md`).

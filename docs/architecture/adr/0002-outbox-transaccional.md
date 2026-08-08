@@ -22,7 +22,7 @@ garantiza at-least-once.
 
 ## Por qué la librería y no una tabla + polling casero
 
-Es más defendible en una entrevista decir "conozco el framework lo bastante bien para no
+Es más defendible en una presentación decir "conozco el framework lo bastante bien para no
 reinventar su Outbox con sus propios bugs de concurrencia" que enseñar un Outbox casero. El
 candidato debe poder explicar igualmente el mecanismo (interceptor de `SaveChanges`, entrega
 asíncrona vía hosted service) sin haberlo escrito él mismo.

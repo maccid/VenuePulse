@@ -22,10 +22,9 @@ Cada ADR en `docs/architecture/adr/` se redactó a partir de una decisión que y
 tomado en la conversación (p. ej. "RabbitMQ en vez de Azure Service Bus", "CQRS solo en
 CheckIn"). La IA estructuró el razonamiento y lo puso por escrito; yo revisé cada uno y ajusté
 matices (por ejemplo, qué se acepta como trade-off consciente frente a qué es una limitación
-real). Ejemplo concreto: la decisión de combinar el dominio "apuestas" original con el
-feedback real de Sportian/Smart Venues fue mía tras recibir información del proceso de
-selección — la IA rediseñó el dominio completo (Ticketing/AccessControl/CheckIn) sobre esa
-corrección en minutos, no en horas.
+real). Ejemplo concreto: la decisión de rediseñar el dominio original ("apuestas") hacia un
+smart venue (Ticketing/AccessControl/CheckIn) fue mía tras recibir feedback sobre el dominio —
+la IA rediseñó el dominio completo sobre esa corrección en minutos, no en horas.
 
 ### Scaffolding de las 3 capas por servicio
 
@@ -61,7 +60,7 @@ fallaba contra MongoDB real con una excepción de serialización de `Guid`. El p
    de seguir indefinidamente, dejando la verificación cruzada pendiente contra `docker-compose`
    real (ver `docs/demo-script.md`).
 
-Este último punto es deliberadamente el ejemplo que más se cuenta en la entrevista: la IA es
+Este último punto es deliberadamente el ejemplo que más se cuenta en la presentación: la IA es
 rápida generando hipótesis y ejecutando diagnósticos, pero decidir **cuándo parar, qué aceptar
 como limitación de entorno y qué exigir como bug real** es criterio humano, no algo que se
 delega.
