@@ -69,6 +69,45 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNo
         return zone.CheckedIn;
     }
 
+    public async Task<ZoneOccupancyDto> ApplySimulatedSalesAsync(Guid zoneId, int quantity, CancellationToken cancellationToken)
+    {
+        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
+            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
+
+        zone.RecordSimulatedSales(quantity);
+        await zoneRepository.SaveAsync(zone, cancellationToken);
+
+        var dto = ToDto(zone);
+        await notifier.NotifyOccupancyChangedAsync(dto, cancellationToken);
+
+        return dto;
+    }
+
+    public async Task<ZoneOccupancyDto> ApplySimulatedCheckInsAsync(Guid zoneId, int quantity, CancellationToken cancellationToken)
+    {
+        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
+            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
+
+        zone.RecordSimulatedCheckIns(quantity);
+        await zoneRepository.SaveAsync(zone, cancellationToken);
+
+        var dto = ToDto(zone);
+        await notifier.NotifyOccupancyChangedAsync(dto, cancellationToken);
+
+        return dto;
+    }
+
+    public async Task ResetSimulationAsync(Guid eventId, CancellationToken cancellationToken)
+    {
+        var zones = await zoneRepository.GetAllAsync(eventId, cancellationToken);
+        foreach (var zone in zones)
+        {
+            zone.ResetCounters();
+            await zoneRepository.SaveAsync(zone, cancellationToken);
+            await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
+        }
+    }
+
     public async Task ProvisionZonesForEventAsync(Guid eventId, CancellationToken cancellationToken)
     {
         if (await zoneRepository.ExistsForEventAsync(eventId, cancellationToken))

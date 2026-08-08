@@ -16,6 +16,10 @@ public static class DependencyInjection
 
         services.AddScoped<IZoneRepository, ZoneRepository>();
         services.AddScoped<IZoneService, ZoneService>();
+        services.AddScoped<IOccupancySnapshotRepository, OccupancySnapshotRepository>();
+
+        services.AddSingleton<ISimulationEngine, SimulationEngine>();
+        services.AddHostedService<SimulationTickWorker>();
 
         services.AddVenuePulseMessaging(
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",

@@ -7,6 +7,8 @@ public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbConte
 {
     public DbSet<Zone> Zones => Set<Zone>();
 
+    public DbSet<ZoneOccupancySnapshot> OccupancySnapshots => Set<ZoneOccupancySnapshot>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Zone>(builder =>
@@ -22,6 +24,19 @@ public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbConte
             builder.HasIndex(z => z.EventId);
             builder.HasIndex(z => new { z.EventId, z.Name }).IsUnique();
             builder.Ignore(z => z.DomainEvents);
+        });
+
+        modelBuilder.Entity<ZoneOccupancySnapshot>(builder =>
+        {
+            builder.ToTable("occupancy_snapshots");
+            builder.HasKey(s => s.Id);
+            builder.Property(s => s.EventId).IsRequired();
+            builder.Property(s => s.ZoneId).IsRequired();
+            builder.Property(s => s.RecordedAtUtc).IsRequired();
+            builder.Property(s => s.ConfirmedSold).IsRequired();
+            builder.Property(s => s.CheckedIn).IsRequired();
+            builder.HasIndex(s => new { s.EventId, s.RecordedAtUtc });
+            builder.Ignore(s => s.DomainEvents);
         });
     }
 }
