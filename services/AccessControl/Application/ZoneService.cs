@@ -2,9 +2,16 @@ namespace VenuePulse.AccessControl.Application;
 
 public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
-    public async Task<IReadOnlyCollection<ZoneOccupancyDto>> GetAllOccupancyAsync(CancellationToken cancellationToken)
+    private static readonly (string Name, int Capacity)[] FixedZones =
+    [
+        ("Puerta Norte", 40),
+        ("Puerta Sur", 40),
+        ("Grada VIP", 15),
+    ];
+
+    public async Task<IReadOnlyCollection<ZoneOccupancyDto>> GetAllOccupancyAsync(Guid? eventId, CancellationToken cancellationToken)
     {
-        var zones = await zoneRepository.GetAllAsync(cancellationToken);
+        var zones = await zoneRepository.GetAllAsync(eventId, cancellationToken);
         return zones.Select(ToDto).ToList();
     }
 
@@ -24,6 +31,7 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNo
 
         zone.ReserveSlot();
         await zoneRepository.SaveAsync(zone, cancellationToken);
+        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
         return true;
     }
 
@@ -34,6 +42,7 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNo
 
         zone.ConfirmSlot();
         await zoneRepository.SaveAsync(zone, cancellationToken);
+        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
     }
 
     public async Task ReleaseSlotAsync(Guid zoneId, CancellationToken cancellationToken)
@@ -43,6 +52,7 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNo
 
         zone.ReleaseSlot();
         await zoneRepository.SaveAsync(zone, cancellationToken);
+        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
     }
 
     public async Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken)
@@ -59,6 +69,18 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNo
         return zone.CheckedIn;
     }
 
+    public async Task ProvisionZonesForEventAsync(Guid eventId, CancellationToken cancellationToken)
+    {
+        if (await zoneRepository.ExistsForEventAsync(eventId, cancellationToken))
+            return;
+
+        var zones = FixedZones
+            .Select(z => new Domain.Zone(Guid.NewGuid(), eventId, z.Name, z.Capacity))
+            .ToList();
+
+        await zoneRepository.AddRangeAsync(zones, cancellationToken);
+    }
+
     private static ZoneOccupancyDto ToDto(Domain.Zone zone) =>
-        new(zone.Id, zone.Name, zone.Capacity, zone.ConfirmedSold, zone.CheckedIn);
+        new(zone.Id, zone.EventId, zone.Name, zone.Capacity, zone.AvailableToSell, zone.ConfirmedSold, zone.CheckedIn);
 }

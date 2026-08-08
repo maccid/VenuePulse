@@ -10,13 +10,19 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
 
 ## En curso
 
-- [ ] **Bloque 1 — `fix/zone-event-scoping`** (Claude Code, rama ya creada): `EventId` en `Zone`
-  vía `EventCreated` (event-driven) — `Ticketing` publica al sembrar/crear un evento (necesita
-  wiring de MassTransit + Outbox, hoy no publica nada), consumer nuevo en `AccessControl` que
-  aprovisiona las 3 zonas del evento, migración EF, `ZonesController` con filtro `?eventId=`,
-  frontend (`shell`/`ticket-checkout`/`venue-ops`) actualizado para pasar/mostrar el evento
-  correcto. Prioridad alta: resuelve la sensación de "mezcla rara" entre ticketing y control de
-  acceso. Ver `.ia/KNOWN-ISSUES.md`. Sin ADR nuevo (ya justificado ahí).
+- [x] **Bloque 1 — `fix/zone-event-scoping`** (Claude Code): `EventId` en `Zone` vía `EventCreated`
+  (event-driven) — `Ticketing` publica al sembrar (wiring de MassTransit + Outbox nuevo, antes no
+  publicaba nada), `EventCreatedConsumer` nuevo en `AccessControl` aprovisiona las 3 zonas del
+  evento (idempotente por `ExistsForEventAsync`), migraciones EF en ambos servicios,
+  `ZonesController` con filtro `?eventId=`, `ZoneOccupancyDto` con `EventId`+`AvailableToSell`
+  (de paso se corrigió que el frontend calculaba "libres" como `capacity-confirmedSold` sin
+  restar `reserved`), frontend (`shell`/`ticket-checkout`/`venue-ops`) actualizado para
+  pasar/mostrar el evento correcto (venue-ops ahora tiene selector de evento). `api-ticketing`
+  en `docker-compose.yml` ahora depende de `api-accesscontrol: service_healthy` para mitigar la
+  pérdida de `EventCreated` si el consumer no está enlazado a tiempo (ver `.ia/KNOWN-ISSUES.md`).
+  Verificado en real con `docker compose up --build`: 2 eventos → 6 zonas (3 por evento, `eventId`
+  correcto), compra de entrada real confirma `confirmedSold` en la zona correcta. Tests unitarios
+  + arquitectura en verde (23). Sin ADR nuevo (ya justificado en KNOWN-ISSUES.md).
 - [ ] **Bloque 2 — `feature/saga-timeout`** (Claude Code): timeout en el estado `Reserving` de
   `TicketPurchaseSaga` — si `AccessControl` no responde en N segundos, transición a `Rejected`
   ("ReservationTimedOut") en vez de quedarse colgada para siempre. Test nuevo en

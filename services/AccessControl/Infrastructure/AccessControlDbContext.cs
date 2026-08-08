@@ -13,11 +13,14 @@ public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbConte
         {
             builder.ToTable("zones");
             builder.HasKey(z => z.Id);
+            builder.Property(z => z.EventId).IsRequired();
             builder.Property(z => z.Name).HasMaxLength(120).IsRequired();
             builder.Property(z => z.Capacity).IsRequired();
             builder.Property(z => z.Reserved).IsRequired();
             builder.Property(z => z.ConfirmedSold).IsRequired();
             builder.Property(z => z.CheckedIn).IsRequired();
+            builder.HasIndex(z => z.EventId);
+            builder.HasIndex(z => new { z.EventId, z.Name }).IsUnique();
             builder.Ignore(z => z.DomainEvents);
         });
     }

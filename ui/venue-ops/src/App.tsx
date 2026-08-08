@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import type { ScanResult, ZoneOccupancy } from './types'
+import type { EventSummary, ScanResult, ZoneOccupancy } from './types'
 import SiteHeader from './components/SiteHeader'
 import ScanPanel from './components/ScanPanel'
 import ZonesDashboard from './components/ZonesDashboard'
 import './App.css'
 
 export default function App() {
+  const [events, setEvents] = useState<EventSummary[]>([])
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
 
   useEffect(() => {
-    loadZones()
+    fetch('/api/ticketing/api/events')
+      .then((r) => r.json())
+      .then((evs: EventSummary[]) => {
+        setEvents(evs)
+        if (evs[0]) setSelectedEventId(evs[0].id)
+      })
+      .catch(() => setEvents([]))
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl('/hubs/occupancy')
@@ -28,8 +36,17 @@ export default function App() {
     }
   }, [])
 
-  function loadZones() {
-    fetch('/api/access-control/api/zones')
+  useEffect(() => {
+    if (selectedEventId === null) {
+      setZones([])
+      return
+    }
+
+    loadZones(selectedEventId)
+  }, [selectedEventId])
+
+  function loadZones(eventId: string) {
+    fetch(`/api/access-control/api/zones?eventId=${eventId}`)
       .then((r) => r.json())
       .then(setZones)
       .catch(() => setZones([]))
@@ -47,6 +64,15 @@ export default function App() {
   return (
     <div className="venue-ops">
       <SiteHeader />
+
+      <label className="event-selector">
+        Evento
+        <select value={selectedEventId ?? ''} onChange={(e) => setSelectedEventId(e.target.value)}>
+          {events.map((ev) => (
+            <option key={ev.id} value={ev.id}>{ev.name}</option>
+          ))}
+        </select>
+      </label>
 
       <ScanPanel onScan={scanTicket} />
 

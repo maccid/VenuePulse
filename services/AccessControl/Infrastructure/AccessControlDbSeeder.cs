@@ -1,22 +1,13 @@
 namespace VenuePulse.AccessControl.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
-using VenuePulse.AccessControl.Domain;
 
+/// <summary>
+/// Ya no siembra zonas fijas: cada evento aprovisiona las suyas al consumir `EventCreated`
+/// (ver <see cref="Consumers.EventCreatedConsumer"/>) — solo queda aplicar migraciones.
+/// </summary>
 public static class AccessControlDbSeeder
 {
-    public static async Task SeedAsync(AccessControlDbContext dbContext, CancellationToken cancellationToken = default)
-    {
-        await dbContext.Database.MigrateAsync(cancellationToken);
-
-        if (await dbContext.Zones.AnyAsync(cancellationToken))
-            return;
-
-        dbContext.Zones.AddRange(
-            new Zone(Guid.NewGuid(), "Puerta Norte", 40),
-            new Zone(Guid.NewGuid(), "Puerta Sur", 40),
-            new Zone(Guid.NewGuid(), "Grada VIP", 15));
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+    public static Task SeedAsync(AccessControlDbContext dbContext, CancellationToken cancellationToken = default) =>
+        dbContext.Database.MigrateAsync(cancellationToken);
 }

@@ -82,12 +82,21 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__TicketingDb: "Host=postgres;Port=5432;Database=venuepulse_ticketing;Username=venuepulse;Password=venuepulse"
+      RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
       Cors__AllowedOrigins__0: "http://localhost:8080"
       Observability__OtlpEndpoint: "http://jaeger:4317"
     ports:
       - "5101:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      # Publica EventCreated al sembrar — necesita que el consumer de AccessControl ya esté
+      # enlazado a su cola antes de arrancar, o el mensaje se pierde (ver .ia/KNOWN-ISSUES.md).
+      # api-accesscontrol healthy implica que su MassTransit ya completó el bind de colas,
+      # porque /health solo responde una vez que todos los IHostedService (incl. el bus) arrancaron.
+      api-accesscontrol:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]

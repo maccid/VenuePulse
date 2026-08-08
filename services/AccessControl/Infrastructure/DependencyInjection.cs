@@ -25,6 +25,7 @@ public static class DependencyInjection
                 x.AddConsumer<ConfirmZoneSlotConsumer>();
                 x.AddConsumer<ReleaseZoneSlotConsumer>();
                 x.AddConsumer<RecordZoneCheckInConsumer>();
+                x.AddConsumer<EventCreatedConsumer>();
             });
 
         return services;

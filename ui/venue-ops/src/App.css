@@ -8,6 +8,14 @@
   margin-bottom: var(--vp-space-6);
 }
 
+.event-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
 .site-header__brand {
   display: flex;
   align-items: center;

@@ -54,7 +54,9 @@ docs/           ADRs, AI-USAGE.md, demo-script.md
 - MediatR/FluentAssertions pese a su licencia comercial 2025 — uso de demo/portfolio (ADR 0008).
 - MassTransit fijado en 8.5.10 (no 9.2.0) tras depuración real (ADR 0009).
 
-## Limitación de diseño conocida (en resolución)
+## Scoping de `Zone` por `Event`
 
-`Zone` no está vinculada a ningún `Event` — ver `.ia/KNOWN-ISSUES.md` y `.ia/TODO.md` para el
-fix en curso (provisión de zonas por evento vía integration event `EventCreated`).
+`Zone` tiene `EventId`: `Ticketing` publica `EventCreated` al sembrar un evento (Outbox propio) y
+`AccessControl` lo consume para aprovisionar sus 3 zonas fijas ya vinculadas a ese evento — ver
+`.ia/KNOWN-ISSUES.md` para el detalle y el riesgo de orden de arranque mitigado en
+`docker-compose.yml`.

@@ -1,7 +1,8 @@
 namespace VenuePulse.Ticketing.Infrastructure;
 
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using VenuePulse.Ticketing.Domain;
+using Event = VenuePulse.Ticketing.Domain.Event;
 
 public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> options) : DbContext(options)
 {
@@ -31,5 +32,10 @@ public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> opti
 
             builder.Navigation(e => e.TicketTypes).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
+
+        // Tablas del Outbox/Inbox transaccional de MassTransit (ver ADR 0002).
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }

@@ -7,7 +7,7 @@ namespace VenuePulse.AccessControl.Application;
 /// </summary>
 public interface IZoneService
 {
-    Task<IReadOnlyCollection<ZoneOccupancyDto>> GetAllOccupancyAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<ZoneOccupancyDto>> GetAllOccupancyAsync(Guid? eventId, CancellationToken cancellationToken);
 
     Task<ZoneOccupancyDto?> GetOccupancyAsync(Guid zoneId, CancellationToken cancellationToken);
 
@@ -18,4 +18,8 @@ public interface IZoneService
     Task ReleaseSlotAsync(Guid zoneId, CancellationToken cancellationToken);
 
     Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken);
+
+    /// <summary>Aprovisiona las 3 zonas fijas del recinto para un evento nuevo. Idempotente:
+    /// si el evento ya tiene zonas (redelivery de EventCreated) no hace nada.</summary>
+    Task ProvisionZonesForEventAsync(Guid eventId, CancellationToken cancellationToken);
 }
