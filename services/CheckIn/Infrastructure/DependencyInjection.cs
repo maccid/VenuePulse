@@ -17,6 +17,12 @@ public static class DependencyInjection
 
         services.AddScoped<ITicketRepository, TicketRepository>();
 
+        services.AddSingleton(new SagaTimeoutOptions(
+            ReservationTimeout: TimeSpan.FromSeconds(int.Parse(configuration["Saga:ReservationTimeoutSeconds"] ?? "30")),
+            PollInterval: TimeSpan.FromSeconds(int.Parse(configuration["Saga:TimeoutPollIntervalSeconds"] ?? "5"))));
+        services.AddSingleton<ReservationTimeoutTracker>();
+        services.AddHostedService<ReservationTimeoutMonitor>();
+
         services.AddVenuePulseMessaging<CheckInDbContext>(
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",
             x =>
@@ -27,6 +33,7 @@ public static class DependencyInjection
 
                 x.AddConsumer<TicketPurchaseConfirmedConsumer>();
                 x.AddConsumer<TicketPurchaseRejectedConsumer>();
+                x.AddConsumer<ReservationWatchdogConsumer>();
             });
 
         return services;
