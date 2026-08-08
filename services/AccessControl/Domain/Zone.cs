@@ -78,4 +78,38 @@ public sealed class Zone : Entity<Guid>
 
         CheckedIn++;
     }
+
+    /// <summary>Venta simulada (motor de demo): confirma directamente sin pasar por reserva ni
+    /// Saga, respetando el aforo vendible. Existe para que el demo pueda generar demanda.</summary>
+    public void RecordSimulatedSales(int quantity)
+    {
+        if (quantity <= 0) return;
+
+        if (AvailableToSell < quantity)
+            throw new InvalidOperationException($"La zona '{Name}' está completa.");
+
+        ConfirmedSold += quantity;
+    }
+
+    /// <summary>Check-in simulado (motor de demo): personas que pasan el torniquete sin entrada
+    /// real. Nunca supera <see cref="ConfirmedSold"/>, así que el no-show queda representado
+    /// de forma natural (CheckedIn &lt; ConfirmedSold).</summary>
+    public void RecordSimulatedCheckIns(int quantity)
+    {
+        if (quantity <= 0) return;
+
+        if (CheckedIn + quantity > ConfirmedSold)
+            throw new InvalidOperationException($"No quedan entradas confirmadas sin usar en la zona '{Name}'.");
+
+        CheckedIn += quantity;
+    }
+
+    /// <summary>Pone el aforo a cero — reinicia la simulación del evento para poder repetir el
+    /// demo. Solo contadores, no elimina la zona.</summary>
+    public void ResetCounters()
+    {
+        Reserved = 0;
+        ConfirmedSold = 0;
+        CheckedIn = 0;
+    }
 }
