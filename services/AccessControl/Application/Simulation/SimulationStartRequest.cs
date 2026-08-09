@@ -1,4 +1,4 @@
-namespace VenuePulse.AccessControl.Application;
+namespace VenuePulse.AccessControl.Application.Simulation;
 
 /// <summary>
 /// Arranque de un run de simulación para un evento. El presentador decide el modo, cuánto dura

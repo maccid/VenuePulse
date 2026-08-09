@@ -1,13 +1,14 @@
-namespace VenuePulse.AccessControl.Application;
+namespace VenuePulse.AccessControl.Application.Simulation;
 
 using System.Collections.Concurrent;
+using VenuePulse.AccessControl.Application;
 
 /// <summary>
 /// Motor de simulación de demo (Bloque 8). Singleton con estado en memoria: un run por evento,
 /// sin tocar Ticketing. Cada tick del worker avanza el reloj virtual y aplica las curvas a las
 /// zonas vía <see cref="IZoneService"/>, emitiendo <see cref="Domain.ZoneOccupancySnapshot"/>
 /// para el Bloque 11. Como es un singleton, los servicios scoped (zonas, snapshots) se pasan
-/// como parámetro desde el worker — ver Simulación/SimulationTickWorker.
+/// como parámetro desde el worker — ver Infrastructure.SimulationTickWorker.
 /// </summary>
 public interface ISimulationEngine
 {

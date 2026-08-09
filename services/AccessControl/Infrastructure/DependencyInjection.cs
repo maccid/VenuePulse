@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VenuePulse.AccessControl.Application;
+using VenuePulse.AccessControl.Application.Simulation;
 using VenuePulse.AccessControl.Infrastructure.Consumers;
 using VenuePulse.AccessControl.Infrastructure.Inbox;
 using VenuePulse.Core.Messaging;

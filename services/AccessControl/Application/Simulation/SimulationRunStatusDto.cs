@@ -1,4 +1,4 @@
-namespace VenuePulse.AccessControl.Application;
+namespace VenuePulse.AccessControl.Application.Simulation;
 
 /// <summary>Estado visible del run de simulación para el frontend (venue-ops).</summary>
 public sealed record SimulationRunStatusDto(

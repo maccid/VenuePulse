@@ -1,4 +1,4 @@
-namespace VenuePulse.AccessControl.Application;
+namespace VenuePulse.AccessControl.Application.Simulation;
 
 public enum SimulationMode
 {
