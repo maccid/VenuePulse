@@ -5,6 +5,7 @@ import SiteHeader from './components/SiteHeader'
 import ScanPanel from './components/ScanPanel'
 import ZonesDashboard from './components/ZonesDashboard'
 import SimulationPanel from './components/SimulationPanel'
+import PredictionPanel from './components/PredictionPanel'
 import './App.css'
 
 export default function App() {
@@ -83,6 +84,10 @@ export default function App() {
           eventStartsAtUtc={selectedEvent.startsAtUtc}
           onSimulationEnded={() => loadZones(selectedEventId)}
         />
+      )}
+
+      {selectedEvent && selectedEventId !== null && (
+        <PredictionPanel eventId={selectedEventId} eventStartsAtUtc={selectedEvent.startsAtUtc} />
       )}
 
       <ScanPanel onScan={scanTicket} />

@@ -87,6 +87,15 @@ public class SimulationEngineTests
             Snapshots.RemoveAll(s => s.EventId == eventId);
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlyList<ZoneOccupancySnapshot>> GetForEventAsync(Guid eventId, CancellationToken cancellationToken)
+        {
+            IReadOnlyList<ZoneOccupancySnapshot> result = Snapshots
+                .Where(s => s.EventId == eventId)
+                .OrderBy(s => s.RecordedAtUtc)
+                .ToList();
+            return Task.FromResult(result);
+        }
     }
 
     private static readonly Guid EventId = Guid.NewGuid();
@@ -163,6 +172,44 @@ public class SimulationEngineTests
 
         zoneService.AppliedSales.Should().Be(0);
         engine.GetStatus(EventId).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task El_ultimo_snapshot_nunca_supera_el_inicio_del_evento()
+    {
+        var engine = new SimulationEngine();
+        var zoneService = new FakeZoneService(CreateZone(capacity: 100));
+        var snapshots = new FakeSnapshotRepository();
+        var eventStartsAtUtc = DateTimeOffset.UtcNow.AddDays(7);
+
+        await engine.TryStartAsync(EventId, SalesRequest(eventStartsAtUtc), CancellationToken.None);
+        for (var i = 0; i < 4; i++)
+            await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(i * 21), zoneService, snapshots, CancellationToken.None);
+        await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(200), zoneService, snapshots, CancellationToken.None);
+
+        // Sin esto, el tick que completa el run escribe snapshots con reloj virtual post-evento
+        // (VirtualNowUtc no se clampa) y la predicción (Bloque 11) los toma como el punto "más reciente".
+        snapshots.Snapshots.Should().NotBeEmpty();
+        snapshots.Snapshots.Max(s => s.RecordedAtUtc).Should().BeBefore(eventStartsAtUtc);
+        engine.GetStatus(EventId).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Los_snapshots_se_escriben_en_utc()
+    {
+        var engine = new SimulationEngine();
+        var zoneService = new FakeZoneService(CreateZone(capacity: 100));
+        var snapshots = new FakeSnapshotRepository();
+        // El catálogo de Ticketing entrega el inicio del evento con offset local (p.ej. +02:00):
+        // Npgsql rechaza escribir DateTimeOffset con offset != 0 en columnas timestamptz.
+        var eventStartsAtUtc = new DateTimeOffset(2026, 8, 15, 19, 0, 0, TimeSpan.FromHours(2));
+
+        await engine.TryStartAsync(EventId, SalesRequest(eventStartsAtUtc), CancellationToken.None);
+        for (var i = 0; i < 3; i++)
+            await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(i * 21), zoneService, snapshots, CancellationToken.None);
+
+        snapshots.Snapshots.Should().NotBeEmpty();
+        snapshots.Snapshots.All(s => s.RecordedAtUtc.Offset == TimeSpan.Zero).Should().BeTrue();
     }
 
     [Fact]

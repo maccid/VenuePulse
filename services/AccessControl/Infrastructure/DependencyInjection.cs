@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VenuePulse.AccessControl.Application;
+using VenuePulse.AccessControl.Application.Prediction;
 using VenuePulse.AccessControl.Application.Simulation;
 using VenuePulse.AccessControl.Infrastructure.Consumers;
 using VenuePulse.AccessControl.Infrastructure.Inbox;
@@ -20,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IZoneRepository, ZoneRepository>();
         services.AddScoped<IZoneService, ZoneService>();
         services.AddScoped<IOccupancySnapshotRepository, OccupancySnapshotRepository>();
+        services.AddScoped<IOccupancyPredictionService, OccupancyPredictionService>();
 
         services.AddSingleton<ISimulationEngine, SimulationEngine>();
         services.AddHostedService<SimulationTickWorker>();
