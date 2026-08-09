@@ -6,7 +6,11 @@ using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Application.Commands;
 using VenuePulse.CheckIn.Application.Queries;
 
-public sealed record PurchaseTicketRequest(Guid EventId, Guid TicketTypeId, Guid ZoneId, string Holder, bool SimulateFailure);
+public sealed record PurchaseTicketRequest(Guid EventId, Guid TicketTypeId, Guid ZoneId, string Holder);
+
+// "Card" | "Bizum" — Bizum es el gatillo determinista de la demo para forzar la compensación en
+// vivo (ver TicketPaymentSubmitted); cualquier otro valor se trata como pago exitoso.
+public sealed record SubmitPaymentRequest(string Method);
 
 [ApiController]
 [Route("api/tickets")]
@@ -16,10 +20,18 @@ public sealed class TicketsController(ISender sender) : ControllerBase
     public async Task<ActionResult<object>> Purchase(PurchaseTicketRequest request, CancellationToken cancellationToken)
     {
         var ticketId = await sender.Send(
-            new PurchaseTicketCommand(request.EventId, request.TicketTypeId, request.ZoneId, request.Holder, request.SimulateFailure),
+            new PurchaseTicketCommand(request.EventId, request.TicketTypeId, request.ZoneId, request.Holder),
             cancellationToken);
 
         return Accepted(new { ticketId });
+    }
+
+    [HttpPost("{ticketId:guid}/pay")]
+    public async Task<IActionResult> Pay(Guid ticketId, SubmitPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var simulateFailure = string.Equals(request.Method, "Bizum", StringComparison.OrdinalIgnoreCase);
+        var result = await sender.Send(new SubmitPaymentCommand(ticketId, simulateFailure), cancellationToken);
+        return result.IsSuccess ? Accepted() : BadRequest(new { error = result.Error });
     }
 
     [HttpGet("{ticketId:guid}/status")]

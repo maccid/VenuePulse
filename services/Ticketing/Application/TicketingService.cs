@@ -9,7 +9,7 @@ public sealed class TicketingService(IEventRepository eventRepository, IZoneDema
         var events = await eventRepository.GetAllAsync(cancellationToken);
 
         return events
-            .Select(e => new EventSummaryDto(e.Id, e.Name, e.VenueName, e.StartsAtUtc))
+            .Select(e => new EventSummaryDto(e.Id, e.Name, e.VenueName, e.StartsAtUtc, e.Type))
             .ToList();
     }
 

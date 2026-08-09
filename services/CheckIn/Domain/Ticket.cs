@@ -39,10 +39,20 @@ public sealed class Ticket : Entity<Guid>, IAuditable
         Status = TicketStatus.Pending;
     }
 
-    public void Confirm()
+    /// <summary>El aforo ya está reservado de verdad (ver TicketPurchaseSaga) — a partir de aquí
+    /// la entrada espera a que el cliente elija método de pago.</summary>
+    public void MarkAwaitingPayment()
     {
         if (Status != TicketStatus.Pending)
-            throw new InvalidOperationException($"Solo una entrada pendiente se puede confirmar (estado actual: {Status}).");
+            throw new InvalidOperationException($"Solo una entrada pendiente puede pasar a esperar pago (estado actual: {Status}).");
+
+        Status = TicketStatus.AwaitingPayment;
+    }
+
+    public void Confirm()
+    {
+        if (Status != TicketStatus.AwaitingPayment)
+            throw new InvalidOperationException($"Solo una entrada esperando pago se puede confirmar (estado actual: {Status}).");
 
         Status = TicketStatus.Confirmed;
         ConfirmedAtUtc = DateTimeOffset.UtcNow;
@@ -50,8 +60,8 @@ public sealed class Ticket : Entity<Guid>, IAuditable
 
     public void Reject(string reason)
     {
-        if (Status != TicketStatus.Pending)
-            throw new InvalidOperationException($"Solo una entrada pendiente se puede rechazar (estado actual: {Status}).");
+        if (Status is not (TicketStatus.Pending or TicketStatus.AwaitingPayment))
+            throw new InvalidOperationException($"Solo una entrada pendiente o esperando pago se puede rechazar (estado actual: {Status}).");
 
         Status = TicketStatus.Rejected;
         RejectionReason = reason;

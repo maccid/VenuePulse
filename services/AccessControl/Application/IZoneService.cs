@@ -1,5 +1,7 @@
 namespace VenuePulse.AccessControl.Application;
 
+using VenuePulse.Core.Domain;
+
 /// <summary>
 /// Application Service simple, sin CQRS (ver ADR 0003): reservar/confirmar/liberar/registrar
 /// check-in es CRUD con un par de invariantes, separar comandos y consultas aquí sería
@@ -19,9 +21,10 @@ public interface IZoneService
 
     Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken);
 
-    /// <summary>Aprovisiona las 3 zonas fijas del recinto para un evento nuevo. Idempotente:
+    /// <summary>Aprovisiona las 3 zonas fijas del recinto para un evento nuevo — el set depende
+    /// del tipo de evento (partido: gradas/puertas; concierto: pista + gradas). Idempotente:
     /// si el evento ya tiene zonas (redelivery de EventCreated) no hace nada.</summary>
-    Task ProvisionZonesForEventAsync(Guid eventId, CancellationToken cancellationToken);
+    Task ProvisionZonesForEventAsync(Guid eventId, EventType eventType, CancellationToken cancellationToken);
 
     /// <summary>Venta simulada (motor de demo, Bloque 8): confirma entradas sin pasar por la
     /// Saga, respetando el aforo vendible.</summary>

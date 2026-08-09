@@ -41,6 +41,7 @@ public class TicketTests
     public void No_se_puede_hacer_check_in_dos_veces()
     {
         var ticket = NewPendingTicket();
+        ticket.MarkAwaitingPayment();
         ticket.Confirm();
         ticket.MarkCheckedIn();
 
@@ -50,13 +51,35 @@ public class TicketTests
     }
 
     [Fact]
-    public void Confirmar_una_entrada_pendiente_funciona()
+    public void No_se_puede_confirmar_una_entrada_pendiente_sin_pasar_por_esperando_pago()
     {
         var ticket = NewPendingTicket();
+
+        var act = ticket.Confirm;
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Confirmar_una_entrada_esperando_pago_funciona()
+    {
+        var ticket = NewPendingTicket();
+        ticket.MarkAwaitingPayment();
 
         ticket.Confirm();
 
         ticket.Status.Should().Be(TicketStatus.Confirmed);
         ticket.ConfirmedAtUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Se_puede_rechazar_una_entrada_esperando_pago()
+    {
+        var ticket = NewPendingTicket();
+        ticket.MarkAwaitingPayment();
+
+        ticket.Reject("PaymentFailed");
+
+        ticket.Status.Should().Be(TicketStatus.Rejected);
     }
 }

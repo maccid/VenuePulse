@@ -4,6 +4,7 @@ using FluentAssertions;
 using VenuePulse.AccessControl.Application;
 using VenuePulse.AccessControl.Application.Simulation;
 using VenuePulse.AccessControl.Domain;
+using VenuePulse.Core.Domain;
 
 public class SimulationEngineTests
 {
@@ -33,7 +34,7 @@ public class SimulationEngineTests
 
         public Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken) => throw new NotImplementedException();
 
-        public Task ProvisionZonesForEventAsync(Guid eventId, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task ProvisionZonesForEventAsync(Guid eventId, EventType eventType, CancellationToken cancellationToken) => throw new NotImplementedException();
 
         public async Task<ZoneOccupancyDto> ApplySimulatedSalesAsync(Guid zoneId, int quantity, CancellationToken cancellationToken)
         {

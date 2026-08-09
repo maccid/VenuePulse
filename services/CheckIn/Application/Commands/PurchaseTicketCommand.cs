@@ -9,13 +9,13 @@ public sealed record PurchaseTicketCommand(
     Guid EventId,
     Guid TicketTypeId,
     Guid ZoneId,
-    string Holder,
-    bool SimulateFailure) : IRequest<Guid>;
+    string Holder) : IRequest<Guid>;
 
 /// <summary>
 /// Escritura compleja: crea la entrada (Pending) y dispara la Saga publicando el evento
 /// iniciador dentro de la MISMA transacción vía el Outbox (Add -> Publish -> SaveChanges, en
-/// ese orden — ver <see cref="ITicketRepository"/>).
+/// ese orden — ver <see cref="ITicketRepository"/>). Reserva el aforo y deja la entrada
+/// esperando a que el cliente elija método de pago (ver <see cref="SubmitPaymentCommand"/>).
 /// </summary>
 public sealed class PurchaseTicketCommandHandler(ITicketRepository repository, IPublishEndpoint publishEndpoint)
     : IRequestHandler<PurchaseTicketCommand, Guid>
@@ -27,7 +27,7 @@ public sealed class PurchaseTicketCommandHandler(ITicketRepository repository, I
         await repository.AddAsync(ticket, cancellationToken);
 
         await publishEndpoint.Publish(
-            new TicketPurchaseRequested(ticket.Id, request.ZoneId, request.SimulateFailure),
+            new TicketPurchaseRequested(ticket.Id, request.ZoneId),
             cancellationToken);
 
         await repository.SaveChangesAsync(cancellationToken);

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MassTransit;
 using VenuePulse.Core.Observability;
 using VenuePulse.Ticketing.Api.Hubs;
@@ -18,7 +19,11 @@ builder.Services.AddTicketingInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<IPricingNotifier, SignalRPricingNotifier>();
 builder.Services.AddSignalR();
 
-builder.Services.AddControllers();
+// Sin esto, EventSummaryDto.Type se serializa como 0/1 (el valor numérico por defecto de
+// System.Text.Json para enums) y el frontend, que espera "Match"/"Concert" como en el resto de
+// campos de texto de la Api, rompe la fusión zona<->tipo de entrada.
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();

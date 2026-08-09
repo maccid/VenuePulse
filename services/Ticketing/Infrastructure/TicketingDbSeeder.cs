@@ -2,6 +2,7 @@ namespace VenuePulse.Ticketing.Infrastructure;
 
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using VenuePulse.Core.Domain;
 using VenuePulse.Core.Messaging.Contracts;
 using Event = VenuePulse.Ticketing.Domain.Event;
 
@@ -33,7 +34,8 @@ public static class TicketingDbSeeder
             Guid.NewGuid(),
             "Derbi de la ciudad",
             Venue,
-            DateTimeOffset.UtcNow.AddDays(7));
+            DateTimeOffset.UtcNow.AddDays(7),
+            EventType.Match);
         derbi.AddTicketType(Guid.NewGuid(), "General", 45.00m, "Grada general, sin asiento numerado");
         derbi.AddTicketType(Guid.NewGuid(), "VIP", 180.00m, "Zona VIP con acceso a hospitality");
 
@@ -41,14 +43,15 @@ public static class TicketingDbSeeder
             Guid.NewGuid(),
             "Concierto de apertura de temporada",
             Venue,
-            DateTimeOffset.UtcNow.AddDays(14));
+            DateTimeOffset.UtcNow.AddDays(14),
+            EventType.Concert);
         concierto.AddTicketType(Guid.NewGuid(), "General", 30.00m, null);
         concierto.AddTicketType(Guid.NewGuid(), "Pista", 60.00m, "Acceso a pista, de pie");
 
         dbContext.Events.AddRange(derbi, concierto);
 
-        await publishEndpoint.Publish(new EventCreated(derbi.Id, derbi.Name, derbi.VenueName, derbi.StartsAtUtc), cancellationToken);
-        await publishEndpoint.Publish(new EventCreated(concierto.Id, concierto.Name, concierto.VenueName, concierto.StartsAtUtc), cancellationToken);
+        await publishEndpoint.Publish(new EventCreated(derbi.Id, derbi.Name, derbi.VenueName, derbi.StartsAtUtc, derbi.Type), cancellationToken);
+        await publishEndpoint.Publish(new EventCreated(concierto.Id, concierto.Name, concierto.VenueName, concierto.StartsAtUtc, concierto.Type), cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }

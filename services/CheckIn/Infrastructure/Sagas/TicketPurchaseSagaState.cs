@@ -17,8 +17,6 @@ public sealed class TicketPurchaseSagaState : SagaStateMachineInstance, ISagaVer
 
     public Guid ZoneId { get; set; }
 
-    public bool SimulateFailure { get; set; }
-
     public DateTimeOffset RequestedAtUtc { get; set; }
 
     public DateTimeOffset? SlotReservedAtUtc { get; set; }

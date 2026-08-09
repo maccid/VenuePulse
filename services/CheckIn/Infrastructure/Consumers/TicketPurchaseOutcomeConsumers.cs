@@ -5,6 +5,39 @@ using Microsoft.Extensions.Logging;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.Core.Messaging.Contracts;
 
+/// <summary>
+/// El aforo ya está reservado de verdad en AccessControl y la Saga ya transicionó a
+/// "AwaitingPayment" — refleja ese hecho en el propio Ticket para que la Api pueda rechazar un
+/// /pay prematuro con un error limpio en vez de dejar que el evento de pago llegue a la Saga en
+/// un estado que no lo espera. Escucha <see cref="TicketAwaitingPayment"/> (publicado por la
+/// propia Saga tras su transición), NO el <see cref="ZoneSlotReserved"/> original: reaccionar al
+/// mismo evento en paralelo que la Saga, sin esperar a que ella termine, deja una ventana real en
+/// la que el Ticket en Postgres dice "AwaitingPayment" antes de que la Saga en Mongo lo esté de
+/// verdad — visto en real, no es un caso hipotético (ver ADR 0018).
+/// </summary>
+public sealed class TicketReadyForPaymentConsumer(
+    ITicketRepository repository,
+    ITicketStatusNotifier notifier,
+    ILogger<TicketReadyForPaymentConsumer> logger) : IConsumer<TicketAwaitingPayment>
+{
+    public async Task Consume(ConsumeContext<TicketAwaitingPayment> context)
+    {
+        var ticket = await repository.GetByIdAsync(context.Message.CorrelationId, context.CancellationToken);
+        if (ticket is null)
+        {
+            logger.LogWarning("TicketAwaitingPayment para una entrada inexistente {TicketId}", context.Message.CorrelationId);
+            return;
+        }
+
+        ticket.MarkAwaitingPayment();
+        await repository.SaveChangesAsync(context.CancellationToken);
+
+        await notifier.NotifyStatusChangedAsync(
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null),
+            context.CancellationToken);
+    }
+}
+
 public sealed class TicketPurchaseConfirmedConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
@@ -23,7 +56,7 @@ public sealed class TicketPurchaseConfirmedConsumer(
         await repository.SaveChangesAsync(context.CancellationToken);
 
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.Status.ToString(), null),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null),
             context.CancellationToken);
     }
 }
@@ -46,7 +79,7 @@ public sealed class TicketPurchaseRejectedConsumer(
         await repository.SaveChangesAsync(context.CancellationToken);
 
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.Status.ToString(), ticket.RejectionReason),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.RejectionReason),
             context.CancellationToken);
     }
 }

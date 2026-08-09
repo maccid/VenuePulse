@@ -81,7 +81,7 @@ public class InboxDeduplicationFilterTests
         await using var _ = provider;
         var zone = await SeedZoneAsync(provider, databaseName);
 
-        var command = new ReserveZoneSlot(Guid.NewGuid(), zone.Id, SimulateFailure: false);
+        var command = new ReserveZoneSlot(Guid.NewGuid(), zone.Id);
 
         await harness.Bus.Publish(command);
         await harness.Bus.Publish(command); // misma instancia => mismo EventId => redelivery simulada
@@ -103,8 +103,8 @@ public class InboxDeduplicationFilterTests
         await using var _ = provider;
         var zone = await SeedZoneAsync(provider, databaseName);
 
-        await harness.Bus.Publish(new ReserveZoneSlot(Guid.NewGuid(), zone.Id, SimulateFailure: false));
-        await harness.Bus.Publish(new ReserveZoneSlot(Guid.NewGuid(), zone.Id, SimulateFailure: false));
+        await harness.Bus.Publish(new ReserveZoneSlot(Guid.NewGuid(), zone.Id));
+        await harness.Bus.Publish(new ReserveZoneSlot(Guid.NewGuid(), zone.Id));
 
         await WaitUntilConsumedAsync(harness, expectedCount: 2);
 

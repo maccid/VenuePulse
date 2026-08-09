@@ -12,7 +12,8 @@ public sealed class ReservationWatchdogConsumer(
     SagaTimeoutOptions options) :
     IConsumer<TicketPurchaseRequested>,
     IConsumer<ZoneSlotReserved>,
-    IConsumer<ZoneSlotReservationFailed>
+    IConsumer<ZoneSlotReservationFailed>,
+    IConsumer<TicketPaymentSubmitted>
 {
     public Task Consume(ConsumeContext<TicketPurchaseRequested> context)
     {
@@ -22,11 +23,19 @@ public sealed class ReservationWatchdogConsumer(
 
     public Task Consume(ConsumeContext<ZoneSlotReserved> context)
     {
-        tracker.Untrack(context.Message.CorrelationId);
+        // El aforo ya está reservado — rearma el reloj para vigilar la siguiente espera real (que
+        // el cliente elija método de pago), en vez de dejar de vigilar del todo.
+        tracker.Track(context.Message.CorrelationId, context.Message.ZoneId, DateTimeOffset.UtcNow + options.ReservationTimeout);
         return Task.CompletedTask;
     }
 
     public Task Consume(ConsumeContext<ZoneSlotReservationFailed> context)
+    {
+        tracker.Untrack(context.Message.CorrelationId);
+        return Task.CompletedTask;
+    }
+
+    public Task Consume(ConsumeContext<TicketPaymentSubmitted> context)
     {
         tracker.Untrack(context.Message.CorrelationId);
         return Task.CompletedTask;
