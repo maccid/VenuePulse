@@ -9,8 +9,8 @@ falla (o al revés), el sistema queda inconsistente sin ninguna transacción que
 ## Decisión
 
 Usar el Outbox transaccional **nativo de MassTransit** (`AddEntityFrameworkOutbox<TDbContext>`)
-en `Ticketing`... no, en `CheckIn` (el único servicio que publica eventos como parte de
-comandos de escritura), en vez de construir un Outbox a mano.
+en `CheckIn` y `Ticketing` (los servicios que publican eventos como parte de comandos de
+escritura), en vez de construir un Outbox a mano.
 
 Mecánica: el handler hace `repository.AddAsync(entidad)` → `publishEndpoint.Publish(evento)`
 → `repository.SaveChangesAsync()`, en ese orden. El `Publish` no toca la red todavía: queda
@@ -29,6 +29,8 @@ asíncrona vía hosted service) sin haberlo escrito él mismo.
 
 ## Alcance
 
-Solo `CheckIn` tiene Outbox propio. `AccessControl` consume comandos y publica eventos de
-respuesta, pero no necesita atomicidad "cambio de agregado + evento" en el mismo grado (sus
-mutaciones son más simples — ver ADR 0003), así que usa MassTransit sin Outbox configurado.
+`CheckIn` y `Ticketing` tienen Outbox propio — ambos escriben una entidad y publican un evento
+en el mismo `SaveChangesAsync` (`TicketPurchased` en CheckIn, `EventCreated` en el seed de
+Ticketing). `AccessControl` consume comandos y publica eventos de respuesta, pero no necesita
+atomicidad "cambio de agregado + evento" en el mismo grado (sus mutaciones son más simples — ver
+ADR 0003), así que usa MassTransit sin Outbox configurado.
