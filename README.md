@@ -93,3 +93,10 @@ paso mockeado dentro de la Saga, por diseño), IdentityServer/Azure AD B2C, vide
 analítica de datos avanzada (pilares del smart venue no cubiertos por decisión consciente de
 alcance), métricas agregadas con Prometheus/Grafana, Module Federation, autoscaling validado
 con carga real. El objetivo fue profundidad y capacidad de defensa sobre amplitud de checklist.
+
+**Autenticación entre servicios (decisión de alcance):** los servicios no se llaman por HTTP
+entre sí — se comunican por el bus de mensajes (RabbitMQ/MassTransit), cuya autenticación es la
+del broker (credenciales + vhost aislado + TLS), no OAuth client-credentials entre procesos.
+El único HTTP es usuario → gateway → backend, y ahí no hay identidad de usuario (JWT/OIDC en el
+gateway quedaría fuera de alcance, como IdentityServer/Azure AD B2C arriba). Si algún día se
+desplegara público: secretos del broker, TLS en nginx e identidad de usuario en el gateway.
