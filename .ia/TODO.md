@@ -26,9 +26,12 @@ choque de migraciones EF) a la vez. 8 no depende de nada pendiente; 9/11/10 depe
   (al cierre, no paralelizable).
 
 Reserva de números de ADR para evitar colisión entre ramas paralelas (siguiente tras 0009):
-`0010` → Bloque 2 (Claude Code), `0011` → Bloque 3 (Claude Code), `0012` → Bloque 11 (opencode,
-si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver `docs/architecture/adr/0013-...md`).**
-**`0014` → Bloque 12 (opencode, si aplica).**
+`0010` → Bloque 2 (Claude Code, ya usado). **`0011` lo tomó en la práctica el Bloque 4** (la
+reserva original decía Bloque 3, pero Bloque 4 se cerró antes — la tabla quedó desactualizada).
+`0012` → Bloque 11 (opencode, si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver
+`docs/architecture/adr/0013-...md`).** **`0014` → Bloque 12 (opencode, si aplica).**
+**`0015` → Bloque 3 (Claude Code, ya usado — ver `docs/architecture/adr/0015-accesscontrol-inbox.md`).**
+Próximo libre para nuevas ramas: `0016`.
 
 ## En curso
 
@@ -56,13 +59,22 @@ si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver `docs/architecture
   (9/9 en verde). ADR 0010. Riesgo aceptado documentado: no sobrevive a reinicio del servicio ni
   a una carrera con `ZoneSlotReserved` tardío (mismo tipo de trade-off que Bloque 1 en
   KNOWN-ISSUES.md).
-- [ ] **Bloque 3 — `feature/accesscontrol-inbox`** (Claude Code, Oleada 1 — tras que opencode
-  mergee su parte de `AccessControl` del Bloque 8, para no pisar migraciones EF del mismo
-  servicio): Inbox real
-  (`ProcessedMessages` keyed por `EventId`) en `AccessControl` — hoy no tiene, pese a que
-  `ARCHITECTURE.md` dice que Outbox/Inbox garantiza "exactamente una vez" (solo cierto en
-  `CheckIn`). Sin esto, una redelivery de RabbitMQ duplica reservas/check-ins reales. ADR nuevo
-  (siguiente número tras 0009).
+- [x] **Bloque 3 — `feature/accesscontrol-inbox`** (Claude Code, Oleada 1 — desbloqueado tras el
+  merge del Bloque 8 a `develop`): Inbox real (`ProcessedMessages` keyed por
+  `IntegrationEvent.EventId`, no un id de negocio) en `AccessControl` — antes solo
+  `EventCreatedConsumer` era idempotente (`ExistsForEventAsync`); los comandos de zona
+  (`ReserveZoneSlot`/`ConfirmZoneSlot`/`ReleaseZoneSlot`/`RecordZoneCheckIn`) no tenían ninguna
+  protección contra redelivery de RabbitMQ. **Sin adoptar el Outbox EF completo** (descartado por
+  sobreingeniería, ver ADR 0015): filtro genérico `InboxDeduplicationFilter<TMessage>`
+  (`IFilter<ConsumeContext<TMessage>>`) registrado vía `UseConsumeFilter` sobre los 5 consumers
+  existentes, sin tocar su código. Atómico con el cambio de negocio sin Outbox: el filtro y el
+  consumer comparten el mismo `AccessControlDbContext` con ámbito por mensaje, así que el
+  `SaveChangesAsync` que ya hace `ZoneRepository.SaveAsync` persiste el marcador y el cambio de
+  negocio juntos. `MessagingExtensions.AddVenuePulseMessaging` (variante sin Outbox) ganó un
+  parámetro opcional `configureBus` como único punto de extensión para engancharlo. Migración
+  `AddProcessedMessages`. Tests nuevos con el harness in-memory de MassTransit
+  (`InboxDeduplicationFilterTests.cs`, sin broker real): redelivery del mismo mensaje solo aplica
+  el efecto una vez, mensajes distintos se procesan ambos. AccessControl 26/26 en verde. ADR 0015.
 - [x] **Bloque 4 — `feature/core-shared-patterns`** (Claude Code, Oleada 1): ampliar `VenuePulse.Core`
   con interceptor EF Core de auditoría, paginación genérica y guard clauses — inspiración de alto
   nivel de patrones (nunca código/nombres literales de otros proyectos privados, ver

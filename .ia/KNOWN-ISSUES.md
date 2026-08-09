@@ -32,9 +32,10 @@ ya vinculadas a ese `EventId`, con contadores en cero. Idempotente ante redelive
 hay cola aún vinculada al exchange). Mitigado con `api-ticketing` dependiendo de
 `api-accesscontrol: condition: service_healthy` — el healthcheck HTTP solo responde una vez que
 todos los `IHostedService` (incl. el bus de MassTransit) ya arrancaron, así que para cuando
-`api-ticketing` arranca, el consumer ya está enlazado. No es una garantía formal (no hay Inbox
-todavía en `AccessControl`, ver Bloque 3 en `.ia/TODO.md` para el caso general de redelivery),
-pero cubre el arranque en frío, que es el único caso relevante para esta demo.
+`api-ticketing` arranca, el consumer ya está enlazado. No es una garantía formal para la pérdida
+de mensajes en el arranque en frío (sigue sin resolverse, pero es el único caso relevante para
+esta demo); el caso general de **redelivery** (mensaje que sí llega pero se reprocesa) ya está
+cubierto — ver Inbox real en `AccessControl` (Bloque 3, ADR 0015).
 
 ## Test de integración de la Saga — camino de compensación intermitente en Testcontainers
 

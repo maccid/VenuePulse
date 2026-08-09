@@ -1,10 +1,12 @@
 namespace VenuePulse.AccessControl.Infrastructure;
 
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VenuePulse.AccessControl.Application;
 using VenuePulse.AccessControl.Infrastructure.Consumers;
+using VenuePulse.AccessControl.Infrastructure.Inbox;
 using VenuePulse.Core.Messaging;
 
 public static class DependencyInjection
@@ -21,6 +23,8 @@ public static class DependencyInjection
         services.AddSingleton<ISimulationEngine, SimulationEngine>();
         services.AddHostedService<SimulationTickWorker>();
 
+        services.AddScoped(typeof(InboxDeduplicationFilter<>));
+
         services.AddVenuePulseMessaging(
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",
             x =>
@@ -30,7 +34,8 @@ public static class DependencyInjection
                 x.AddConsumer<ReleaseZoneSlotConsumer>();
                 x.AddConsumer<RecordZoneCheckInConsumer>();
                 x.AddConsumer<EventCreatedConsumer>();
-            });
+            },
+            (context, cfg) => cfg.UseConsumeFilter(typeof(InboxDeduplicationFilter<>), context));
 
         return services;
     }
