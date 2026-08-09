@@ -7,12 +7,29 @@ import App from './App.tsx'
  * ver ADR 0004: un único convenio de estilos compartido entre apps en vez de aislar CSS).
  * `shell` lo consume como <ticket-checkout-app event-id="..." holder="..." />.
  */
+// El build (`vite.config.ts`, cssCodeSplit: false) emite el CSS como fichero hermano de
+// ticket-checkout.js, no lo inyecta por JS. La propia página de ticket-checkout (modo standalone)
+// lo enlaza sola vía su index.html, pero cuando este módulo se carga como <script> remoto dentro
+// de shell (el flujo real de compra) nadie más lo hace — resultado: el componente pierde toda su
+// hoja de estilos (bordes, tokens --tc-*, colores del SVG del plano, que caía a negro) y solo
+// "se veía bien" antes por casualidad, heredando los estilos globales de <button>/<input> de shell.
+const STYLESHEET_HREF = new URL('./ticket-checkout.css', import.meta.url).href
+
+function ensureStylesheetLoaded() {
+  if (document.querySelector(`link[href="${STYLESHEET_HREF}"]`)) return
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = STYLESHEET_HREF
+  document.head.appendChild(link)
+}
+
 class TicketCheckoutElement extends HTMLElement {
   static observedAttributes = ['event-id', 'holder']
 
   private root: Root | null = null
 
   connectedCallback() {
+    ensureStylesheetLoaded()
     this.root = createRoot(this)
     this.render()
   }
