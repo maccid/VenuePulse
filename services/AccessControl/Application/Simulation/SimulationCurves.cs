@@ -1,4 +1,4 @@
-namespace VenuePulse.AccessControl.Application;
+namespace VenuePulse.AccessControl.Application.Simulation;
 
 /// <summary>Curvas temporales del motor de simulación. Funciones puras, [0,1] → [0,1], sin estado:
 /// lo único que hay que poder explicar en el demo es "la venta acelera en los últimos días" y

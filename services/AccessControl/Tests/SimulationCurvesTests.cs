@@ -2,6 +2,7 @@ namespace VenuePulse.AccessControl.Tests;
 
 using FluentAssertions;
 using VenuePulse.AccessControl.Application;
+using VenuePulse.AccessControl.Application.Simulation;
 
 public class SimulationCurvesTests
 {

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using VenuePulse.AccessControl.Application;
+using VenuePulse.AccessControl.Application.Simulation;
 
 /// <summary>
 /// Corazón del motor de simulación (Bloque 8): cada tick resuelve los servicios scoped desde un
