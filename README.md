@@ -1,11 +1,10 @@
 # VenuePulse
 
-Demo técnica construida para un proceso de selección en **Sportian** (Smart Venues) —
-digitalización de estadios: experiencia del fan (ticketing) y operaciones del recinto (control
-de accesos y aforo en tiempo real).
+Demo técnica de digitalización de estadios (smart venues): experiencia del fan (ticketing) y
+operaciones del recinto (control de accesos y aforo en tiempo real).
 
-No es un proyecto de apuestas ni tiene relación con ninguna marca real: los nombres del
-dominio (`VenuePulse`, `Ticketing`, `AccessControl`, `CheckIn`) son inventados para esta demo.
+No tiene relación con ninguna marca real: los nombres del dominio (`VenuePulse`, `Ticketing`,
+`AccessControl`, `CheckIn`) son inventados para esta demo.
 
 ## Qué demuestra
 
@@ -35,14 +34,15 @@ dominio (`VenuePulse`, `Ticketing`, `AccessControl`, `CheckIn`) son inventados p
 ## Estructura del repositorio
 
 ```
-src/        Backend .NET — 3 microservicios + librería compartida VenuePulse.Core
-frontend/   3 apps React independientes (shell, ticket-checkout, venue-ops)
+services/   Backend .NET — 3 microservicios + librería compartida Core (VenuePulse.Core)
+            Incluye Architecture.Tests/ (ArchUnitNET): tooling transversal que valida las reglas
+            de capas sobre los ensamblados reales, no es un servicio más
+ui/         3 apps React independientes (shell, ticket-checkout, venue-ops)
 infra/      docker-compose, manifiestos K8s, Jenkinsfile, guía de Azure, Nginx de composición
 docs/       ADRs, AI-USAGE.md, demo-script.md
-.ia/        Metodología de trabajo con IA del autor (local, ver .dockerignore — nunca en Docker)
 ```
 
-Separación deliberada: `infra/` no depende de `src/` ni `frontend/` a nivel de código, solo los
+Separación deliberada: `infra/` no depende de `services/` ni `ui/` a nivel de código, solo los
 referencia como contexto de build — así queda claro qué es aplicación y qué es despliegue.
 
 ## Arrancar la demo
@@ -51,6 +51,8 @@ referencia como contexto de build — así queda claro qué es aplicación y qu�
 docker compose -f infra/docker-compose.yml up --build
 ```
 
+- Rebuild selectivo por capas: `docker compose up --build` solo reconstruye las imágenes cuyo
+  código cambió, el resto reutiliza la cache.
 - `http://localhost:8080` — app pública (catálogo + aforo en vivo + comprar entrada)
 - `http://localhost:8080/venue-ops/` — panel de operaciones (escanear entradas, aforo por zona)
 - `http://localhost:16686` — Jaeger (trazas distribuidas)
@@ -71,12 +73,12 @@ No prometer de más es parte del ejercicio. Tabla honesta:
 | Manifiestos K8s/Kustomize (`infra/deploy/k8s`) | Escritos y válidos, **no desplegados** a AKS real |
 | `Jenkinsfile` (`infra/deploy/jenkins`) | Escrito, **no ejecutado** |
 | Topología Azure (`infra/deploy/azure/README.md`) | **Documentada**, no aprovisionada |
-| Test de integración de la Saga contra Testcontainers reales | Camino feliz **verificado**; camino de compensación con un problema de fiabilidad específico del arnés de test, documentado en [ADR 0009](docs/architecture/adr/0009-masstransit-mongo-debugging.md) — verificación cruzada pendiente contra `docker-compose` real |
+| Test de integración de la Saga contra Testcontainers reales | Camino feliz **verificado**; camino de compensación con un problema de fiabilidad específico del arnés de test, documentado en [ADR 0009](docs/architecture/adr/0009-masstransit-mongo-debugging.md) — **verificado por separado contra `docker-compose` real**: ambos caminos funcionan correctamente, confirmando que no era un defecto de la Saga |
 
 ## Tests
 
 ```bash
-dotnet test src/VenuePulse.slnx
+dotnet test services/VenuePulse.slnx
 ```
 
 Pirámide deliberada: tests de dominio (invariantes), tests de la Saga con el harness in-memory
@@ -88,6 +90,6 @@ de integración con Testcontainers (Postgres+RabbitMQ+MongoDB reales).
 
 Fuera de alcance, documentado como roadmap con motivo: pasarela de pago real (el "pago" es un
 paso mockeado dentro de la Saga, por diseño), IdentityServer/Azure AD B2C, videovigilancia y
-analítica de datos avanzada (pilares de Smart Venues no cubiertos por decisión consciente de
+analítica de datos avanzada (pilares del smart venue no cubiertos por decisión consciente de
 alcance), métricas agregadas con Prometheus/Grafana, Module Federation, autoscaling validado
 con carga real. El objetivo fue profundidad y capacidad de defensa sobre amplitud de checklist.

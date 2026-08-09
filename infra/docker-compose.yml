@@ -1,10 +1,24 @@
 name: venuepulse
 
 # Contexto de build relativo a este fichero (infra/docker-compose.yml): ".." es la raíz del
-# repo — mantiene infra/ separado de src/ (backend) y frontend/ (ver README de estructura).
+# repo — mantiene infra/ separado de services/ (backend) y ui/ (frontend) (ver README de estructura).
+#
+# Nomenclatura de servicios (para que `docker ps` / Docker Desktop agrupe visualmente por tipo):
+#   sin prefijo -> infraestructura de terceros (postgres, mongo, rabbitmq, jaeger)
+#   api-*       -> backends propios (.NET)
+#   web-*       -> frontends propios (React)
+#   gateway     -> único punto de entrada del navegador
+#
+# Rebuild selectivo: `docker compose up --build` solo reconstruye las imágenes cuyo contexto
+# cambió (cache por capas) — no hace falta perfiles para eso.
 services:
+
+  # ---------------------------------------------------------------------------------------
+  # Infraestructura
+  # ---------------------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
+    container_name: venuepulse-postgres
     environment:
       POSTGRES_USER: venuepulse
       POSTGRES_PASSWORD: venuepulse
@@ -22,6 +36,7 @@ services:
 
   mongo:
     image: mongo:7
+    container_name: venuepulse-mongo
     ports:
       - "27017:27017"
     volumes:
@@ -34,6 +49,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    container_name: venuepulse-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -47,20 +63,26 @@ services:
   # abrir http://localhost:16686 tras una compra para ver el trace completo cruzando los 3 servicios.
   jaeger:
     image: jaegertracing/all-in-one:1.60
+    container_name: venuepulse-jaeger
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
       - "16686:16686"
       - "4317:4317"
 
-  ticketing-api:
+  # ---------------------------------------------------------------------------------------
+  # Backends (.NET)
+  # ---------------------------------------------------------------------------------------
+  api-ticketing:
+    container_name: venuepulse-api-ticketing
     build:
       context: ..
-      dockerfile: src/Services/Ticketing/Api/Dockerfile
+      dockerfile: services/Ticketing/Api/Dockerfile
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__TicketingDb: "Host=postgres;Port=5432;Database=venuepulse_ticketing;Username=venuepulse;Password=venuepulse"
+      RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
       Cors__AllowedOrigins__0: "http://localhost:8080"
       Observability__OtlpEndpoint: "http://jaeger:4317"
     ports:
@@ -68,11 +90,26 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      # Publica EventCreated al sembrar — necesita que el consumer de AccessControl ya esté
+      # enlazado a su cola antes de arrancar, o el mensaje se pierde (ver .ia/KNOWN-ISSUES.md).
+      # api-accesscontrol healthy implica que su MassTransit ya completó el bind de colas,
+      # porque /health solo responde una vez que todos los IHostedService (incl. el bus) arrancaron.
+      api-accesscontrol:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  accesscontrol-api:
+  api-accesscontrol:
+    container_name: venuepulse-api-accesscontrol
     build:
       context: ..
-      dockerfile: src/Services/AccessControl/Api/Dockerfile
+      dockerfile: services/AccessControl/Api/Dockerfile
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -87,11 +124,18 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  checkin-api:
+  api-checkin:
+    container_name: venuepulse-api-checkin
     build:
       context: ..
-      dockerfile: src/Services/CheckIn/Api/Dockerfile
+      dockerfile: services/CheckIn/Api/Dockerfile
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -110,43 +154,59 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  shell:
+  # ---------------------------------------------------------------------------------------
+  # Frontends (React) — nombre de carpeta real en ui/<app>, sin el prefijo web-
+  # ---------------------------------------------------------------------------------------
+  web-shell:
+    container_name: venuepulse-web-shell
     build:
       context: ..
-      dockerfile: frontend/apps/shell/Dockerfile
+      dockerfile: ui/shell/Dockerfile
     expose:
       - "80"
 
-  ticket-checkout:
+  web-ticket-checkout:
+    container_name: venuepulse-web-ticket-checkout
     build:
       context: ..
-      dockerfile: frontend/apps/ticket-checkout/Dockerfile
+      dockerfile: ui/ticket-checkout/Dockerfile
     expose:
       - "80"
 
-  venue-ops:
+  web-venue-ops:
+    container_name: venuepulse-web-venue-ops
     build:
       context: ..
-      dockerfile: frontend/apps/venue-ops/Dockerfile
+      dockerfile: ui/venue-ops/Dockerfile
     expose:
       - "80"
 
+  # ---------------------------------------------------------------------------------------
+  # Gateway
+  # ---------------------------------------------------------------------------------------
   # Único punto de entrada del navegador: compone las 3 apps React y hace de reverse proxy
   # hacia los 3 backends + los hubs de SignalR (ver ADR 0004 sobre micro frontends).
-  nginx:
+  gateway:
+    container_name: venuepulse-gateway
     image: nginx:alpine
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "8080:80"
     depends_on:
-      - shell
-      - ticket-checkout
-      - venue-ops
-      - ticketing-api
-      - accesscontrol-api
-      - checkin-api
+      - web-shell
+      - web-ticket-checkout
+      - web-venue-ops
+      - api-ticketing
+      - api-accesscontrol
+      - api-checkin
 
 volumes:
   postgres-data:

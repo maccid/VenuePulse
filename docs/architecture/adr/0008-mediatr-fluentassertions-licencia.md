@@ -17,8 +17,8 @@ Se usan igualmente en esta demo:
 
 Este es un proyecto de demo/portfolio sin fines comerciales ni generación de ingresos — entra
 dentro del uso permitido de ambas licencias. Además, siguen siendo el estándar que muchas
-empresas (potencialmente el propio Sportian) usan en producción bajo licencia pagada: mostrar
-que se conocen y se saben aplicar correctamente es mejor argumento de entrevista que evitarlas
+empresas usan en producción bajo licencia pagada: mostrar
+que se conocen y se saben aplicar correctamente es mejor argumento de presentación que evitarlas
 por evitar. El propio hecho de documentar este ADR — conocer el cambio de licencia de 2025 y
 haber evaluado conscientemente si aplica a este contexto — es en sí mismo la señal de criterio
 senior que se busca transmitir, no la elección de librería en sí.
