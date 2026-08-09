@@ -2,12 +2,15 @@ namespace VenuePulse.AccessControl.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
 using VenuePulse.AccessControl.Domain;
+using VenuePulse.AccessControl.Infrastructure.Inbox;
 
 public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbContext> options) : DbContext(options)
 {
     public DbSet<Zone> Zones => Set<Zone>();
 
     public DbSet<ZoneOccupancySnapshot> OccupancySnapshots => Set<ZoneOccupancySnapshot>();
+
+    public DbSet<ProcessedMessage> ProcessedMessages => Set<ProcessedMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +40,14 @@ public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbConte
             builder.Property(s => s.CheckedIn).IsRequired();
             builder.HasIndex(s => new { s.EventId, s.RecordedAtUtc });
             builder.Ignore(s => s.DomainEvents);
+        });
+
+        modelBuilder.Entity<ProcessedMessage>(builder =>
+        {
+            builder.ToTable("processed_messages");
+            builder.HasKey(p => p.EventId);
+            builder.Property(p => p.MessageType).HasMaxLength(200).IsRequired();
+            builder.Property(p => p.ProcessedAtUtc).IsRequired();
         });
     }
 }
