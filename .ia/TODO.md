@@ -28,6 +28,7 @@ choque de migraciones EF) a la vez. 8 no depende de nada pendiente; 9/11/10 depe
 Reserva de números de ADR para evitar colisión entre ramas paralelas (siguiente tras 0009):
 `0010` → Bloque 2 (Claude Code), `0011` → Bloque 3 (Claude Code), `0012` → Bloque 11 (opencode,
 si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver `docs/architecture/adr/0013-...md`).**
+**`0014` → Bloque 12 (opencode, si aplica).**
 
 ## En curso
 
@@ -115,6 +116,16 @@ si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver `docs/architecture
   `ConfirmedSold`** — la métrica que de verdad opera un estadio ("¿cuántos pasarán el torniquete y
   cuándo?"), no las ventas. Es el pilar del smart venue que encaja con la demo y la prioridad #1
   de esta ronda de mejoras. Nuevo servicio/endpoint + gráfica en `venue-ops`. ADR nuevo.
+- [ ] **Bloque 12 — `feature/ui-tailwind`** (sin asignar): introducir Tailwind CSS en las 3 apps
+  React (`shell`/`ticket-checkout`/`venue-ops`) y de paso revisar la parte `ui/` para hacerla más
+  amigable. Hoy el estilo es CSS en BEM con tokens `--vp-*` (Bloque 5, que fijó "sin librerías UI
+  nuevas") — Tailwind sustituye las clases BEM por utilidades y acelera iterar en el diseño.
+  Alcance: Tailwind v4 + plugin `@tailwindcss/vite` en cada app, mapear los tokens `--vp-*` a
+  `@theme` para no perder el sistema de diseño, migrar los `App.css`/`index.css` y los `className`
+  de los componentes, y una pasada de UX (estados vacíos, jerarquía, responsive). Notas: revierte
+  la decisión del Bloque 5, así que ADR pequeño (`0014`) si se aprueba; toca solo `ui/` (sin riesgo
+  de migraciones EF); el Bloque 11 también mete una gráfica en `venue-ops` — coordinar para no
+  pisarse el mismo componente.
 - [ ] **Bloque 9 — `feature/dynamic-pricing`** (Claude Code, Oleada 2 — tras merge del Bloque 8):
   precio de un `TicketType` ajustado
   por demanda con heurísticas transparentes (ej. ocupación del sector > X% → sube un escalón;
