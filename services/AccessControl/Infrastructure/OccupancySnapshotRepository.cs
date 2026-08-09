@@ -1,5 +1,6 @@
 namespace VenuePulse.AccessControl.Infrastructure;
 
+using Microsoft.EntityFrameworkCore;
 using VenuePulse.AccessControl.Application;
 using VenuePulse.AccessControl.Domain;
 
@@ -19,5 +20,15 @@ public sealed class OccupancySnapshotRepository(AccessControlDbContext dbContext
         var stale = dbContext.OccupancySnapshots.Where(s => s.EventId == eventId);
         dbContext.OccupancySnapshots.RemoveRange(stale);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ZoneOccupancySnapshot>> GetForEventAsync(Guid eventId, CancellationToken cancellationToken)
+    {
+        var rows = await dbContext.OccupancySnapshots
+            .Where(s => s.EventId == eventId)
+            .OrderBy(s => s.RecordedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return rows;
     }
 }

@@ -35,6 +35,7 @@ public class InboxDeduplicationFilterTests
         services.AddDbContext<AccessControlDbContext>(o => o.UseInMemoryDatabase(databaseName));
         services.AddScoped<IZoneRepository, ZoneRepository>();
         services.AddScoped<IZoneService, ZoneService>();
+        services.AddScoped<IOccupancySnapshotRepository, OccupancySnapshotRepository>();
         services.AddSingleton<IZoneOccupancyNotifier, NoopZoneOccupancyNotifier>();
         services.AddScoped(typeof(InboxDeduplicationFilter<>));
 
