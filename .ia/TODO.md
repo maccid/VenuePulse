@@ -31,7 +31,8 @@ reserva original decía Bloque 3, pero Bloque 4 se cerró antes — la tabla que
 `0012` → Bloque 11 (opencode, si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver
 `docs/architecture/adr/0013-...md`).** **`0014` → Bloque 12 (opencode, si aplica).**
 **`0015` → Bloque 3 (Claude Code, ya usado — ver `docs/architecture/adr/0015-accesscontrol-inbox.md`).**
-Próximo libre para nuevas ramas: `0016`.
+**`0016` → Bloque 9 (Claude Code, ya usado — ver `docs/architecture/adr/0016-dynamic-pricing.md`).**
+Próximo libre para nuevas ramas: `0017`.
 
 ## En curso
 
@@ -138,13 +139,30 @@ Próximo libre para nuevas ramas: `0016`.
   la decisión del Bloque 5, así que ADR pequeño (`0014`) si se aprueba; toca solo `ui/` (sin riesgo
   de migraciones EF); el Bloque 11 también mete una gráfica en `venue-ops` — coordinar para no
   pisarse el mismo componente.
-- [ ] **Bloque 9 — `feature/dynamic-pricing`** (Claude Code, Oleada 2 — tras merge del Bloque 8):
-  precio de un `TicketType` ajustado
-  por demanda con heurísticas transparentes (ej. ocupación del sector > X% → sube un escalón;
-  demanda baja → baja), **no** ML entrenado. Depende del Bloque 8 (sin demanda simulada no hay
-  señal). Visible en el checkout (el precio cambia en vivo con la ocupación). Evaluar ADR pequeño.
-  **Recomendado sobre el Bloque 10 si el tiempo aprieta**: se demuestra en 30 segundos y es
-  defendible sin datos reales.
+- [x] **Bloque 9 — `feature/dynamic-pricing`** (Claude Code, Oleada 2 — tras merge del Bloque 8):
+  precio de un `TicketType` ajustado por demanda con heurísticas transparentes en escalones fijos
+  (`<40%` -10%, `40-70%` base, `70-90%` +15%, `≥90%` +30%), **sin** ML. **Ocupación agregada a
+  nivel de `Event`, no de zona/sector** como decía el enunciado original: `Zone` (AccessControl) y
+  `TicketType` (Ticketing) son bounded contexts distintos sin relación 1:1 hoy, solo comparten
+  `EventId` — inventar esa relación cruzada era más superficie de la que la demo necesita (ver ADR
+  0016). Nuevo evento `ZoneOccupancyChanged` publicado por `AccessControl` reutilizando el mismo
+  punto de notificación que ya usa el SignalR de aforo (`SignalRZoneOccupancyNotifier`, registro
+  pasado de `AddSingleton` a `AddScoped` para poder inyectar `IPublishEndpoint`). `Ticketing`
+  estrena su primer consumer (`ZoneOccupancyChangedConsumer`) que mantiene una proyección local
+  (`ZoneDemandSnapshot`, migración `AddZoneDemandSnapshots`) y recalcula/empuja el precio efectivo
+  por un nuevo `PricingHub` — sin Inbox real, es un snapshot idempotente por naturaleza (a
+  diferencia de los comandos de zona del Bloque 3/ADR 0015). `TicketTypeDto` gana
+  `EffectivePrice`/`PriceTier` calculados en cada lectura, `Price` (catálogo) no se toca.
+  `ticket-checkout` se suscribe a `/hubs/pricing` igual que ya hace con el aforo; nueva ruta en
+  `nginx.conf`. Tests nuevos: heurística pura (`DynamicPricingTests`), `TicketingService` aplicando
+  el precio dado un snapshot (`TicketingServiceTests`), consumer con harness in-memory de
+  MassTransit (`ZoneOccupancyChangedConsumerTests`). Ticketing 18/18 en verde. ADR 0016.
+  **Verificado en real con `docker compose up --build`**: compras reales vía el checkout (Saga
+  completa) mueven el precio efectivo en vivo (35,8% ocupación → -10%, 76,8% → +15%, coherente con
+  los tramos). De paso se encontró y corrigió un bug real: `ProvisionZonesForEventAsync` no
+  notificaba el estado inicial de una zona recién creada, así que una zona virgen quedaba fuera
+  del agregado de ocupación y la inflaba — corregido, cubierto con `ZoneServiceTests` nuevo en
+  `AccessControl` (27/27 en verde). Pendiente de review: commits y merge a `develop`.
 - [ ] **Bloque 10 — `feature/fraud-detection`** (sin asignar, **OPCIONAL / candidato a recorte,
   solo si sobra tiempo tras la Oleada 2**):
   detección de fraude/reventa con heurísticas (misma IP comprando N entradas en T segundos, misma
