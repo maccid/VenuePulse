@@ -118,6 +118,12 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNo
             .ToList();
 
         await zoneRepository.AddRangeAsync(zones, cancellationToken);
+
+        // Notifica el estado inicial de cada zona: sin esto, Ticketing (Bloque 9) solo se entera
+        // de una zona la primera vez que cambia, y una zona virgen (100% libre) queda fuera de su
+        // agregado de ocupación por evento — infla el % de demanda calculado en vez de diluirlo.
+        foreach (var zone in zones)
+            await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
     }
 
     private static ZoneOccupancyDto ToDto(Domain.Zone zone) =>
