@@ -43,11 +43,16 @@ public static class MessagingExtensions
     /// <summary>
     /// Variante para AccessControl: no necesita EF Core Outbox propio para eventos salientes,
     /// solo consumir comandos entrantes y actualizar su propio estado en Postgres.
+    /// <paramref name="configureBus"/> es el único punto de extensión del bus ya construido (p.ej.
+    /// AccessControl lo usa para enganchar su Inbox real vía <c>UseConsumeFilter</c>, ver ADR
+    /// 0015) — deliberadamente no genérico en <c>TDbContext</c> como el Outbox de arriba, para no
+    /// forzar esa forma a servicios que no la necesiten.
     /// </summary>
     public static IServiceCollection AddVenuePulseMessaging(
         this IServiceCollection services,
         string rabbitMqConnectionString,
-        Action<IBusRegistrationConfigurator> configureConsumers)
+        Action<IBusRegistrationConfigurator> configureConsumers,
+        Action<IBusRegistrationContext, IRabbitMqBusFactoryConfigurator>? configureBus = null)
     {
         services.AddMassTransit(x =>
         {
@@ -56,6 +61,7 @@ public static class MessagingExtensions
             x.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(new Uri(rabbitMqConnectionString));
+                configureBus?.Invoke(context, cfg);
                 cfg.ConfigureEndpoints(context);
             });
         });
