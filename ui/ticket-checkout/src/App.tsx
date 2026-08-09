@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import type { TicketStatus, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
+import type { PricingChanged, TicketStatus, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
 import { SagaTimeline } from './SagaTimeline'
 import PurchaseForm from './components/PurchaseForm'
 import './App.css'
@@ -80,6 +80,25 @@ export default function App({ eventId, holder }: Props) {
       connection.stop()
     }
   }, [])
+
+  useEffect(() => {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl('/hubs/pricing')
+      .withAutomaticReconnect()
+      .build()
+
+    // El hub emite para todos los eventos; solo aplica si el mensaje es del evento que estamos
+    // mostrando (mismo criterio que occupancyChanged más arriba).
+    connection.on('pricingChanged', (updated: PricingChanged) => {
+      if (updated.eventId === eventId) setTicketTypes(updated.ticketTypes)
+    })
+
+    connection.start().catch((err) => console.error('No se pudo conectar al hub de precios', err))
+
+    return () => {
+      connection.stop()
+    }
+  }, [eventId])
 
   async function handlePurchase() {
     setStatus('Purchasing')
