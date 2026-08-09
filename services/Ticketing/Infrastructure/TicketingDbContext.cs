@@ -7,6 +7,7 @@ using Event = VenuePulse.Ticketing.Domain.Event;
 public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> options) : DbContext(options)
 {
     public DbSet<Event> Events => Set<Event>();
+    public DbSet<ZoneDemandSnapshot> ZoneDemandSnapshots => Set<ZoneDemandSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -31,6 +32,12 @@ public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> opti
             });
 
             builder.Navigation(e => e.TicketTypes).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<ZoneDemandSnapshot>(builder =>
+        {
+            builder.ToTable("zone_demand_snapshots");
+            builder.HasKey(s => s.ZoneId);
         });
 
         // Tablas del Outbox/Inbox transaccional de MassTransit (ver ADR 0002).
