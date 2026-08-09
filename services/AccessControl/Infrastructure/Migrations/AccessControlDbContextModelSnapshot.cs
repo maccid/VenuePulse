@@ -85,6 +85,25 @@ namespace VenuePulse.AccessControl.Infrastructure.Migrations
 
                     b.ToTable("occupancy_snapshots", (string)null);
                 });
+
+            modelBuilder.Entity("VenuePulse.AccessControl.Infrastructure.Inbox.ProcessedMessage", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("EventId");
+
+                    b.ToTable("processed_messages", (string)null);
+                });
 #pragma warning restore 612, 618
         }
     }
