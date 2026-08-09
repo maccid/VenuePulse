@@ -30,7 +30,10 @@ public sealed class ZoneRepository(AccessControlDbContext dbContext) : IZoneRepo
     public async Task SaveAsync(Zone zone, CancellationToken cancellationToken)
     {
         if (dbContext.Entry(zone).State == EntityState.Detached)
+        {
             dbContext.Zones.Attach(zone);
+            dbContext.Entry(zone).State = EntityState.Modified;
+        }
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
