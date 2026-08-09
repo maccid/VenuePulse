@@ -41,11 +41,11 @@ export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulatio
       const response = await fetch(`/api/access-control/api/simulation/events/${eventId}/status`)
       if (cancelled || !response.ok) return
 
-      const current = (await response.json()) as SimulationRunStatus | null
+      const current = (await response.json().catch(() => null)) as SimulationRunStatus | null
       const wasRunning = statusRef.current?.running === true
       setStatus(current)
 
-      if (wasRunning && current?.running === false) {
+      if (wasRunning && !current?.running) {
         onSimulationEndedRef.current()
       }
     }, 500)
