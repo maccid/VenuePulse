@@ -162,7 +162,7 @@ Próximo libre para nuevas ramas: `0017`.
   los tramos). De paso se encontró y corrigió un bug real: `ProvisionZonesForEventAsync` no
   notificaba el estado inicial de una zona recién creada, así que una zona virgen quedaba fuera
   del agregado de ocupación y la inflaba — corregido, cubierto con `ZoneServiceTests` nuevo en
-  `AccessControl` (27/27 en verde). Pendiente de review: commits y merge a `develop`.
+   `AccessControl` (27/27 en verde). **Mergeado a `develop` (c30dbf5) y pusheado.**
 - [ ] **Bloque 10 — `feature/fraud-detection`** (sin asignar, **OPCIONAL / candidato a recorte,
   solo si sobra tiempo tras la Oleada 2**):
   detección de fraude/reventa con heurísticas (misma IP comprando N entradas en T segundos, misma

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Infrastructure.Consumers;
 using VenuePulse.CheckIn.Infrastructure.Sagas;
+using VenuePulse.CheckIn.Infrastructure.Sagas.Timeout;
 using VenuePulse.Core.Data;
 using VenuePulse.Core.Messaging;
 

@@ -1,4 +1,4 @@
-namespace VenuePulse.CheckIn.Infrastructure.Sagas;
+namespace VenuePulse.CheckIn.Infrastructure.Sagas.Timeout;
 
 using System.Collections.Concurrent;
 
