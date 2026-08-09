@@ -39,12 +39,15 @@ public class TicketPurchaseSagaTests
         var zoneId = Guid.NewGuid();
 
         await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: false));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
         (await harness.Published.Any<ReserveZoneSlot>()).Should().BeTrue();
 
         await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId, SimulateFailure: false));
+        await harness.Consumed.Any<ZoneSlotReserved>();
         (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeTrue();
 
         await harness.Bus.Publish(new ZoneSlotConfirmed(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotConfirmed>();
         (await harness.Published.Any<TicketPurchaseConfirmed>()).Should().BeTrue();
 
         // SetCompletedWhenFinalized() borra la instancia del repositorio al finalizar —
@@ -62,10 +65,13 @@ public class TicketPurchaseSagaTests
         var zoneId = Guid.NewGuid();
 
         await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: true));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
         await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId, SimulateFailure: true));
+        await harness.Consumed.Any<ZoneSlotReserved>();
         (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeTrue();
 
         await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReleased>();
         (await harness.Published.Any<TicketPurchaseRejected>()).Should().BeTrue();
     }
 
@@ -79,11 +85,13 @@ public class TicketPurchaseSagaTests
         var zoneId = Guid.NewGuid();
 
         await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: false));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
         (await harness.Published.Any<ReserveZoneSlot>()).Should().BeTrue();
 
         // AccessControl nunca responde — el watchdog (fuera de la Saga, ver ADR 0010) publica
         // ReservationTimedOut tras el deadline.
         await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
+        await harness.Consumed.Any<ReservationTimedOut>();
 
         (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "ReservationTimedOut")).Should().BeTrue();
         (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeFalse();
@@ -100,7 +108,9 @@ public class TicketPurchaseSagaTests
         var zoneId = Guid.NewGuid();
 
         await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: false));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
         await harness.Bus.Publish(new ZoneSlotReservationFailed(ticketId, zoneId, "ZoneFull"));
+        await harness.Consumed.Any<ZoneSlotReservationFailed>();
 
         (await harness.Published.Any<TicketPurchaseRejected>()).Should().BeTrue();
         (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeFalse();

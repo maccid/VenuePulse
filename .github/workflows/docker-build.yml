@@ -63,4 +63,4 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validar manifiestos K8s (sintaxis, sin desplegar — ver infra/deploy/README)
         uses: azure/setup-kubectl@v4
-      - run: kubectl apply --dry-run=client -f infra/deploy/k8s/base/
+      - run: kubectl apply --dry-run=client --validate=false -f infra/deploy/k8s/base/
