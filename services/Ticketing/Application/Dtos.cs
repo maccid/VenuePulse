@@ -6,9 +6,14 @@ public sealed record EventSummaryDto(
     string VenueName,
     DateTimeOffset StartsAtUtc);
 
+// Price es el precio de catálogo (el que se guarda); EffectivePrice/PriceTier son el resultado de
+// aplicarle la heurística de demanda (Bloque 9, ver ADR 0016) — se recalculan en cada lectura, no
+// se persisten, para que un cambio de heurística no obligue a migrar datos históricos.
 public sealed record TicketTypeDto(
     Guid Id,
     Guid EventId,
     string Name,
     decimal Price,
-    string? Description);
+    string? Description,
+    decimal EffectivePrice,
+    string PriceTier);

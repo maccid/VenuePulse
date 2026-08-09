@@ -1,6 +1,8 @@
 namespace VenuePulse.Ticketing.Application;
 
-public sealed class TicketingService(IEventRepository eventRepository) : ITicketingService
+using VenuePulse.Ticketing.Domain;
+
+public sealed class TicketingService(IEventRepository eventRepository, IZoneDemandRepository zoneDemandRepository) : ITicketingService
 {
     public async Task<IReadOnlyCollection<EventSummaryDto>> GetEventsAsync(CancellationToken cancellationToken)
     {
@@ -17,8 +19,14 @@ public sealed class TicketingService(IEventRepository eventRepository) : ITicket
         if (@event is null)
             return null;
 
+        var occupancyPercentage = await zoneDemandRepository.GetOccupancyPercentageAsync(eventId, cancellationToken);
+
         return @event.TicketTypes
-            .Select(t => new TicketTypeDto(t.Id, t.EventId, t.Name, t.Price, t.Description))
+            .Select(t =>
+            {
+                var (effectivePrice, tier) = DynamicPricing.Apply(t.Price, occupancyPercentage);
+                return new TicketTypeDto(t.Id, t.EventId, t.Name, t.Price, t.Description, effectivePrice, tier);
+            })
             .ToList();
     }
 }
