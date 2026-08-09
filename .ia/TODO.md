@@ -187,6 +187,12 @@ los tests de los 3 servicios (ADR 0008 se cumple); el modelo `Zone` (`Capacity`/
   demo.
 - [ ] Definir mecanismo de exportación "código sin `.git/` ni `.ia/`" para la entrega real
   (distinto de repartir solo el Docker, que era el plan inicial).
+- [ ] **Autenticación (decisión de alcance tomada, no tarea):** los servicios no se llaman por
+  HTTP — se comunican por el bus de mensajes (RabbitMQ/MassTransit), así que no aplica OAuth
+  client-credentials entre procesos; la auth del bus es la del broker (credenciales + vhost +
+  TLS). El único HTTP es usuario → nginx → backend y no hay identidad de usuario. Documentado en
+  `README.md` ("Autenticación entre servicios") como fuera de alcance, con nota de qué se haría
+  si se desplegara público (secretos del broker, TLS en nginx, JWT/OIDC en el gateway).
 
 ## Hecho
 
