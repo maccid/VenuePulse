@@ -164,7 +164,7 @@ Próximo libre para nuevas ramas: `0018`.
   la decisión del Bloque 5, así que ADR pequeño (`0014`) si se aprueba; toca solo `ui/` (sin riesgo
   de migraciones EF); el Bloque 11 también mete una gráfica en `venue-ops` — coordinar para no
   pisarse el mismo componente.
-- [ ] **Bloque 13 — `feature/purchase-wizard-venue-map`** (Claude Code, nuevo — ampliación de
+- [x] **Bloque 13 — `feature/purchase-wizard-venue-map`** (Claude Code, nuevo — ampliación de
   alcance pedida al plantear el Bloque 12): antes de migrar a Tailwind, dar más realismo funcional
   al checkout y a operaciones. `ticket-checkout`: `PurchaseForm` (un único formulario) sustituido
   por un wizard de 3 pasos (`PurchaseWizard` + `StepTicketType`/`StepZone`/`StepConfirm`) — tipo de
@@ -179,7 +179,16 @@ Próximo libre para nuevas ramas: `0018`.
   `PositionX/Y` al dominio sería ingeniería especulativa (ver ADR 0017, mismo criterio que ADR
   0016). Sin librería de gráficos nueva (SVG a mano), sin cambios de backend, componente duplicado
   entre las dos apps a propósito (ADR 0004 ya descarta código compartido entre micro frontends).
-  ADR 0017.
+  ADR 0017. Mergeado `develop` (Bloque 11) dentro de esta rama antes de cerrarla, sin conflictos
+  reales. **Bug real encontrado y corregido durante la verificación manual en real** (no en
+  standalone): `ticket-checkout.css` nunca se enlazaba en la página cuando `ticket-checkout` se
+  carga como Web Component remoto dentro de `shell` (el flujo real de compra) — solo la propia
+  `index.html` de `ticket-checkout` en modo standalone lo enlazaba. Pasaba desapercibido porque
+  `<select>`/`input`/`button` heredaban por accidente los estilos globales de `shell` (sin Shadow
+  DOM, ADR 0004); el SVG del plano, en cambio, no tenía ningún estilo de respaldo y caía a negro.
+  Corregido en `main.tsx` inyectando el `<link>` al propio CSS (`new URL('./ticket-checkout.css',
+  import.meta.url)`) en `connectedCallback`. Verificado con Chrome headless (CDP) contra el flujo
+  real embebido en `shell`, no solo el modo `?eventId=` standalone.
 - [x] **Bloque 9 — `feature/dynamic-pricing`** (Claude Code, Oleada 2 — tras merge del Bloque 8):
   precio de un `TicketType` ajustado por demanda con heurísticas transparentes en escalones fijos
   (`<40%` -10%, `40-70%` base, `70-90%` +15%, `≥90%` +30%), **sin** ML. **Ocupación agregada a
