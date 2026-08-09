@@ -15,7 +15,9 @@ builder.Services.AddVenuePulseTracing(
     builder.Configuration["Observability:OtlpEndpoint"] ?? "http://localhost:4317");
 
 builder.Services.AddAccessControlInfrastructure(builder.Configuration);
-builder.Services.AddSingleton<IZoneOccupancyNotifier, SignalRZoneOccupancyNotifier>();
+// Scoped, no Singleton: ahora inyecta IPublishEndpoint (scoped en MassTransit) para publicar
+// ZoneOccupancyChanged además del push por SignalR.
+builder.Services.AddScoped<IZoneOccupancyNotifier, SignalRZoneOccupancyNotifier>();
 builder.Services.AddSignalR();
 
 builder.Services.AddVenuePulseControllersWithStringEnums();
