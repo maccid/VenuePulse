@@ -92,6 +92,101 @@
   margin-bottom: var(--vp-space-4);
 }
 
+.stadium-map {
+  margin-bottom: var(--vp-space-5);
+}
+
+.stadium-map__svg {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  display: block;
+}
+
+.stadium-map__pitch {
+  fill: var(--vp-accent-bg);
+  stroke: var(--vp-border-strong);
+}
+
+.stadium-map__midline,
+.stadium-map__midcircle {
+  fill: none;
+  stroke: var(--vp-border-strong);
+}
+
+.stadium-map__zone rect {
+  stroke-width: 1;
+}
+
+.stadium-map__zone text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--vp-text);
+  pointer-events: none;
+}
+
+.stadium-map__zone--low rect {
+  fill: var(--vp-success);
+  fill-opacity: 0.35;
+  stroke: var(--vp-success);
+}
+
+.stadium-map__zone--mid rect {
+  fill: var(--vp-accent);
+  fill-opacity: 0.35;
+  stroke: var(--vp-accent);
+}
+
+.stadium-map__zone--high rect {
+  fill: var(--vp-danger);
+  fill-opacity: 0.35;
+  stroke: var(--vp-danger);
+}
+
+.stadium-map__fallback {
+  list-style: none;
+  padding: 0;
+  margin: var(--vp-space-2) 0 0;
+  color: var(--vp-text-muted);
+  font-size: var(--vp-font-size-sm);
+}
+
+.stadium-map__legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vp-space-4);
+  padding: 0;
+  margin: var(--vp-space-2) 0 0;
+  font-size: var(--vp-font-size-xs);
+  color: var(--vp-text-muted);
+}
+
+.stadium-map__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stadium-map__legend-item::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.stadium-map__legend-item--low::before {
+  background: var(--vp-success);
+}
+
+.stadium-map__legend-item--mid::before {
+  background: var(--vp-accent);
+}
+
+.stadium-map__legend-item--high::before {
+  background: var(--vp-danger);
+}
+
 .zone-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

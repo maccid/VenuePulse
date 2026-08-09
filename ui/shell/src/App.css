@@ -125,18 +125,6 @@
   margin: 0;
 }
 
-.holder-field {
-  display: flex;
-  align-items: center;
-  gap: var(--vp-space-2);
-  font-size: var(--vp-font-size-sm);
-  color: var(--vp-text-muted);
-}
-
-.holder-field input {
-  width: 160px;
-}
-
 .event-list {
   list-style: none;
   padding: 0;

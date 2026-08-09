@@ -11,7 +11,6 @@ export default function App() {
   const [events, setEvents] = useState<EventSummary[]>([])
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
-  const [holder, setHolder] = useState('Ana')
 
   useEffect(() => {
     fetch('/api/ticketing/api/events')
@@ -52,21 +51,12 @@ export default function App() {
       <SiteHeader />
 
       {selectedEventId === null ? (
-        <EventCatalog
-          events={events}
-          holder={holder}
-          onHolderChange={setHolder}
-          onSelectEvent={setSelectedEventId}
-        />
+        <EventCatalog events={events} onSelectEvent={setSelectedEventId} />
       ) : (
         <>
           <OccupancyWidget zones={zones} />
 
-          <CheckoutPanel
-            eventId={selectedEventId}
-            holder={holder}
-            onBack={() => setSelectedEventId(null)}
-          />
+          <CheckoutPanel eventId={selectedEventId} onBack={() => setSelectedEventId(null)} />
         </>
       )}
     </div>
