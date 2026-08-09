@@ -67,3 +67,36 @@ commit `fix(gateway): corregir rewrite duplicado /api/api/`.
 El modo standalone de desarrollo de `ticket-checkout` buscaba `document.getElementById('root')`,
 el mismo id que usa `shell`. Al cargarse como script remoto dentro de `shell`, vaciaba su DOM.
 Corregido con un id exclusivo (`ticket-checkout-standalone-root`).
+
+## Timeline de la Saga: por SignalR solo llega el estado final (EN REVISIÓN)
+
+**Síntoma**: `docs/demo-script.md` promete el timeline actualizándose en vivo paso a paso
+("Reservando aforo → Procesando pago → Confirmando → Confirmada"), pero `ITicketStatusNotifier`
+solo se invoca desde los consumers de resultado (`TicketPurchaseOutcomeConsumers`, estados
+`Confirmed`/`Rejected`). Los pasos intermedios los deriva el frontend (`SagaTimeline.tsx`) del
+estado final, así que no animan individualmente en tiempo real.
+
+**Verificado** con un cliente SignalR real vía el gateway (misma ruta `/hubs/tickets` que el
+navegador): una compra feliz y una de compensación emiten un único `ticketStatusChanged` con el
+estado definitivo (~40ms después del `occupancyChanged` de la reserva). El timeline de la UI sí
+refleja el resultado y marca en rojo el paso que falló según `rejectionReason`, pero no hay
+progresión animada entre pasos.
+
+**Estado**: pendiente de decidir entre (a) que `CheckIn` notifique cada transición de la Saga
+(`Reserving`/`ProcessingPayment`/`Confirming`) para que el timeline sea realmente en vivo, o
+(b) ajustar el guion para no prometer esa progresión. Claude Code está trabajando en una mejora
+relacionada — **cuando mergee, revisar si ya se emiten las transiciones y re-verificar con el
+mismo procedimiento** antes de dar el ítem por cerrado.
+
+**Actualización (Bloque 14, ADR 0018, ya mergeado a `develop`)**: la partición de la Saga en
+`Reserving → AwaitingPayment → Confirming` añadió un paso intermedio real. Ahora
+`ITicketStatusNotifier.NotifyStatusChangedAsync` se invoca desde **tres** consumers, no solo dos:
+`TicketReadyForPaymentConsumer` (estado `AwaitingPayment`, tras `TicketAwaitingPayment` publicado
+por la propia Saga) además de los ya existentes `TicketPurchaseConfirmedConsumer`/
+`TicketPurchaseRejectedConsumer` (`services/CheckIn/Infrastructure/Consumers/
+TicketPurchaseOutcomeConsumers.cs`). El timeline del frontend (`SagaTimeline.tsx`) ahora tiene 5
+pasos y sí anima en vivo el salto "Reservando aforo → Esperando pago" por SignalR real (el salto
+"Esperando pago → Confirmando" lo sigue disparando la propia acción del usuario al pulsar pagar, no
+la Saga). **Sigue pendiente de re-verificar con el mismo procedimiento** (cliente SignalR real vía
+`/hubs/tickets`) antes de cerrar el ítem del todo — esta nota solo confirma que el código ya emite
+el paso intermedio, no que se haya vuelto a comprobar en vivo tras el merge.

@@ -270,7 +270,13 @@ Próximo libre para nuevas ramas: `0019`.
   quedó apuntado en el TODO local del proyecto de referencia, no aquí.
 - [ ] Verificar manualmente desde el navegador (no solo API) el camino feliz y el de
   compensación, con el timeline de la Saga por SignalR — único ítem sin marcar en el checklist
-  de `docs/demo-script.md`.
+  de `docs/demo-script.md`. **Verificado el canal (SignalR vía gateway, camino feliz y
+  compensación, ver `.ia/KNOWN-ISSUES.md`): falta confirmar la visual del timeline en el
+  navegador.**
+- [ ] **Timeline de la Saga — ¿"en vivo" real o estado final?** (en revisión): por SignalR solo
+  llega `Confirmed`/`Rejected`; los pasos intermedios los deriva el frontend. Claude Code está en
+  una mejora relacionada — **revisar al mergear si ya se emiten las transiciones** y cerrar el
+  hallazgo (ver `.ia/KNOWN-ISSUES.md`).
 
 **Verificado durante la revisión (sin acción):** MediatR excluido de `Ticketing`/`AccessControl`
 es la decisión correcta (ADR 0003, forzado por `Architecture.Tests`); FluentAssertions ya se usa en
