@@ -1,6 +1,7 @@
 using VenuePulse.AccessControl.Api.Hubs;
 using VenuePulse.AccessControl.Application;
 using VenuePulse.AccessControl.Infrastructure;
+using VenuePulse.Core.Api;
 using VenuePulse.Core.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +18,7 @@ builder.Services.AddAccessControlInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<IZoneOccupancyNotifier, SignalRZoneOccupancyNotifier>();
 builder.Services.AddSignalR();
 
-builder.Services.AddControllers();
+builder.Services.AddVenuePulseControllersWithStringEnums();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
