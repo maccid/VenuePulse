@@ -21,5 +21,5 @@ comandos y consultas ahí añadiría una capa de indirección sin ganancia. En `
 implica arrancar una Saga con varios saltos de red y compensación posible, mientras que leer
 es una consulta directa a Postgres: la asimetría es real y CQRS aporta claridad genuina.
 
-Este reparto es en sí mismo el argumento de entrevista: "aplico CQRS donde hay asimetría real,
+Este reparto es en sí mismo el argumento de la presentación: "aplico CQRS donde hay asimetría real,
 no como checklist".

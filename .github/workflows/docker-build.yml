@@ -14,23 +14,23 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: ticketing-api
-            dockerfile: src/Services/Ticketing/Api/Dockerfile
+          - name: api-ticketing
+            dockerfile: services/Ticketing/Api/Dockerfile
             context: .
-          - name: accesscontrol-api
-            dockerfile: src/Services/AccessControl/Api/Dockerfile
+          - name: api-accesscontrol
+            dockerfile: services/AccessControl/Api/Dockerfile
             context: .
-          - name: checkin-api
-            dockerfile: src/Services/CheckIn/Api/Dockerfile
+          - name: api-checkin
+            dockerfile: services/CheckIn/Api/Dockerfile
             context: .
-          - name: shell
-            dockerfile: frontend/apps/shell/Dockerfile
+          - name: web-shell
+            dockerfile: ui/shell/Dockerfile
             context: .
-          - name: ticket-checkout
-            dockerfile: frontend/apps/ticket-checkout/Dockerfile
+          - name: web-ticket-checkout
+            dockerfile: ui/ticket-checkout/Dockerfile
             context: .
-          - name: venue-ops
-            dockerfile: frontend/apps/venue-ops/Dockerfile
+          - name: web-venue-ops
+            dockerfile: ui/venue-ops/Dockerfile
             context: .
     steps:
       - uses: actions/checkout@v4
@@ -38,11 +38,10 @@ jobs:
       - name: Construir imagen
         run: docker build -f ${{ matrix.dockerfile }} -t venuepulse-${{ matrix.name }}:ci ${{ matrix.context }}
 
-      # Convierte la garantía de "ADR 0007 (.ia nunca en Docker)" en una aserción verificada en
-      # cada push, no en una promesa: falla el pipeline si algo con ese nombre aparece en la imagen.
-      - name: "Guard: .ia nunca debe estar en la imagen"
+      # Verifica que la imagen no incluye ficheros de desarrollo local que no deben empaquetarse.
+      - name: "Guard: sin ficheros de desarrollo local en la imagen"
         run: |
-          docker save venuepulse-${{ matrix.name }}:ci | tar -tv | grep -i '\.ia' && exit 1 || echo "OK: .ia no encontrado en la imagen"
+          docker save venuepulse-${{ matrix.name }}:ci | tar -tv | grep -i '\.ia' && exit 1 || echo "OK"
 
       - name: Login a GHCR
         if: github.ref == 'refs/heads/main'
