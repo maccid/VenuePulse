@@ -34,10 +34,180 @@
   color: var(--tc-text);
 }
 
-.purchase-form {
+.purchase-wizard {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.wizard-step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field-label {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tc-muted);
+}
+
+.wizard-steps {
+  list-style: none;
+  display: flex;
+  gap: 18px;
+  padding: 0;
+  margin: 0 0 4px;
+}
+
+.wizard-steps__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tc-muted);
+}
+
+.wizard-steps__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--tc-border);
+  color: var(--tc-text);
+  font-size: 12px;
+}
+
+.wizard-steps__item--active {
+  color: var(--tc-text);
+}
+
+.wizard-steps__item--active .wizard-steps__index {
+  background: var(--tc-accent);
+  color: white;
+}
+
+.wizard-steps__item--done .wizard-steps__index {
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent);
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wizard-nav__back {
+  background: transparent;
+  color: var(--tc-text);
+  border: 1px solid var(--tc-border-strong);
+}
+
+.wizard-nav__back:hover {
+  background: var(--tc-accent-bg);
+}
+
+.purchase-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  background: var(--tc-accent-bg);
+  border-radius: var(--tc-radius-sm);
+}
+
+.purchase-summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.purchase-summary dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tc-muted);
+}
+
+.purchase-summary dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.stadium-map__svg {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+}
+
+.stadium-map__pitch {
+  fill: rgba(29, 111, 92, 0.05);
+  stroke: var(--tc-border-strong);
+}
+
+.stadium-map__midline,
+.stadium-map__midcircle {
+  fill: none;
+  stroke: var(--tc-border-strong);
+}
+
+.stadium-map__zone rect {
+  stroke-width: 1;
+  transition: fill-opacity 0.15s ease;
+}
+
+.stadium-map__zone text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--tc-text);
+  pointer-events: none;
+}
+
+.stadium-map__zone--low rect {
+  fill: var(--tc-accent);
+  fill-opacity: 0.35;
+  stroke: var(--tc-accent);
+}
+
+.stadium-map__zone--mid rect {
+  fill: #d97706;
+  fill-opacity: 0.35;
+  stroke: #d97706;
+}
+
+.stadium-map__zone--high rect {
+  fill: var(--tc-danger);
+  fill-opacity: 0.35;
+  stroke: var(--tc-danger);
+}
+
+.stadium-map__zone--selected rect {
+  stroke-width: 2.5;
+  stroke: var(--tc-text);
+}
+
+.stadium-map__zone--interactive {
+  cursor: pointer;
+}
+
+.stadium-map__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tc-muted);
+}
+
+.stadium-map__fallback {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .ticket-checkout label {

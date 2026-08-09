@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type { PricingChanged, TicketStatus, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
 import { SagaTimeline } from './SagaTimeline'
-import PurchaseForm from './components/PurchaseForm'
+import PurchaseWizard from './components/PurchaseWizard'
 import './App.css'
 
 interface Props {
@@ -15,6 +15,7 @@ export default function App({ eventId, holder }: Props) {
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
   const [ticketTypeId, setTicketTypeId] = useState('')
   const [zoneId, setZoneId] = useState('')
+  const [holderName, setHolderName] = useState(holder)
   const [simulateFailure, setSimulateFailure] = useState(false)
 
   const [ticketId, setTicketId] = useState<string | null>(null)
@@ -111,7 +112,7 @@ export default function App({ eventId, holder }: Props) {
         eventId,
         ticketTypeId,
         zoneId,
-        holder,
+        holder: holderName,
         simulateFailure,
       }),
     })
@@ -132,15 +133,17 @@ export default function App({ eventId, holder }: Props) {
     <div className="ticket-checkout">
       <h3 className="ticket-checkout__title">Comprar entrada</h3>
 
-      <PurchaseForm
+      <PurchaseWizard
         ticketTypes={ticketTypes}
         zones={zones}
         ticketTypeId={ticketTypeId}
         zoneId={zoneId}
+        holder={holderName}
         simulateFailure={simulateFailure}
         disabled={isPurchasing}
         onTicketTypeChange={setTicketTypeId}
         onZoneChange={setZoneId}
+        onHolderChange={setHolderName}
         onSimulateFailureChange={setSimulateFailure}
         onSubmit={handlePurchase}
       />

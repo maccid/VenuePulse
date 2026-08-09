@@ -32,7 +32,9 @@ reserva original decía Bloque 3, pero Bloque 4 se cerró antes — la tabla que
 `docs/architecture/adr/0013-...md`).** **`0014` → Bloque 12 (opencode, si aplica).**
 **`0015` → Bloque 3 (Claude Code, ya usado — ver `docs/architecture/adr/0015-accesscontrol-inbox.md`).**
 **`0016` → Bloque 9 (Claude Code, ya usado — ver `docs/architecture/adr/0016-dynamic-pricing.md`).**
-Próximo libre para nuevas ramas: `0017`.
+**`0017` → Bloque 13 (Claude Code, ya usado — ver
+`docs/architecture/adr/0017-purchase-wizard-venue-map.md`).**
+Próximo libre para nuevas ramas: `0018`.
 
 ## En curso
 
@@ -139,6 +141,22 @@ Próximo libre para nuevas ramas: `0017`.
   la decisión del Bloque 5, así que ADR pequeño (`0014`) si se aprueba; toca solo `ui/` (sin riesgo
   de migraciones EF); el Bloque 11 también mete una gráfica en `venue-ops` — coordinar para no
   pisarse el mismo componente.
+- [ ] **Bloque 13 — `feature/purchase-wizard-venue-map`** (Claude Code, nuevo — ampliación de
+  alcance pedida al plantear el Bloque 12): antes de migrar a Tailwind, dar más realismo funcional
+  al checkout y a operaciones. `ticket-checkout`: `PurchaseForm` (un único formulario) sustituido
+  por un wizard de 3 pasos (`PurchaseWizard` + `StepTicketType`/`StepZone`/`StepConfirm`) — tipo de
+  entrada, zona (elegida sobre un plano visual del recinto, `StadiumMap`, en vez de un `<select>`),
+  y nombre del comprador + confirmación como último paso (antes se capturaba en `shell` y viajaba
+  fijo). `shell`: `EventCatalog`/`CheckoutPanel` dejan de gestionar `holder`, sin otro consumidor
+  afectado. `venue-ops`: mismo `StadiumMap` (copia adaptada, solo lectura, coloreado por
+  `checkedIn` en vez de `availableToSell`) añadido como panel adicional en `ZonesDashboard`, sin
+  quitar las tarjetas `ZoneGauge` existentes. **Plano = mapeo estático en frontend por `zone.name`,
+  sin geometría en el backend**: las 3 zonas (`Puerta Norte`/`Puerta Sur`/`Grada VIP`) son
+  hardcodeadas e idénticas para cualquier evento (`ZoneService.FixedZones`), así que añadir
+  `PositionX/Y` al dominio sería ingeniería especulativa (ver ADR 0017, mismo criterio que ADR
+  0016). Sin librería de gráficos nueva (SVG a mano), sin cambios de backend, componente duplicado
+  entre las dos apps a propósito (ADR 0004 ya descarta código compartido entre micro frontends).
+  ADR 0017.
 - [x] **Bloque 9 — `feature/dynamic-pricing`** (Claude Code, Oleada 2 — tras merge del Bloque 8):
   precio de un `TicketType` ajustado por demanda con heurísticas transparentes en escalones fijos
   (`<40%` -10%, `40-70%` base, `70-90%` +15%, `≥90%` +30%), **sin** ML. **Ocupación agregada a
