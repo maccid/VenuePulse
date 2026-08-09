@@ -17,6 +17,24 @@ export interface ZoneOccupancy {
 
 export type ScanResult = { kind: 'idle' } | { kind: 'ok' } | { kind: 'error'; message: string }
 
+export type TicketStatus = 'Pending' | 'AwaitingPayment' | 'Confirmed' | 'Rejected' | 'CheckedIn'
+
+export interface TicketStatusUpdate {
+  ticketId: string
+  eventId: string
+  zoneId: string
+  status: TicketStatus
+  rejectionReason: string | null
+}
+
+export interface ActivityEntry {
+  id: string
+  zoneName: string
+  status: TicketStatus
+  rejectionReason: string | null
+  atUtc: string
+}
+
 export type SimulationMode = 'Sales' | 'Arrivals'
 
 export interface SimulationRunStatus {

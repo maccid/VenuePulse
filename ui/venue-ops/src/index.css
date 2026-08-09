@@ -1,3 +1,31 @@
+@import 'tailwindcss';
+
+/* Alias de los tokens --vp-* existentes (paleta naranja de venue-ops) a @theme, ver
+   ui/shell/src/index.css para el mismo patrón y .ia/TODO.md Bloque 12. */
+@theme {
+  --color-text: var(--vp-text);
+  --color-text-muted: var(--vp-text-muted);
+  --color-text-on-accent: var(--vp-text-on-accent);
+  --color-bg: var(--vp-bg);
+  --color-surface: var(--vp-surface);
+  --color-border: var(--vp-border);
+  --color-border-strong: var(--vp-border-strong);
+  --color-accent: var(--vp-accent);
+  --color-accent-hover: var(--vp-accent-hover);
+  --color-accent-bg: var(--vp-accent-bg);
+  --color-danger: var(--vp-danger);
+  --color-danger-bg: var(--vp-danger-bg);
+  --color-success: var(--vp-success);
+  --color-success-bg: var(--vp-success-bg);
+
+  --radius-sm: var(--vp-radius-sm);
+  --radius-md: var(--vp-radius-md);
+  --radius-lg: var(--vp-radius-lg);
+
+  --shadow-sm: var(--vp-shadow-sm);
+  --shadow-md: var(--vp-shadow-md);
+}
+
 :root {
   --vp-text: #1f2328;
   --vp-text-muted: #6b7280;

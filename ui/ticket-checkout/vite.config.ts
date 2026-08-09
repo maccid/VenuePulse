@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // base '/ticket-checkout/' porque Nginx sirve este build bajo esa ruta (ver
 // frontend/nginx/nginx.conf). Nombres de fichero SIN hash a propósito: shell necesita
 // referenciar "ticket-checkout.js" por una ruta fija, no puede conocer un hash generado en
 // build time de un despliegue independiente (ver ADR 0004).
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   base: '/ticket-checkout/',
   build: {
     cssCodeSplit: false,

@@ -7,19 +7,35 @@ interface ZoneLayout {
   height: number
 }
 
-// Las 3 zonas son fijas para cualquier evento (ver ZoneService.FixedZones en AccessControl), así
-// que un mapeo estático por nombre cubre el 100% del caso de uso actual sin añadir geometría al
-// backend — ver ADR 0017.
-const ZONE_LAYOUT: Record<string, ZoneLayout> = {
+interface ZonePricing {
+  price: number
+  effectivePrice: number
+  priceTier: string
+}
+
+// Las zonas son fijas por tipo de evento (ver ZoneService en AccessControl: partido vs.
+// concierto), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
+// añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito.
+const MATCH_LAYOUT: Record<string, ZoneLayout> = {
   'Puerta Norte': { x: 40, y: 16, width: 220, height: 44 },
   'Grada VIP': { x: 272, y: 76, width: 48, height: 128 },
   'Puerta Sur': { x: 40, y: 220, width: 220, height: 44 },
+}
+
+// Concierto: la zona central (el campo, en un partido) pasa a ser "Pista" (de pie, cerca del
+// escenario); las gradas laterales flanquean. "Escenario" es solo decorativo, no es una zona
+// real — no aparece en `zones` ni se puede seleccionar.
+const CONCERT_LAYOUT: Record<string, ZoneLayout> = {
+  Pista: { x: 110, y: 46, width: 120, height: 170 },
+  'Grada Norte': { x: 40, y: 46, width: 58, height: 170 },
+  'Grada Sur': { x: 242, y: 46, width: 58, height: 170 },
 }
 
 interface Props {
   zones: ZoneOccupancy[]
   selectedZoneId?: string
   onSelect?: (zoneId: string) => void
+  pricingByZoneId?: Record<string, ZonePricing>
 }
 
 function occupancyRatio(zone: ZoneOccupancy): number {
@@ -33,22 +49,37 @@ function occupancyTier(ratio: number): 'low' | 'mid' | 'high' {
   return 'low'
 }
 
-export default function StadiumMap({ zones, selectedZoneId, onSelect }: Props) {
+export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZoneId }: Props) {
   const interactive = Boolean(onSelect)
-  const laidOut = zones.filter((z) => ZONE_LAYOUT[z.name])
-  const unmapped = zones.filter((z) => !ZONE_LAYOUT[z.name])
+  const isConcert = zones.some((z) => z.name === 'Pista')
+  const layout = isConcert ? CONCERT_LAYOUT : MATCH_LAYOUT
+  const laidOut = zones.filter((z) => layout[z.name])
+  const unmapped = zones.filter((z) => !layout[z.name])
 
   return (
     <div className="stadium-map">
       <svg viewBox="0 0 340 280" role="img" aria-label="Plano del recinto" className="stadium-map__svg">
         <rect x="20" y="20" width="300" height="240" rx="6" className="stadium-map__pitch" />
-        <line x1="20" y1="140" x2="320" y2="140" className="stadium-map__midline" />
-        <circle cx="170" cy="140" r="28" className="stadium-map__midcircle" />
+
+        {isConcert ? (
+          <>
+            <rect x="90" y="12" width="160" height="22" rx="4" className="stadium-map__stage" />
+            <text x="170" y="23" textAnchor="middle" dominantBaseline="middle" className="stadium-map__stage-label">
+              Escenario
+            </text>
+          </>
+        ) : (
+          <>
+            <line x1="20" y1="140" x2="320" y2="140" className="stadium-map__midline" />
+            <circle cx="170" cy="140" r="28" className="stadium-map__midcircle" />
+          </>
+        )}
 
         {laidOut.map((zone) => {
-          const layout = ZONE_LAYOUT[zone.name]
+          const zoneLayout = layout[zone.name]
           const tier = occupancyTier(occupancyRatio(zone))
           const isSelected = zone.zoneId === selectedZoneId
+          const pricing = pricingByZoneId?.[zone.zoneId]
           const classes = [
             'stadium-map__zone',
             `stadium-map__zone--${tier}`,
@@ -77,15 +108,26 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect }: Props) {
                   : undefined
               }
             >
-              <rect x={layout.x} y={layout.y} width={layout.width} height={layout.height} rx={4} />
+              <rect x={zoneLayout.x} y={zoneLayout.y} width={zoneLayout.width} height={zoneLayout.height} rx={4} />
               <text
-                x={layout.x + layout.width / 2}
-                y={layout.y + layout.height / 2}
+                x={zoneLayout.x + zoneLayout.width / 2}
+                y={zoneLayout.y + zoneLayout.height / 2 - (pricing ? 7 : 0)}
                 textAnchor="middle"
                 dominantBaseline="middle"
               >
                 {zone.name}
               </text>
+              {pricing && (
+                <text
+                  x={zoneLayout.x + zoneLayout.width / 2}
+                  y={zoneLayout.y + zoneLayout.height / 2 + 10}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="stadium-map__zone-price"
+                >
+                  {pricing.effectivePrice.toFixed(2)} €
+                </text>
+              )}
             </g>
           )
         })}
