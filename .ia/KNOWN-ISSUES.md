@@ -45,6 +45,17 @@ compensación) funcionan correctamente fuera del arnés de test. Causa más prob
 recursos entre Testcontainers y `WebApplicationFactory` en la misma máquina. No se ha vuelto a
 intentar arreglar el test en sí — coste/beneficio no lo justifica para una demo.
 
+**Reconfirmado en el Bloque 14** (partición de la Saga en `AwaitingPayment`, ver ADR 0018):
+`Bizum_compensa_y_rechaza_la_entrada` (antes `Fallo_de_pago_simulado_...`) sigue reproduciendo la
+misma intermitencia, ahora con diagnóstico más fino (log a fichero, no solo `Console.WriteLine` —
+xUnit no captura la salida de consola de hilos de fondo de MassTransit en este runner). Traza real
+observada: el doble de `AccessControl` del test recibe `ReserveZoneSlot` y responde
+`ZoneSlotReserved` en ~1s, pero la Saga del host de pruebas no llega a procesarlo a tiempo y el
+watchdog la rechaza por `ReservationTimedOut` (aunque se subió el timeout a 60s solo para este
+test). **Verificado a mano varias veces contra el stack real** (`docker compose up --build`,
+contenedores persistentes en vez de efímeros): tarjeta confirma, bizum compensa correctamente — el
+código de producción funciona, la intermitencia sigue siendo del arnés de Testcontainers.
+
 ## Rewrite de rutas duplicado en el gateway (RESUELTO)
 
 El `nginx.conf` del gateway anteponía un `/api/` extra al reenviar peticiones hacia los
