@@ -42,7 +42,8 @@ export default function PurchaseForm({
         >
           {ticketTypes.map((t) => (
             <option key={t.id} value={t.id}>
-              {t.name} — {t.price.toFixed(2)} €
+              {t.name} — {t.effectivePrice.toFixed(2)} €
+              {t.priceTier !== 'Normal' ? ` (${t.priceTier}, antes ${t.price.toFixed(2)} €)` : ''}
             </option>
           ))}
         </select>

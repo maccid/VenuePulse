@@ -4,6 +4,13 @@ export interface TicketType {
   name: string
   price: number
   description: string | null
+  effectivePrice: number
+  priceTier: string
+}
+
+export interface PricingChanged {
+  eventId: string
+  ticketTypes: TicketType[]
 }
 
 export interface ZoneOccupancy {
