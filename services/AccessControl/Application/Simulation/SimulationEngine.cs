@@ -86,7 +86,6 @@ public sealed class SimulationEngine : ISimulationEngine
             var completed = progress >= 1;
 
             var zones = await zoneService.GetAllOccupancyAsync(run.EventId, cancellationToken);
-            var snapshots = new List<Domain.ZoneOccupancySnapshot>(zones.Count);
 
             foreach (var zone in zones)
             {
@@ -104,22 +103,34 @@ public sealed class SimulationEngine : ISimulationEngine
                     if (delta > 0)
                         await zoneService.ApplySimulatedCheckInsAsync(zone.ZoneId, delta, cancellationToken);
                 }
-
-                var updated = await zoneService.GetOccupancyAsync(zone.ZoneId, cancellationToken);
-                if (updated is not null)
-                {
-                    snapshots.Add(new Domain.ZoneOccupancySnapshot(
-                        Guid.NewGuid(),
-                        run.EventId,
-                        zone.ZoneId,
-                        virtualNowUtc,
-                        updated.ConfirmedSold,
-                        updated.CheckedIn));
-                }
             }
 
-            if (snapshots.Count > 0)
-                await snapshotRepository.AddRangeAsync(snapshots, cancellationToken);
+            // El tick que completa el run aplica los últimos incrementos pero NO escribe snapshot:
+            // su reloj virtual sobrepasaría el evento (VirtualNowUtc no se clampa) y ese punto
+            // "post-evento" corrompe la predicción (Bloque 11) al quedar como el más reciente.
+            if (!completed)
+            {
+                var snapshots = new List<Domain.ZoneOccupancySnapshot>(zones.Count);
+                foreach (var zone in zones)
+                {
+                    var updated = await zoneService.GetOccupancyAsync(zone.ZoneId, cancellationToken);
+                    if (updated is not null)
+                    {
+                        snapshots.Add(new Domain.ZoneOccupancySnapshot(
+                            Guid.NewGuid(),
+                            run.EventId,
+                            zone.ZoneId,
+                            // El catálogo de Ticketing entrega EventStartsAtUtc con offset local
+                            // (p.ej. +02:00); Npgsql rechaza escribir offsets != 0 en timestamptz.
+                            virtualNowUtc.ToUniversalTime(),
+                            updated.ConfirmedSold,
+                            updated.CheckedIn));
+                    }
+                }
+
+                if (snapshots.Count > 0)
+                    await snapshotRepository.AddRangeAsync(snapshots, cancellationToken);
+            }
 
             if (completed)
                 _runs.TryRemove(run.EventId, out _);

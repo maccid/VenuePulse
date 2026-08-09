@@ -1,6 +1,6 @@
 namespace VenuePulse.AccessControl.Application;
 
-public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNotifier notifier) : IZoneService
+public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
     private static readonly (string Name, int Capacity)[] FixedZones =
     [
@@ -106,6 +106,11 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IZoneOccupancyNo
             await zoneRepository.SaveAsync(zone, cancellationToken);
             await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
         }
+
+        // Sin esto, la predicción (Bloque 11) acumula snapshots de corridas anteriores del mismo
+        // evento y se envenena: puntos fuera de la ventana quedan pegados a progress 0/1 y el R²
+        // se degrada. El reset debe dejar la serie temporal limpia para empezar de cero.
+        await snapshotRepository.ClearForEventAsync(eventId, cancellationToken);
     }
 
     public async Task ProvisionZonesForEventAsync(Guid eventId, CancellationToken cancellationToken)

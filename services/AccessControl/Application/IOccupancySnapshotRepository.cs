@@ -11,4 +11,8 @@ public interface IOccupancySnapshotRepository
     Task AddRangeAsync(IReadOnlyCollection<ZoneOccupancySnapshot> snapshots, CancellationToken cancellationToken);
 
     Task ClearForEventAsync(Guid eventId, CancellationToken cancellationToken);
+
+    /// <summary>Serie temporal del evento ordenada por tiempo simulado — entrada del modelo de
+    /// predicción (Bloque 11).</summary>
+    Task<IReadOnlyList<ZoneOccupancySnapshot>> GetForEventAsync(Guid eventId, CancellationToken cancellationToken);
 }

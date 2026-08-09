@@ -28,7 +28,7 @@ choque de migraciones EF) a la vez. 8 no depende de nada pendiente; 9/11/10 depe
 Reserva de números de ADR para evitar colisión entre ramas paralelas (siguiente tras 0009):
 `0010` → Bloque 2 (Claude Code, ya usado). **`0011` lo tomó en la práctica el Bloque 4** (la
 reserva original decía Bloque 3, pero Bloque 4 se cerró antes — la tabla quedó desactualizada).
-`0012` → Bloque 11 (opencode, si aplica). **`0013` → Bloque 8 (opencode, ya usado — ver
+`0012` → Bloque 11 (opencode, ya usado — ver `docs/architecture/adr/0012-occupancy-prediction.md`). **`0013` → Bloque 8 (opencode, ya usado — ver
 `docs/architecture/adr/0013-...md`).** **`0014` → Bloque 12 (opencode, si aplica).**
 **`0015` → Bloque 3 (Claude Code, ya usado — ver `docs/architecture/adr/0015-accesscontrol-inbox.md`).**
 **`0016` → Bloque 9 (Claude Code, ya usado — ver `docs/architecture/adr/0016-dynamic-pricing.md`).**
@@ -122,13 +122,36 @@ Próximo libre para nuevas ramas: `0017`.
   `venue-ops` (`SimulationPanel` + no-shows visibles en `ZoneGauge`). `Ticketing` intacto: `venue-ops`
   trae `EventStartsAtUtc` del catálogo. ADR 0013. Tests unitarios del motor/curvas/Zone en verde
   (24). **Verificación pendiente**: `dotnet test` completo + `docker compose up --build` end-to-end.
-- [ ] **Bloque 11 — `feature/occupancy-prediction`** (opencode, Oleada 2 — tras merge del Bloque 8):
-  predicción de ocupación con
-  modelo estadístico honesto (regresión / exponential smoothing sobre datos que el propio sistema
-  genera vía Bloque 8), **no** "ML mágico". Predice la **curva de llegada + no-shows sobre
-  `ConfirmedSold`** — la métrica que de verdad opera un estadio ("¿cuántos pasarán el torniquete y
-  cuándo?"), no las ventas. Es el pilar del smart venue que encaja con la demo y la prioridad #1
-  de esta ronda de mejoras. Nuevo servicio/endpoint + gráfica en `venue-ops`. ADR nuevo.
+- [x] **Bloque 11 — `feature/occupancy-prediction`** (opencode, Oleada 2 — tras merge del Bloque 8):
+  predicción de ocupación con **modelo estadístico honesto**, no "ML mágico": mínimos cuadrados
+  lineales de la **asíntota A** (llegadas totales esperadas) contra la forma fija
+  `F(p)=1-(1-p)³` — la misma curva de llegada que genera el simulador, así que el sistema predice
+  con la forma de llegada que él mismo genera — y **no-shows = `1 - A/ConfirmedSold`** (estimados
+  por el ajuste, no un parámetro adivino), con **R²** como bondad visible en la UI. **Sin servicio
+  nuevo** (mismo criterio que ADR 0013, sobreingeniería): endpoint
+  `GET api/prediction/events/{id}?eventStartsAtUtc=` en `AccessControl` sobre los
+  `occupancy_snapshots` del Bloque 8 **agregados a nivel de evento** (métrica que opera un estadio);
+  `eventStartsAtUtc` lo trae venue-ops del catálogo (bounded contexts, patrón del ADR 0013); 404 si
+  el evento aún no tiene snapshots; **sin historia de llegadas → no-show asumido 8%** con
+  `FitFromData=false` para que la UI lo muestre como supuesto, no como dato. Gráfica SVG a mano en
+  `venue-ops` (`PredictionChart` + `PredictionPanel`, sin librerías — coherencia Bloque 5): curva
+  proyectada vs puntos observados, total previsto, vendidas y marca de "ahora". Piezas:
+  `ArrivalForecast` + `OccupancyPredictionService` (`Application/Prediction/`), `PredictionController`,
+  `GetForEventAsync` en el repo de snapshots. Sin CQRS/MediatR (ADR 0003). Tests: modelo puro
+  (recuperación de la asíntota, clamping a vendidas/llegadas, no-shows asumido) + servicio
+  (agregación por zonas, proyección hasta el evento, 404 sin datos) — AccessControl 38/38 en verde.
+  ADR 0012. **Verificación E2E**: `docker compose up --build` + Sales→Arrivals del Bloque 8 →
+  predicción con `fitFromData=true`, `nowUtc` dentro de la ventana pre-evento, R²≈0.999 y no-shows
+  ≈8% (el 8% real de la simulación). De paso se arreglaron tres bugs que solo aparecían con
+  Postgres real (los tests unitarios usan in-memory): (1) el **reset no limpiaba los snapshots**
+  (`ClearForEventAsync` existía pero nunca se conectaba) y la predicción acumulaba basura de
+  corridas anteriores (R² 0.62, puntos pegados a progress 0/1); (2) el engine escribía snapshots
+  **post-evento** (el `VirtualNowUtc` no se clampa, solo el progress) que corrompían el "ahora"
+  de la predicción — ahora el tick que completa el run aplica pero no escribe snapshot; (3) los
+  snapshots se escribían con el offset local del `EventStartsAtUtc` del catálogo (+02:00) y
+  **Npgsql rechaza offsets ≠ 0 en `timestamptz`** — el write fallaba silenciosamente en el worker
+  y rompía todo el pipeline simulación→predicción; ahora se normaliza a UTC. Regresión completa
+  de la solución en verde (salvo los 2 integration tests de CheckIn, flaky pre-existente).
 - [ ] **Bloque 12 — `feature/ui-tailwind`** (sin asignar): introducir Tailwind CSS en las 3 apps
   React (`shell`/`ticket-checkout`/`venue-ops`) y de paso revisar la parte `ui/` para hacerla más
   amigable. Hoy el estilo es CSS en BEM con tokens `--vp-*` (Bloque 5, que fijó "sin librerías UI
