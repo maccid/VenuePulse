@@ -34,6 +34,7 @@ public static class DependencyInjection
                     configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
 
+                x.AddConsumer<TicketReadyForPaymentConsumer>();
                 x.AddConsumer<TicketPurchaseConfirmedConsumer>();
                 x.AddConsumer<TicketPurchaseRejectedConsumer>();
                 x.AddConsumer<ReservationWatchdogConsumer>();

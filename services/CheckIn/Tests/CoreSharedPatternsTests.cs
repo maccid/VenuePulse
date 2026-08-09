@@ -41,6 +41,7 @@ public class CoreSharedPatternsTests
         await dbContext.SaveChangesAsync();
         var createdAtUtc = ticket.CreatedAtUtc;
 
+        ticket.MarkAwaitingPayment();
         ticket.Confirm();
         await dbContext.SaveChangesAsync();
 

@@ -12,7 +12,7 @@ public sealed class EventCreatedConsumer(IZoneService zoneService, ILogger<Event
     {
         var message = context.Message;
 
-        await zoneService.ProvisionZonesForEventAsync(message.Id, context.CancellationToken);
+        await zoneService.ProvisionZonesForEventAsync(message.Id, message.Type, context.CancellationToken);
 
         logger.LogInformation("Zonas aprovisionadas para el evento {EventId} ({Name})", message.Id, message.Name);
     }

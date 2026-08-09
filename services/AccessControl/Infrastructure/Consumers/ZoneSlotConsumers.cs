@@ -17,7 +17,7 @@ public sealed class ReserveZoneSlotConsumer(IZoneService zoneService, ILogger<Re
         if (reserved)
         {
             logger.LogInformation("Slot reservado en zona {ZoneId} para {CorrelationId}", message.ZoneId, message.CorrelationId);
-            await context.Publish(new ZoneSlotReserved(message.CorrelationId, message.ZoneId, message.SimulateFailure));
+            await context.Publish(new ZoneSlotReserved(message.CorrelationId, message.ZoneId));
         }
         else
         {

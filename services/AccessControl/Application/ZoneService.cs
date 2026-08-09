@@ -1,13 +1,32 @@
 namespace VenuePulse.AccessControl.Application;
 
+using VenuePulse.Core.Domain;
+
 public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
-    private static readonly (string Name, int Capacity)[] FixedZones =
+    // Set de zonas fijo por tipo de evento — igual para cualquier partido/concierto (sin
+    // geometría real, ver ADR sobre StadiumMap): "Grada VIP"/"Pista" son las zonas "especiales"
+    // cuyo nombre coincide a propósito con el TicketType correspondiente en Ticketing, para que el
+    // frontend pueda fusionar zona+tipo de entrada por nombre sin inventar una relación cruzada.
+    private static readonly (string Name, int Capacity)[] MatchZones =
     [
         ("Puerta Norte", 40),
         ("Puerta Sur", 40),
         ("Grada VIP", 15),
     ];
+
+    private static readonly (string Name, int Capacity)[] ConcertZones =
+    [
+        ("Pista", 60),
+        ("Grada Norte", 20),
+        ("Grada Sur", 20),
+    ];
+
+    private static (string Name, int Capacity)[] ZonesFor(EventType eventType) => eventType switch
+    {
+        EventType.Concert => ConcertZones,
+        _ => MatchZones,
+    };
 
     public async Task<IReadOnlyCollection<ZoneOccupancyDto>> GetAllOccupancyAsync(Guid? eventId, CancellationToken cancellationToken)
     {
@@ -113,12 +132,12 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         await snapshotRepository.ClearForEventAsync(eventId, cancellationToken);
     }
 
-    public async Task ProvisionZonesForEventAsync(Guid eventId, CancellationToken cancellationToken)
+    public async Task ProvisionZonesForEventAsync(Guid eventId, EventType eventType, CancellationToken cancellationToken)
     {
         if (await zoneRepository.ExistsForEventAsync(eventId, cancellationToken))
             return;
 
-        var zones = FixedZones
+        var zones = ZonesFor(eventType)
             .Select(z => new Domain.Zone(Guid.NewGuid(), eventId, z.Name, z.Capacity))
             .ToList();
 

@@ -108,6 +108,18 @@
   stroke: var(--vp-border-strong);
 }
 
+.stadium-map__stage {
+  fill: var(--vp-text);
+  fill-opacity: 0.85;
+}
+
+.stadium-map__stage-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--vp-surface);
+  letter-spacing: 0.04em;
+}
+
 .stadium-map__midline,
 .stadium-map__midcircle {
   fill: none;
@@ -376,4 +388,60 @@
   color: var(--vp-text-muted);
   font-size: var(--vp-font-size-sm);
   margin: 0;
+}
+
+.activity-feed h2 {
+  margin-bottom: var(--vp-space-3);
+}
+
+.activity-feed__empty {
+  color: var(--vp-text-muted);
+  font-size: var(--vp-font-size-sm);
+  margin: 0;
+}
+
+.activity-feed__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vp-space-2);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.activity-feed__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--vp-space-2);
+  font-size: var(--vp-font-size-sm);
+  padding: var(--vp-space-2) var(--vp-space-3);
+  border-radius: var(--vp-radius-sm);
+  background: var(--vp-bg);
+  border-left: 3px solid var(--vp-border-strong);
+}
+
+.activity-feed__item--confirmed {
+  border-left-color: var(--vp-success);
+}
+
+.activity-feed__item--rejected {
+  border-left-color: var(--vp-danger);
+}
+
+.activity-feed__item--awaitingpayment {
+  border-left-color: var(--vp-accent);
+}
+
+.activity-feed__zone {
+  font-weight: 650;
+  color: var(--vp-text);
+}
+
+.activity-feed__time {
+  margin-left: auto;
+  color: var(--vp-text-muted);
+  font-size: var(--vp-font-size-xs);
+  flex-shrink: 0;
 }

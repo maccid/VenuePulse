@@ -34,7 +34,9 @@ reserva original decía Bloque 3, pero Bloque 4 se cerró antes — la tabla que
 **`0016` → Bloque 9 (Claude Code, ya usado — ver `docs/architecture/adr/0016-dynamic-pricing.md`).**
 **`0017` → Bloque 13 (Claude Code, ya usado — ver
 `docs/architecture/adr/0017-purchase-wizard-venue-map.md`).**
-Próximo libre para nuevas ramas: `0018`.
+**`0018` → Bloque 14 (Claude Code, ya usado — ver
+`docs/architecture/adr/0018-carrito-saga-partida-tipo-evento.md`).**
+Próximo libre para nuevas ramas: `0019`.
 
 ## En curso
 
@@ -154,16 +156,43 @@ Próximo libre para nuevas ramas: `0018`.
   **Npgsql rechaza offsets ≠ 0 en `timestamptz`** — el write fallaba silenciosamente en el worker
   y rompía todo el pipeline simulación→predicción; ahora se normaliza a UTC. Regresión completa
   de la solución en verde (salvo los 2 integration tests de CheckIn, flaky pre-existente).
-- [ ] **Bloque 12 — `feature/ui-tailwind`** (sin asignar): introducir Tailwind CSS en las 3 apps
-  React (`shell`/`ticket-checkout`/`venue-ops`) y de paso revisar la parte `ui/` para hacerla más
-  amigable. Hoy el estilo es CSS en BEM con tokens `--vp-*` (Bloque 5, que fijó "sin librerías UI
-  nuevas") — Tailwind sustituye las clases BEM por utilidades y acelera iterar en el diseño.
-  Alcance: Tailwind v4 + plugin `@tailwindcss/vite` en cada app, mapear los tokens `--vp-*` a
-  `@theme` para no perder el sistema de diseño, migrar los `App.css`/`index.css` y los `className`
-  de los componentes, y una pasada de UX (estados vacíos, jerarquía, responsive). Notas: revierte
-  la decisión del Bloque 5, así que ADR pequeño (`0014`) si se aprueba; toca solo `ui/` (sin riesgo
-  de migraciones EF); el Bloque 11 también mete una gráfica en `venue-ops` — coordinar para no
-  pisarse el mismo componente.
+- [~] **Bloque 12 — `feature/ui-tailwind`** (Claude Code, parcial dentro del Bloque 14): Tailwind
+  v4 + `@tailwindcss/vite` ya montado en las 3 apps, tokens `--vp-*`/`--tc-*` mapeados a `@theme`
+  (conviven con el CSS BEM existente). Todo lo **nuevo/reescrito** en el Bloque 14 (catálogo,
+  carrito, popup, formulario de pago, plano, feed de actividad) usa Tailwind directamente, sin
+  pasar por BEM. **Pendiente**: migrar los componentes que no se tocaron esta ronda (`SiteHeader`
+  en ambas apps, `ScanPanel`, `SimulationPanel`, `PredictionPanel`/`PredictionChart`, `ZoneGauge`) —
+  siguen en BEM, conviven sin problema, se migran en una pasada más pequeña cuando toque.
+- [x] **Bloque 14 — `feature/checkout-cart-tailwind`** (Claude Code, ampliación de alcance pedida
+  al revisar el Bloque 13 ya mergeado): más realismo en la compra y en operaciones, resuelto sin
+  sobreingeniería. Cambios:
+  - **`EventType` (`Match`/`Concert`)** en `Event` (Ticketing), propagado en `EventCreated`;
+    `AccessControl` aprovisiona un set de zonas distinto por tipo (partido: `Puerta Norte/Sur` +
+    `Grada VIP`; concierto: `Pista` + `Grada Norte/Sur`) — los nombres de la zona "especial" de
+    cada tipo coinciden a propósito con su `TicketType` correspondiente.
+  - **Saga de compra partida en tres fases reales** (`Reserving` → `AwaitingPayment` →
+    `Confirming`), no dos: el aforo se reserva de verdad antes de saber el método de pago, en vez
+    de decidir todo en una sola llamada. Nuevo endpoint `POST /api/checkin/api/tickets/{id}/pay`
+    (`Card`/`Bizum`) y evento `TicketPaymentSubmitted`. `Ticket` gana el estado real
+    `AwaitingPayment` (no solo interno de la Saga). El watchdog de timeout (ADR 0010) se rearma
+    para vigilar también esta espera. Es más fiel al patrón Saga, no una desviación.
+  - **Carrito multi-entrada**: clic en zona del plano → popup (precio tachado/`effectivePrice`
+    destacado, tier, aforo, cantidad) → "Añadir" dispara ya la compra real por unidad (el aforo se
+    bloquea al instante, no al final). Límite de 10 entradas por compra. Nombre del comprador una
+    vez al principio (lo exige el backend al crear cada entrada); apellidos/correo en el paso de
+    pago son solo visuales. Tarjeta/Bizum decide el resultado de cada línea en `AwaitingPayment`.
+  - **Fusión zona↔tipo de entrada solo en frontend**, por coincidencia de nombre — sin relación
+    real en el backend (mismo criterio que ADR 0016).
+  - **`StadiumMap`** (ambas apps) elige plantilla mirando los propios nombres de zona (zona
+    `"Pista"` → concierto: pista + escenario decorativo; si no → partido).
+  - **`venue-ops`**: plano coloreado por ocupación de **venta** (`capacity - availableToSell`), no
+    por `checkedIn` (que no se mueve durante la fase de venta); nuevo panel "Actividad en vivo"
+    (`ActivityFeed`) suscrito a `/hubs/tickets`. `TicketStatusDto` gana `EventId`/`ZoneId`.
+  - `shell`: catálogo de eventos rediseñado (badge de fecha, fila con hora/tipo/título/subtítulo,
+    botón "Entradas"), filtro de fechas. `OccupancyWidget` ("Aforo en vivo") retirado — el plano
+    interactivo del checkout lo sustituye mejor.
+  ADR 0018. Build/lint/tests unitarios en verde en las 3 apps + backend (79 tests .NET). Pendiente
+  la verificación E2E real con `docker compose up --build`.
 - [x] **Bloque 13 — `feature/purchase-wizard-venue-map`** (Claude Code, nuevo — ampliación de
   alcance pedida al plantear el Bloque 12): antes de migrar a Tailwind, dar más realismo funcional
   al checkout y a operaciones. `ticket-checkout`: `PurchaseForm` (un único formulario) sustituido

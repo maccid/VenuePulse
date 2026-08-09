@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // En producción, Nginx hace de reverse proxy (ver frontend/nginx/nginx.conf).
 // En desarrollo (`npm run dev`), este proxy apunta directo a los servicios en localhost
 // para poder trabajar en la app sin levantar todo docker-compose.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
     proxy: {

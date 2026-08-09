@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import type { PricingChanged, TicketStatus, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
-import { SagaTimeline } from './SagaTimeline'
-import PurchaseWizard from './components/PurchaseWizard'
+import type { CartLine, PaymentMethod, PricingChanged, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
+import PurchaseFlow from './components/PurchaseFlow'
 import './App.css'
 
 interface Props {
@@ -13,30 +12,19 @@ interface Props {
 export default function App({ eventId, holder }: Props) {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
-  const [ticketTypeId, setTicketTypeId] = useState('')
-  const [zoneId, setZoneId] = useState('')
   const [holderName, setHolderName] = useState(holder)
-  const [simulateFailure, setSimulateFailure] = useState(false)
-
-  const [ticketId, setTicketId] = useState<string | null>(null)
-  const [status, setStatus] = useState<TicketStatus | 'Idle' | 'Purchasing'>('Idle')
-  const [rejectionReason, setRejectionReason] = useState<string | null>(null)
+  const [cart, setCart] = useState<CartLine[]>([])
+  const [isPaying, setIsPaying] = useState(false)
 
   useEffect(() => {
     fetch(`/api/ticketing/api/events/${eventId}/ticket-types`)
       .then((r) => r.json())
-      .then((types: TicketType[]) => {
-        setTicketTypes(types)
-        if (types[0]) setTicketTypeId(types[0].id)
-      })
+      .then(setTicketTypes)
       .catch(() => setTicketTypes([]))
 
     fetch(`/api/access-control/api/zones?eventId=${eventId}`)
       .then((r) => r.json())
-      .then((z: ZoneOccupancy[]) => {
-        setZones(z)
-        if (z[0]) setZoneId(z[0].zoneId)
-      })
+      .then(setZones)
       .catch(() => setZones([]))
   }, [eventId])
 
@@ -47,13 +35,13 @@ export default function App({ eventId, holder }: Props) {
       .build()
 
     connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
-      setTicketId((current) => {
-        if (current !== null && update.ticketId === current) {
-          setStatus(update.status)
-          setRejectionReason(update.rejectionReason)
-        }
-        return current
-      })
+      setCart((prev) =>
+        prev.map((line) =>
+          line.ticketId === update.ticketId
+            ? { ...line, status: update.status, rejectionReason: update.rejectionReason }
+            : line,
+        ),
+      )
     })
 
     connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
@@ -101,63 +89,77 @@ export default function App({ eventId, holder }: Props) {
     }
   }, [eventId])
 
-  async function handlePurchase() {
-    setStatus('Purchasing')
-    setRejectionReason(null)
-
-    const response = await fetch('/api/checkin/api/tickets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventId,
-        ticketTypeId,
-        zoneId,
-        holder: holderName,
-        simulateFailure,
-      }),
-    })
-
-    if (!response.ok) {
-      setStatus('Idle')
-      return
+  // Se apaga sola en cuanto ninguna línea sigue "AwaitingPayment" — ya sea porque todo se
+  // confirmó/rechazó (llegado vía SignalR) o porque nunca se llegó a pagar nada.
+  useEffect(() => {
+    if (isPaying && !cart.some((line) => line.status === 'AwaitingPayment')) {
+      setIsPaying(false)
     }
+  }, [cart, isPaying])
 
-    const { ticketId: newTicketId } = await response.json()
-    setTicketId(newTicketId)
-    setStatus('Pending')
+  async function addToCart(zoneId: string, ticketTypeId: string, quantity: number) {
+    const zone = zones.find((z) => z.zoneId === zoneId)
+    const ticketType = ticketTypes.find((t) => t.id === ticketTypeId)
+    if (!zone || !ticketType) return
+
+    const purchases = await Promise.all(
+      Array.from({ length: quantity }, async () => {
+        const response = await fetch('/api/checkin/api/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId, ticketTypeId, zoneId, holder: holderName }),
+        })
+        if (!response.ok) return null
+        const { ticketId } = await response.json()
+        return ticketId as string
+      }),
+    )
+
+    const newLines: CartLine[] = purchases
+      .filter((ticketId): ticketId is string => ticketId !== null)
+      .map((ticketId) => ({
+        ticketId,
+        zoneId,
+        zoneName: zone.name,
+        ticketTypeName: ticketType.name,
+        unitPrice: ticketType.effectivePrice,
+        priceTier: ticketType.priceTier,
+        status: 'Pending',
+        rejectionReason: null,
+      }))
+
+    setCart((prev) => [...prev, ...newLines])
   }
 
-  const isPurchasing = status !== 'Idle'
+  async function submitPayment(method: PaymentMethod) {
+    setIsPaying(true)
+
+    const awaitingLines = cart.filter((line) => line.status === 'AwaitingPayment')
+    await Promise.all(
+      awaitingLines.map((line) =>
+        fetch(`/api/checkin/api/tickets/${line.ticketId}/pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ method }),
+        }),
+      ),
+    )
+  }
 
   return (
     <div className="ticket-checkout">
       <h3 className="ticket-checkout__title">Comprar entrada</h3>
 
-      <PurchaseWizard
+      <PurchaseFlow
         ticketTypes={ticketTypes}
         zones={zones}
-        ticketTypeId={ticketTypeId}
-        zoneId={zoneId}
         holder={holderName}
-        simulateFailure={simulateFailure}
-        disabled={isPurchasing}
-        onTicketTypeChange={setTicketTypeId}
-        onZoneChange={setZoneId}
         onHolderChange={setHolderName}
-        onSimulateFailureChange={setSimulateFailure}
-        onSubmit={handlePurchase}
+        cart={cart}
+        isPaying={isPaying}
+        onAddToCart={addToCart}
+        onSubmitPayment={submitPayment}
       />
-
-      {status !== 'Idle' && (
-        <div className="saga-panel">
-          <SagaTimeline status={status} rejectionReason={rejectionReason} />
-          {ticketId && (status === 'Confirmed' || status === 'Rejected') && (
-            <p className="ticket-id-hint">
-              ID de la entrada (para escanear en <em>venue-ops</em>): <code>{ticketId}</code>
-            </p>
-          )}
-        </div>
-      )}
     </div>
   )
 }

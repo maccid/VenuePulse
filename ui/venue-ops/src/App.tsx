@@ -1,17 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import type { EventSummary, ScanResult, ZoneOccupancy } from './types'
+import type { ActivityEntry, EventSummary, ScanResult, TicketStatusUpdate, ZoneOccupancy } from './types'
 import SiteHeader from './components/SiteHeader'
 import ScanPanel from './components/ScanPanel'
 import ZonesDashboard from './components/ZonesDashboard'
 import SimulationPanel from './components/SimulationPanel'
 import PredictionPanel from './components/PredictionPanel'
+import ActivityFeed from './components/ActivityFeed'
 import './App.css'
+
+const MAX_ACTIVITY_ENTRIES = 20
 
 export default function App() {
   const [events, setEvents] = useState<EventSummary[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
+  const [activity, setActivity] = useState<ActivityEntry[]>([])
+
+  // Evita cierres obsoletos dentro del handler del hub de entradas, que se suscribe una sola vez.
+  const zonesRef = useRef(zones)
+  useEffect(() => {
+    zonesRef.current = zones
+  }, [zones])
+
+  const selectedEventIdRef = useRef(selectedEventId)
+  useEffect(() => {
+    selectedEventIdRef.current = selectedEventId
+  }, [selectedEventId])
 
   useEffect(() => {
     fetch('/api/ticketing/api/events')
@@ -39,11 +54,48 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl('/hubs/tickets')
+      .withAutomaticReconnect()
+      .build()
+
+    // El hub emite para todas las entradas de todos los eventos; se filtra aquí por el evento
+    // seleccionado (vía ref, la suscripción solo se monta una vez) y se resuelve el nombre de la
+    // zona con las zonas ya cargadas — sin pedir la entrada completa por separado.
+    connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
+      if (update.eventId !== selectedEventIdRef.current) return
+      if (update.status !== 'AwaitingPayment' && update.status !== 'Confirmed' && update.status !== 'Rejected') return
+
+      const zone = zonesRef.current.find((z) => z.zoneId === update.zoneId)
+
+      setActivity((prev) =>
+        [
+          {
+            id: `${update.ticketId}-${update.status}`,
+            zoneName: zone?.name ?? 'Zona desconocida',
+            status: update.status,
+            rejectionReason: update.rejectionReason,
+            atUtc: new Date().toISOString(),
+          },
+          ...prev,
+        ].slice(0, MAX_ACTIVITY_ENTRIES),
+      )
+    })
+
+    connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
+
+    return () => {
+      connection.stop()
+    }
+  }, [])
+
+  useEffect(() => {
     if (selectedEventId === null) {
       setZones([])
       return
     }
 
+    setActivity([])
     loadZones(selectedEventId)
   }, [selectedEventId])
 
@@ -93,6 +145,8 @@ export default function App() {
       <ScanPanel onScan={scanTicket} />
 
       <ZonesDashboard zones={zones} />
+
+      <ActivityFeed entries={activity} />
     </div>
   )
 }

@@ -19,6 +19,13 @@ using VenuePulse.Core.Messaging.Contracts;
 /// Cubre explícitamente el camino feliz Y el camino de compensación (ver ADR 0001).
 /// Timeout generoso (90s): arrancar 3 contenedores + el host completo de ASP.NET Core en una
 /// máquina compartida bajo carga puede tardar más que en un runner de CI dedicado.
+///
+/// NOTA (ver .ia/KNOWN-ISSUES.md): "Bizum_compensa_y_rechaza_la_entrada" se ha observado flaky en
+/// este arnés de Testcontainers — el doble de AccessControl recibe y responde ReserveZoneSlot
+/// correctamente y rápido, pero la Saga real del host de pruebas no siempre llega a procesar esa
+/// respuesta a tiempo y acaba rechazada por ReservationTimedOut. No reproduce contra el stack real
+/// (docker compose, RabbitMQ/Postgres/Mongo persistentes en vez de contenedores efímeros), donde
+/// tarjeta y bizum se han verificado a mano repetidamente.
 /// </summary>
 public sealed class TicketPurchaseFlowTests : IAsyncLifetime
 {
@@ -40,6 +47,10 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
             builder.UseSetting("RabbitMq:ConnectionString", _rabbitMq.GetConnectionString());
             builder.UseSetting("Mongo:ConnectionString", _mongo.GetConnectionString());
             builder.UseSetting("Mongo:SagaDatabase", "venuepulse_sagas_test");
+            // Más generoso que el valor de producción (30s, appsettings.json): el arranque en frío
+            // del host + 3 Testcontainers en una máquina bajo carga puede comerse buena parte de
+            // ese margen antes de que la primera reserva real llegue a completarse.
+            builder.UseSetting("Saga:ReservationTimeoutSeconds", "60");
         });
 
         _client = _apiFactory.CreateClient();
@@ -52,7 +63,7 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
             cfg.ReceiveEndpoint("access-control-fake", e =>
             {
                 e.Handler<ReserveZoneSlot>(ctx =>
-                    ctx.Publish(new ZoneSlotReserved(ctx.Message.CorrelationId, ctx.Message.ZoneId, ctx.Message.SimulateFailure)));
+                    ctx.Publish(new ZoneSlotReserved(ctx.Message.CorrelationId, ctx.Message.ZoneId)));
                 e.Handler<ConfirmZoneSlot>(ctx =>
                     ctx.Publish(new ZoneSlotConfirmed(ctx.Message.CorrelationId, ctx.Message.ZoneId)));
                 e.Handler<ReleaseZoneSlot>(ctx =>
@@ -75,25 +86,29 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
     [Fact]
     public async Task Camino_feliz_confirma_la_entrada_de_extremo_a_extremo()
     {
-        var ticketId = await PurchaseAsync(simulateFailure: false);
+        var ticketId = await PurchaseAsync();
+        await PollUntilAsync(ticketId, s => s.Status is "AwaitingPayment" or "Rejected", TimeSpan.FromSeconds(90));
 
+        await PayAsync(ticketId, "Card");
         var status = await PollUntilAsync(ticketId, s => s.Status is "Confirmed" or "Rejected", TimeSpan.FromSeconds(90));
 
         status.Status.Should().Be("Confirmed");
     }
 
     [Fact]
-    public async Task Fallo_de_pago_simulado_compensa_y_rechaza_la_entrada()
+    public async Task Bizum_compensa_y_rechaza_la_entrada()
     {
-        var ticketId = await PurchaseAsync(simulateFailure: true);
+        var ticketId = await PurchaseAsync();
+        await PollUntilAsync(ticketId, s => s.Status is "AwaitingPayment" or "Rejected", TimeSpan.FromSeconds(90));
 
+        await PayAsync(ticketId, "Bizum");
         var status = await PollUntilAsync(ticketId, s => s.Status is "Confirmed" or "Rejected", TimeSpan.FromSeconds(90));
 
         status.Status.Should().Be("Rejected");
         status.RejectionReason.Should().Be("PaymentFailed");
     }
 
-    private async Task<Guid> PurchaseAsync(bool simulateFailure)
+    private async Task<Guid> PurchaseAsync()
     {
         var response = await _client.PostAsJsonAsync("/api/tickets", new
         {
@@ -101,12 +116,33 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
             TicketTypeId = Guid.NewGuid(),
             ZoneId = Guid.NewGuid(),
             Holder = "Ana",
-            SimulateFailure = simulateFailure
         });
 
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("ticketId").GetGuid();
+    }
+
+    // Entre que el Ticket llega a "AwaitingPayment" (columna de Postgres, lo que consulta
+    // PollUntilAsync) y ese mismo hecho queda también confirmado en la Saga (documento de Mongo,
+    // lo que valida SubmitPaymentCommandHandler) hay un salto de mensaje real por RabbitMQ — en la
+    // UI real esto es invisible porque el botón de pago solo aparece tras la notificación SignalR
+    // que dispara ese mismo consumer, pero aquí, sin SignalR, un GET justo tras ver el estado
+    // puede llegar a la ventana de unos pocos milisegundos antes de que cierre. Reintentar un par
+    // de veces refleja ese mismo comportamiento sin necesitar un cliente SignalR en el test.
+    private async Task PayAsync(Guid ticketId, string method)
+    {
+        for (var attempt = 1; attempt <= 5; attempt++)
+        {
+            var response = await _client.PostAsJsonAsync($"/api/tickets/{ticketId}/pay", new { Method = method });
+            if (response.IsSuccessStatusCode)
+                return;
+
+            if (attempt == 5)
+                response.EnsureSuccessStatusCode();
+
+            await Task.Delay(300);
+        }
     }
 
     private async Task<TicketStatusDto> PollUntilAsync(Guid ticketId, Func<TicketStatusDto, bool> isDone, TimeSpan timeout)

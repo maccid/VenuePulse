@@ -11,6 +11,7 @@ public sealed class Event : Entity<Guid>
     public string Name { get; private set; } = string.Empty;
     public string VenueName { get; private set; } = string.Empty;
     public DateTimeOffset StartsAtUtc { get; private set; }
+    public EventType Type { get; private set; }
 
     private readonly List<TicketType> _ticketTypes = [];
     public IReadOnlyCollection<TicketType> TicketTypes => _ticketTypes.AsReadOnly();
@@ -20,11 +21,12 @@ public sealed class Event : Entity<Guid>
         // EF Core
     }
 
-    public Event(Guid id, string name, string venueName, DateTimeOffset startsAtUtc) : base(id)
+    public Event(Guid id, string name, string venueName, DateTimeOffset startsAtUtc, EventType type = EventType.Match) : base(id)
     {
         Name = Guard.AgainstNullOrWhiteSpace(name, nameof(name), "El evento necesita un nombre.");
         VenueName = Guard.AgainstNullOrWhiteSpace(venueName, nameof(venueName), "El evento necesita un recinto.");
         StartsAtUtc = startsAtUtc;
+        Type = type;
     }
 
     public TicketType AddTicketType(Guid id, string name, decimal price, string? description)

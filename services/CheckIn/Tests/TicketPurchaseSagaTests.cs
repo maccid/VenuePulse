@@ -38,16 +38,25 @@ public class TicketPurchaseSagaTests
         var ticketId = Guid.NewGuid();
         var zoneId = Guid.NewGuid();
 
-        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: false));
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
         await harness.Consumed.Any<TicketPurchaseRequested>();
         (await harness.Published.Any<ReserveZoneSlot>()).Should().BeTrue();
 
-        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId, SimulateFailure: false));
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
         await harness.Consumed.Any<ZoneSlotReserved>();
+
+        // El aforo ya está reservado, pero la Saga espera aquí a que el cliente elija método de
+        // pago (Tarjeta/Bizum) en vez de confirmar sola. TicketAwaitingPayment lo publica la
+        // propia Saga tras su transición (no un consumer en paralelo que la adivine) — ver ADR
+        // 0018, evita la ventana real donde el Ticket en Postgres podía ir por delante de la Saga.
+        var sagaHarness = provider.GetRequiredService<ISagaStateMachineTestHarness<TicketPurchaseSaga, TicketPurchaseSagaState>>();
+        sagaHarness.Sagas.Contains(ticketId)?.CurrentState.Should().Be("AwaitingPayment");
+        (await harness.Published.Any<TicketAwaitingPayment>()).Should().BeTrue();
+
+        await harness.Bus.Publish(new TicketPaymentSubmitted(ticketId, SimulateFailure: false));
         (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeTrue();
 
         await harness.Bus.Publish(new ZoneSlotConfirmed(ticketId, zoneId));
-        await harness.Consumed.Any<ZoneSlotConfirmed>();
         (await harness.Published.Any<TicketPurchaseConfirmed>()).Should().BeTrue();
 
         // SetCompletedWhenFinalized() borra la instancia del repositorio al finalizar —
@@ -56,7 +65,7 @@ public class TicketPurchaseSagaTests
     }
 
     [Fact]
-    public async Task Camino_de_compensacion_libera_el_aforo_reservado()
+    public async Task Camino_de_compensacion_por_bizum_libera_el_aforo_reservado()
     {
         var (provider, harness) = await StartHarnessAsync();
         await using var _ = provider;
@@ -64,15 +73,17 @@ public class TicketPurchaseSagaTests
         var ticketId = Guid.NewGuid();
         var zoneId = Guid.NewGuid();
 
-        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: true));
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
         await harness.Consumed.Any<TicketPurchaseRequested>();
-        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId, SimulateFailure: true));
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
         await harness.Consumed.Any<ZoneSlotReserved>();
+
+        await harness.Bus.Publish(new TicketPaymentSubmitted(ticketId, SimulateFailure: true));
         (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeTrue();
 
         await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
         await harness.Consumed.Any<ZoneSlotReleased>();
-        (await harness.Published.Any<TicketPurchaseRejected>()).Should().BeTrue();
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "PaymentFailed")).Should().BeTrue();
     }
 
     [Fact]
@@ -84,12 +95,13 @@ public class TicketPurchaseSagaTests
         var ticketId = Guid.NewGuid();
         var zoneId = Guid.NewGuid();
 
-        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: false));
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
         await harness.Consumed.Any<TicketPurchaseRequested>();
         (await harness.Published.Any<ReserveZoneSlot>()).Should().BeTrue();
 
         // AccessControl nunca responde — el watchdog (fuera de la Saga, ver ADR 0010) publica
-        // ReservationTimedOut tras el deadline.
+        // ReservationTimedOut tras el deadline. Como el aforo nunca llegó a reservarse, no hace
+        // falta compensar (sin ReleaseZoneSlot).
         await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
         await harness.Consumed.Any<ReservationTimedOut>();
 
@@ -99,7 +111,7 @@ public class TicketPurchaseSagaTests
     }
 
     [Fact]
-    public async Task Zona_llena_rechaza_directamente_sin_llegar_a_reservar_pago()
+    public async Task Timeout_esperando_pago_libera_el_aforo_ya_reservado()
     {
         var (provider, harness) = await StartHarnessAsync();
         await using var _ = provider;
@@ -107,7 +119,32 @@ public class TicketPurchaseSagaTests
         var ticketId = Guid.NewGuid();
         var zoneId = Guid.NewGuid();
 
-        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId, SimulateFailure: false));
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReserved>();
+
+        // El cliente nunca elige método de pago — a diferencia del timeout en Reserving, aquí el
+        // aforo SÍ está reservado de verdad y hace falta liberarlo.
+        await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
+        await harness.Consumed.Any<ReservationTimedOut>();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeTrue();
+
+        await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReleased>();
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "PaymentTimedOut")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Zona_llena_rechaza_directamente_sin_llegar_a_esperar_pago()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
         await harness.Consumed.Any<TicketPurchaseRequested>();
         await harness.Bus.Publish(new ZoneSlotReservationFailed(ticketId, zoneId, "ZoneFull"));
         await harness.Consumed.Any<ZoneSlotReservationFailed>();

@@ -10,6 +10,8 @@ public sealed class GetTicketStatusQueryHandler(ITicketRepository repository)
     public async Task<TicketStatusDto?> Handle(GetTicketStatusQuery request, CancellationToken cancellationToken)
     {
         var ticket = await repository.GetByIdAsync(request.TicketId, cancellationToken);
-        return ticket is null ? null : new TicketStatusDto(ticket.Id, ticket.Status.ToString(), ticket.RejectionReason);
+        return ticket is null
+            ? null
+            : new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.RejectionReason);
     }
 }

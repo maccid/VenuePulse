@@ -1,3 +1,25 @@
+/* Solo utilidades de Tailwind, SIN preflight: el reset global de Tailwind pisaría los estilos de
+   `shell`, que comparte documento con este componente (light DOM, sin Shadow DOM, ver ADR 0004).
+   Por eso también todo el CSS de aquí sigue escopado bajo .ticket-checkout a mano. */
+@import 'tailwindcss/theme.css';
+@import 'tailwindcss/utilities.css';
+
+@theme {
+  --color-tc-text: var(--tc-text);
+  --color-tc-muted: var(--tc-muted);
+  --color-tc-border: var(--tc-border);
+  --color-tc-border-strong: var(--tc-border-strong);
+  --color-tc-surface: var(--tc-surface);
+  --color-tc-accent: var(--tc-accent);
+  --color-tc-accent-hover: var(--tc-accent-hover);
+  --color-tc-accent-bg: var(--tc-accent-bg);
+  --color-tc-danger: var(--tc-danger);
+  --color-tc-danger-bg: var(--tc-danger-bg);
+
+  --radius-tc-sm: var(--tc-radius-sm);
+  --radius-tc-md: var(--tc-radius-md);
+}
+
 /* Todo escopado bajo .ticket-checkout a propósito: este componente vive en light DOM dentro
    de la página de shell (sin Shadow DOM, ver ADR 0004), así que nunca toca :root/body/h1... */
 .ticket-checkout {
@@ -34,18 +56,6 @@
   color: var(--tc-text);
 }
 
-.purchase-wizard {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.wizard-step {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
 .field-label {
   margin: 0 0 4px;
   font-size: 13px;
@@ -53,90 +63,24 @@
   color: var(--tc-muted);
 }
 
-.wizard-steps {
-  list-style: none;
-  display: flex;
-  gap: 18px;
-  padding: 0;
-  margin: 0 0 4px;
+.purchase-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 20px;
+  align-items: start;
 }
 
-.wizard-steps__item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--tc-muted);
+@media (max-width: 640px) {
+  .purchase-flow {
+    grid-template-columns: 1fr;
+  }
 }
 
-.wizard-steps__index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--tc-border);
-  color: var(--tc-text);
-  font-size: 12px;
-}
-
-.wizard-steps__item--active {
-  color: var(--tc-text);
-}
-
-.wizard-steps__item--active .wizard-steps__index {
-  background: var(--tc-accent);
-  color: white;
-}
-
-.wizard-steps__item--done .wizard-steps__index {
-  background: var(--tc-accent-bg);
-  color: var(--tc-accent);
-}
-
-.wizard-nav {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.wizard-nav__back {
-  background: transparent;
-  color: var(--tc-text);
-  border: 1px solid var(--tc-border-strong);
-}
-
-.wizard-nav__back:hover {
-  background: var(--tc-accent-bg);
-}
-
-.purchase-summary {
+.purchase-flow__map-column {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 12px;
-  background: var(--tc-accent-bg);
-  border-radius: var(--tc-radius-sm);
-}
-
-.purchase-summary > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.purchase-summary dt {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--tc-muted);
-}
-
-.purchase-summary dd {
-  margin: 0;
-  font-weight: 600;
+  gap: 14px;
+  position: relative;
 }
 
 .stadium-map__svg {
@@ -210,6 +154,237 @@
   gap: 8px;
 }
 
+.stadium-map__stage {
+  fill: var(--tc-text);
+  fill-opacity: 0.85;
+}
+
+.stadium-map__stage-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--tc-surface);
+  letter-spacing: 0.04em;
+}
+
+.stadium-map__zone-price {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--tc-text);
+  pointer-events: none;
+}
+
+/* Popup de zona */
+.zone-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.zone-popup {
+  position: relative;
+  width: min(320px, calc(100vw - 32px));
+  background: var(--tc-surface);
+  border-radius: var(--tc-radius-md);
+  box-shadow: var(--tc-shadow-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.zone-popup h3 {
+  margin: 0;
+  color: var(--tc-text);
+}
+
+.zone-popup__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  color: var(--tc-muted);
+  padding: 4px 8px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.zone-popup__close:hover {
+  background: var(--tc-accent-bg);
+}
+
+.zone-popup__type {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tc-muted);
+}
+
+.zone-popup__price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.zone-popup__price-old {
+  text-decoration: line-through;
+  color: var(--tc-muted);
+  font-size: 14px;
+}
+
+.zone-popup__price-new {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tc-text);
+}
+
+.zone-popup__tier {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-accent);
+  background: var(--tc-accent-bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.zone-popup__availability {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tc-muted);
+}
+
+.zone-popup__quantity {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.zone-popup__quantity select {
+  width: 70px;
+}
+
+.zone-popup__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tc-muted);
+}
+
+/* Carrito */
+.cart-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--tc-border);
+  border-radius: var(--tc-radius-md);
+  padding: 16px;
+  background: var(--tc-surface);
+  position: sticky;
+  top: 12px;
+}
+
+.cart-panel h3 {
+  margin: 0;
+  color: var(--tc-text);
+}
+
+.cart-panel__empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tc-muted);
+}
+
+.cart-panel__lines {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cart-panel__line {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--tc-border);
+}
+
+.cart-panel__line:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.cart-panel__line-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tc-text);
+  margin-bottom: 8px;
+}
+
+.cart-panel__total {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-size: 14px;
+  color: var(--tc-text);
+  padding-top: 8px;
+  border-top: 1px solid var(--tc-border);
+}
+
+.cart-panel__quota {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: var(--tc-muted);
+}
+
+.cart-panel__done {
+  margin: 0;
+  font-weight: 600;
+  color: var(--tc-accent);
+}
+
+/* Formulario de pago */
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--tc-border);
+}
+
+.payment-form h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.payment-methods {
+  display: flex;
+  gap: 8px;
+}
+
+.payment-method {
+  flex: 1;
+  background: var(--tc-surface);
+  color: var(--tc-text);
+  border: 1px solid var(--tc-border-strong);
+  font-weight: 600;
+}
+
+.payment-method:hover {
+  background: var(--tc-accent-bg);
+}
+
+.payment-method--selected {
+  border-color: var(--tc-accent);
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent);
+}
+
 .ticket-checkout label {
   display: flex;
   flex-direction: column;
@@ -262,11 +437,6 @@
 .ticket-checkout button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.saga-panel {
-  border-top: 1px solid var(--tc-border);
-  padding-top: 14px;
 }
 
 .saga-timeline {
