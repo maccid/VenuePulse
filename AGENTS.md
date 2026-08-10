@@ -37,6 +37,10 @@ dotnet test services/VenuePulse.slnx
 docker compose -f infra/docker-compose.yml up --build
 ```
 
+**Regla:** antes de lanzar `dotnet test` o `docker compose up` (o cualquier verificación E2E
+contra el stack real), preguntar primero al usuario si prefiere hacerlo él mismo — el usuario suele
+ejecutarlos más rápido que el agente.
+
 Un servicio o app concreta:
 
 ```bash
