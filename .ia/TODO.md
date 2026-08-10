@@ -89,10 +89,48 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
     `develop`**, ver Oleada 1.
 - **Oleada 3 (en paralelo desde ya)** — solo frontend, apps independientes sin build
   compartido (ADR 0004), sin riesgo de choque entre IAs:
-  - Claude Code → **Bloque 18** `feature/venue-ops-tabs-redesign` (`venue-ops`): `EventTabs` +
-    `EventCreateForm` (tabs estilo Chrome, alta de evento con `+`), carga perezosa por pestaña,
-    `ModeToggle` Ventas/Ocupación en grid, `RevenueWidget`, `StadiumMap` con `mode: sales|checkin`,
-    `PredictionPanel` condicionado a `confirmedCount > 0`.
+  - [x] Claude Code → **Bloque 18** `feature/venue-ops-tabs-redesign` (`venue-ops`,
+    **implementado en rama**): `EventTabs` (pestañas estilo Chrome + pestaña `+` fija, insignia si
+    `Status !== OnSale`) sustituye al `<select>`, sin filtro de "pasados" (Operaciones ve siempre
+    todo). `EventCreateForm` (nombre/tipo/fecha/relevancia) sobre `POST /api/events` del Bloque 15;
+    si el catálogo está vacío la app aterriza directamente en el formulario. Carga perezosa por
+    pestaña: `App` mantiene un único socket de cada hub (`/hubs/occupancy`, `/hubs/tickets`) y
+    reparte los mensajes por `eventId` en un diccionario, pero solo pide zonas/ingresos la primera
+    vez que se activa una pestaña; solo la pestaña activa monta su `EventWorkspace` (evita sondeos
+    de `SimulationPanel` en segundo plano en pestañas ya visitadas). `ModeToggle` (Ventas/Ocupación)
+    decide el grid dentro de la pestaña: Ventas trae `SimulationPanel` (fase `Sales`),
+    `RevenueWidget` (nuevo, sobre el endpoint de ingresos del Bloque 17), `ActivityFeed`,
+    `StadiumMap` coloreado por venta y los botones "Cerrar venta"/"Cancelar evento" (solo si
+    `OnSale`, con confirmación); Ocupación trae `ZonesDashboard` (ya sin plano embebido),
+    `SimulationPanel` (fase por defecto `Arrivals` en cuanto el evento deja `OnSale`, vía
+    `defaultMode` + `key` para remontar sin esperar a un cambio de modo manual), `ScanPanel`,
+    `StadiumMap` coloreado por check-in y `PredictionPanel` condicionado a
+    `zones.some(confirmedSold > 0)` (**no** a los ingresos de `CheckIn` — verificado en real que el
+    motor de simulación, camino principal de la demo, mueve `ConfirmedSold` sin pasar nunca por
+    `CheckIn`, así que condicionar a `revenue.confirmedCount` dejaba el panel sin montarse jamás en
+    una demo solo-simulador). `StadiumMap` gana la prop `mode: 'sales' | 'checkin'` en vez de
+    duplicarse. "Cerrar venta"/fase de simulación siguen desacoplados a propósito (mismo criterio
+    que ADR 0019), el único puente es ese `defaultMode` en el frontend. ADR 0022. Build (`tsc -b` +
+    `vite build`) y lint (`oxlint`) en verde. **Verificado en real con `docker compose up --build`**
+    (Playwright headless contra el gateway): alta de evento desde la pestaña `+` con sus zonas
+    apareciendo en vivo tras el aprovisionamiento asíncrono, `ModeToggle` Ventas/Ocupación,
+    simulación de ventas+llegadas con `PredictionPanel` apareciendo correctamente tras el fix de
+    esta misma verificación, y "Cerrar venta" (insignia en la pestaña, botones ocultos, fase por
+    defecto del simulador en Ocupación pasando a `Arrivals`). **Ampliación pedida en la propia
+    verificación** (0€ de ingresos con el simulador "parece roto" en el camino principal de la
+    demo): `RevenueWidget` gana una tercera cifra `estimatedRevenue` = Σ `zone.confirmedSold` ×
+    `ticketType.effectivePrice` (nuevo `ui/venue-ops/src/zoneTicketType.ts`, fusión zona↔tipo de
+    entrada por nombre igual que `ticket-checkout` pero con una regla más robusta —
+    `zoneName.includes(ticketType.name)`, no solo igualdad exacta), etiquetada como estimación y
+    nunca mezclada con los dos números reales. Verificado en real contra "Derbi de la ciudad": 14
+    Grada VIP × 234€ + 37 Puerta Norte × 58,50€ + 38 Puerta Sur × 58,50€ = 7.663,50€, coincide
+    exacto. **Bug real encontrado de paso en `ticket-checkout` (no corregido desde esta rama, ver
+    `.ia/KNOWN-ISSUES.md`)**: su fusión zona↔tipo por igualdad exacta nunca encuentra `Grada VIP` →
+    `VIP`, cae a `General` — un fan que compra ahí vería y pagaría el precio de `General`. **Sin
+    probar**: cancelación con reembolso real de principio a fin — exigiría una compra real vía
+    `ticket-checkout`, app que opencode está tocando en paralelo sobre la misma base de datos
+    compartida del stack; se deja para la verificación conjunta de ronda que se hará al mergear con
+    los Bloques 19/20.
   - opencode → **Bloque 19 + 20** `feature/checkout-header-total` (`ticket-checkout` + `shell`,
     misma rama): `CheckoutHeader` con info de evento + botón volver (evento `CustomEvent` hacia
     `shell`), plano en sección propia, total visible en el botón de pago (el pago ya se agrupa a
