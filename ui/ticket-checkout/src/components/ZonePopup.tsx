@@ -26,7 +26,7 @@ export default function ZonePopup({ zone, ticketType, holderReady, remainingQuot
         <p className="zone-popup__type">{ticketType.name}</p>
 
         <p className="zone-popup__price">
-          {hasDiscount && <span className="zone-popup__price-old">{ticketType.price.toFixed(2)} €</span>}
+          {hasDiscount && <span className="zone-popup__price-old">{ticketType.basePrice.toFixed(2)} €</span>}
           <span className="zone-popup__price-new">{ticketType.effectivePrice.toFixed(2)} €</span>
           <span className="zone-popup__tier">{ticketType.priceTier}</span>
         </p>
