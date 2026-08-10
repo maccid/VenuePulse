@@ -35,9 +35,10 @@ public class ZoneServiceTests
         // Sin esta notificación inicial, una zona virgen (100% libre) queda invisible para
         // Ticketing hasta su primer cambio, e infla el % de ocupación agregado por evento
         // (ver ADR 0016) al excluir su aforo del denominador.
-        notifier.Notified.Should().HaveCount(3);
+        notifier.Notified.Should().HaveCount(4);
         notifier.Notified.Should().OnlyContain(z => z.EventId == eventId && z.AvailableToSell == z.Capacity && z.ConfirmedSold == 0);
-        notifier.Notified.Select(z => z.Name).Should().Contain("Grada VIP");
+        notifier.Notified.Select(z => z.Name).Should().Contain("Grada Este VIP");
+        notifier.Notified.Select(z => z.Name).Should().Contain("Grada Oeste VIP");
     }
 
     [Fact]
@@ -57,7 +58,8 @@ public class ZoneServiceTests
         // real en el backend — si este nombre cambia, esa fusión deja de funcionar en silencio.
         var names = notifier.Notified.Select(z => z.Name).ToList();
         names.Should().Contain("Pista");
-        names.Should().NotContain("Grada VIP");
+        names.Should().NotContain("Grada Este VIP");
+        names.Should().NotContain("Grada Oeste VIP");
         names.Should().NotContain("Puerta Norte");
     }
 
@@ -138,7 +140,7 @@ public class ZoneServiceTests
             zones.Should().OnlyContain(z => z.Cancelled);
         }
 
-        notifier.Notified.Should().HaveCount(6);
+        notifier.Notified.Should().HaveCount(8);
         notifier.Notified.Should().OnlyContain(z => z.EventId == eventId);
     }
 

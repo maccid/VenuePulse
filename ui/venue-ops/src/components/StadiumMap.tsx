@@ -12,9 +12,10 @@ interface ZoneLayout {
 // añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito. Copia adaptada de la
 // de `ticket-checkout` (sin código compartido entre micro frontends, ver ADR 0004).
 const MATCH_LAYOUT: Record<string, ZoneLayout> = {
-  'Puerta Norte': { x: 40, y: 16, width: 220, height: 44 },
-  'Grada VIP': { x: 272, y: 76, width: 48, height: 128 },
-  'Puerta Sur': { x: 40, y: 220, width: 220, height: 44 },
+  'Puerta Norte': { x: 76, y: 26, width: 188, height: 50 },
+  'Puerta Sur': { x: 76, y: 204, width: 188, height: 50 },
+  'Grada Oeste VIP': { x: 30, y: 88, width: 46, height: 104 },
+  'Grada Este VIP': { x: 264, y: 88, width: 46, height: 104 },
 }
 
 const CONCERT_LAYOUT: Record<string, ZoneLayout> = {

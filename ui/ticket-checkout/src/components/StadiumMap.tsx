@@ -15,11 +15,14 @@ interface ZonePricing {
 
 // Las zonas son fijas por tipo de evento (ver ZoneService en AccessControl: partido vs.
 // concierto), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
-// añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito.
+// añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito. Partido: 4 gradas
+// alrededor del campo (Norte/Sur más anchas, Este/Oeste VIP más estrechas), con hueco en las
+// esquinas para que se vea el gris del estadio detrás.
 const MATCH_LAYOUT: Record<string, ZoneLayout> = {
-  'Puerta Norte': { x: 40, y: 16, width: 220, height: 44 },
-  'Grada VIP': { x: 272, y: 76, width: 48, height: 128 },
-  'Puerta Sur': { x: 40, y: 220, width: 220, height: 44 },
+  'Puerta Norte': { x: 76, y: 26, width: 188, height: 50 },
+  'Puerta Sur': { x: 76, y: 204, width: 188, height: 50 },
+  'Grada Oeste VIP': { x: 30, y: 88, width: 46, height: 104 },
+  'Grada Este VIP': { x: 264, y: 88, width: 46, height: 104 },
 }
 
 // Concierto: la zona central (el campo, en un partido) pasa a ser "Pista" (de pie, cerca del
@@ -30,6 +33,12 @@ const CONCERT_LAYOUT: Record<string, ZoneLayout> = {
   'Grada Norte': { x: 40, y: 46, width: 58, height: 170 },
   'Grada Sur': { x: 242, y: 46, width: 58, height: 170 },
 }
+
+// Campo de partido: rectángulo central con líneas de un campo de fútbol real (banda central,
+// círculo central, áreas y punto de penalti) — puramente decorativo, no es una zona seleccionable.
+const FIELD = { x: 88, y: 84, width: 164, height: 112 }
+const FIELD_CENTER_X = FIELD.x + FIELD.width / 2
+const FIELD_CENTER_Y = FIELD.y + FIELD.height / 2
 
 interface Props {
   zones: ZoneOccupancy[]
@@ -59,10 +68,9 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
   return (
     <div className="stadium-map">
       <svg viewBox="0 0 340 280" role="img" aria-label="Plano del recinto" className="stadium-map__svg">
-        <rect x="20" y="20" width="300" height="240" rx="6" className="stadium-map__pitch" />
-
         {isConcert ? (
           <>
+            <rect x="20" y="20" width="300" height="240" rx="6" className="stadium-map__pitch" />
             <rect x="90" y="12" width="160" height="22" rx="4" className="stadium-map__stage" />
             <text x="170" y="23" textAnchor="middle" dominantBaseline="middle" className="stadium-map__stage-label">
               Escenario
@@ -70,8 +78,48 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
           </>
         ) : (
           <>
-            <line x1="20" y1="140" x2="320" y2="140" className="stadium-map__midline" />
-            <circle cx="170" cy="140" r="28" className="stadium-map__midcircle" />
+            {/* Estadio: fondo gris de todo el recinto, con hueco en las esquinas donde no llegan
+                las gradas (ver MATCH_LAYOUT). */}
+            <rect x="8" y="8" width="324" height="264" rx="56" className="stadium-map__exterior" />
+
+            {/* Campo: rectángulo verde con líneas de un campo de fútbol real, decorativo. */}
+            <g className="stadium-map__field">
+              <rect
+                x={FIELD.x}
+                y={FIELD.y}
+                width={FIELD.width}
+                height={FIELD.height}
+                rx={4}
+                className="stadium-map__field-fill"
+              />
+              <line
+                x1={FIELD_CENTER_X}
+                y1={FIELD.y}
+                x2={FIELD_CENTER_X}
+                y2={FIELD.y + FIELD.height}
+                className="stadium-map__field-line"
+              />
+              <circle cx={FIELD_CENTER_X} cy={FIELD_CENTER_Y} r={26} className="stadium-map__field-line" />
+              <circle cx={FIELD_CENTER_X} cy={FIELD_CENTER_Y} r={2} className="stadium-map__field-dot" />
+              <rect x={FIELD.x} y={FIELD_CENTER_Y - 30} width={30} height={60} className="stadium-map__field-line" />
+              <rect x={FIELD.x} y={FIELD_CENTER_Y - 16} width={14} height={32} className="stadium-map__field-line" />
+              <circle cx={FIELD.x + 22} cy={FIELD_CENTER_Y} r={2} className="stadium-map__field-dot" />
+              <rect
+                x={FIELD.x + FIELD.width - 30}
+                y={FIELD_CENTER_Y - 30}
+                width={30}
+                height={60}
+                className="stadium-map__field-line"
+              />
+              <rect
+                x={FIELD.x + FIELD.width - 14}
+                y={FIELD_CENTER_Y - 16}
+                width={14}
+                height={32}
+                className="stadium-map__field-line"
+              />
+              <circle cx={FIELD.x + FIELD.width - 22} cy={FIELD_CENTER_Y} r={2} className="stadium-map__field-dot" />
+            </g>
           </>
         )}
 
@@ -82,7 +130,7 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
           const pricing = pricingByZoneId?.[zone.zoneId]
           const classes = [
             'stadium-map__zone',
-            `stadium-map__zone--${tier}`,
+            isConcert ? `stadium-map__zone--${tier}` : 'stadium-map__zone--stand',
             isSelected ? 'stadium-map__zone--selected' : '',
             interactive ? 'stadium-map__zone--interactive' : '',
           ]
@@ -127,6 +175,15 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
                 >
                   {pricing.effectivePrice.toFixed(2)} €
                 </text>
+              )}
+              {/* Grada: color azul fijo, la ocupación se indica con una luz sutil parpadeante en
+                  vez de teñir todo el bloque (semáforo verde/naranja/rojo del concierto se queda
+                  igual). */}
+              {!isConcert && (
+                <g transform={`translate(${zoneLayout.x + zoneLayout.width - 10}, ${zoneLayout.y + 10})`}>
+                  <circle r={7} className={`stadium-map__zone-light-halo stadium-map__zone-light--${tier}`} />
+                  <circle r={3} className={`stadium-map__zone-light-core stadium-map__zone-light--${tier}`} />
+                </g>
               )}
             </g>
           )

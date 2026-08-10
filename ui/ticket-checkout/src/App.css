@@ -66,32 +66,26 @@
   font-size: 14px;
 }
 
-/* Cabecera del checkout: info del evento (estilo EventCard de shell) + volver al catálogo.
-   El botón avisa al shell con un CustomEvent (ver CheckoutHeader.tsx y ADR 0023). */
+/* Cabecera del checkout: info del evento (estilo EventCard de shell) a la izquierda + botón
+   volver al catálogo pegado a la derecha. El botón avisa al shell con un CustomEvent (ver
+   CheckoutHeader.tsx y ADR 0023). */
 .checkout-header {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
 }
 
 .checkout-header__back {
-  align-self: flex-start;
-  background: none;
-  color: var(--tc-accent);
-  font-weight: 600;
-  padding: 0;
-}
-
-.checkout-header__back:hover {
-  background: none;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  flex-shrink: 0;
 }
 
 .checkout-header__card {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .checkout-header__date {
@@ -185,10 +179,26 @@
   stroke: var(--tc-border-strong);
 }
 
-.stadium-map__midline,
-.stadium-map__midcircle {
+/* Partido: fondo gris del estadio, campo verde con líneas realistas (ver StadiumMap.tsx). El
+   azul del concierto se mantiene por semáforo de ocupación (--low/--mid/--high), sin tocar. */
+.stadium-map__exterior {
+  fill: #e4e7ec;
+  stroke: #d1d5db;
+}
+
+.stadium-map__field-fill {
+  fill: #2f9e56;
+  stroke: rgba(255, 255, 255, 0.6);
+}
+
+.stadium-map__field-line {
   fill: none;
-  stroke: var(--tc-border-strong);
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 1.5;
+}
+
+.stadium-map__field-dot {
+  fill: rgba(255, 255, 255, 0.85);
 }
 
 .stadium-map__zone rect {
@@ -221,6 +231,22 @@
   stroke: var(--tc-danger);
 }
 
+/* Gradas de partido: azul fijo para las 4, sin semáforo — la ocupación se indica con la luz
+   parpadeante (stadium-map__zone-light-*) en vez de teñir todo el bloque. */
+.stadium-map__zone--stand rect {
+  fill: #2563eb;
+  fill-opacity: 0.85;
+  stroke: #1e40af;
+}
+
+.stadium-map__zone--stand text {
+  fill: #ffffff;
+}
+
+.stadium-map__zone--stand .stadium-map__zone-price {
+  fill: rgba(255, 255, 255, 0.9);
+}
+
 .stadium-map__zone--selected rect {
   stroke-width: 2.5;
   stroke: var(--tc-text);
@@ -228,6 +254,37 @@
 
 .stadium-map__zone--interactive {
   cursor: pointer;
+}
+
+.stadium-map__zone-light-halo {
+  opacity: 0.35;
+  animation: zone-light-glow 1.8s ease-in-out infinite;
+}
+
+.stadium-map__zone-light-core {
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.stadium-map__zone-light--low {
+  fill: #22c55e;
+}
+
+.stadium-map__zone-light--mid {
+  fill: #f59e0b;
+}
+
+.stadium-map__zone-light--high {
+  fill: #ef4444;
+}
+
+@keyframes zone-light-glow {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .stadium-map__hint {
