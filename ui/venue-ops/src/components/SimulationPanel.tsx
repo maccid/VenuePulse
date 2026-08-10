@@ -5,6 +5,10 @@ interface Props {
   eventId: string
   eventStartsAtUtc: string
   onSimulationEnded: () => void
+  // Bloque 18: el grid de Ocupación monta su propia instancia de este panel arrancando en
+  // 'Arrivals' una vez el evento ya no está OnSale (ver EventWorkspace y ADR 0022) — solo afecta
+  // al valor inicial del selector, el usuario lo puede cambiar igualmente.
+  defaultMode?: SimulationMode
 }
 
 const MODE_LABELS: Record<SimulationMode, string> = {
@@ -12,8 +16,8 @@ const MODE_LABELS: Record<SimulationMode, string> = {
   Arrivals: 'Llegadas (horas previas)',
 }
 
-export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulationEnded }: Props) {
-  const [mode, setMode] = useState<SimulationMode>('Sales')
+export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulationEnded, defaultMode = 'Sales' }: Props) {
+  const [mode, setMode] = useState<SimulationMode>(defaultMode)
   const [durationSeconds, setDurationSeconds] = useState(20)
   const [targetSoldPct, setTargetSoldPct] = useState(0.85)
   const [noShowPct, setNoShowPct] = useState(0.08)

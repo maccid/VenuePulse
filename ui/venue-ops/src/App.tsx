@@ -2,38 +2,32 @@ import { useEffect, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type { ActivityEntry, EventSummary, ScanResult, TicketStatusUpdate, ZoneOccupancy } from './types'
 import SiteHeader from './components/SiteHeader'
-import ScanPanel from './components/ScanPanel'
-import ZonesDashboard from './components/ZonesDashboard'
-import SimulationPanel from './components/SimulationPanel'
-import PredictionPanel from './components/PredictionPanel'
-import ActivityFeed from './components/ActivityFeed'
+import EventTabs, { NEW_EVENT_TAB_ID } from './components/EventTabs'
+import EventCreateForm from './components/EventCreateForm'
+import EventWorkspace from './components/EventWorkspace'
 import './App.css'
 
 const MAX_ACTIVITY_ENTRIES = 20
 
 export default function App() {
   const [events, setEvents] = useState<EventSummary[]>([])
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
-  const [zones, setZones] = useState<ZoneOccupancy[]>([])
-  const [activity, setActivity] = useState<ActivityEntry[]>([])
+  const [activeId, setActiveId] = useState<string>(NEW_EVENT_TAB_ID)
+  const [zonesByEvent, setZonesByEvent] = useState<Record<string, ZoneOccupancy[]>>({})
+  const [activityByEvent, setActivityByEvent] = useState<Record<string, ActivityEntry[]>>({})
 
-  // Evita cierres obsoletos dentro del handler del hub de entradas, que se suscribe una sola vez.
-  const zonesRef = useRef(zones)
+  // Los handlers de los hubs se suscriben una sola vez; leen el estado más reciente por ref para
+  // evitar cierres obsoletos.
+  const zonesByEventRef = useRef(zonesByEvent)
   useEffect(() => {
-    zonesRef.current = zones
-  }, [zones])
-
-  const selectedEventIdRef = useRef(selectedEventId)
-  useEffect(() => {
-    selectedEventIdRef.current = selectedEventId
-  }, [selectedEventId])
+    zonesByEventRef.current = zonesByEvent
+  }, [zonesByEvent])
 
   useEffect(() => {
     fetch('/api/ticketing/api/events')
       .then((r) => r.json())
       .then((evs: EventSummary[]) => {
         setEvents(evs)
-        if (evs[0]) setSelectedEventId(evs[0].id)
+        if (evs[0]) setActiveId(evs[0].id)
       })
       .catch(() => setEvents([]))
 
@@ -42,8 +36,21 @@ export default function App() {
       .withAutomaticReconnect()
       .build()
 
+    // Un único socket para todos los eventos (Bloque 18): solo aplica la actualización a pestañas
+    // que ya han hecho su carga perezosa inicial (existing !== undefined) — evita reconstruir un
+    // aforo a medias para una pestaña que el operador nunca ha abierto.
     connection.on('occupancyChanged', (updated: ZoneOccupancy) => {
-      setZones((prev) => prev.map((z) => (z.zoneId === updated.zoneId ? updated : z)))
+      setZonesByEvent((prev) => {
+        const existing = prev[updated.eventId]
+        if (existing === undefined) return prev
+
+        const hasZone = existing.some((z) => z.zoneId === updated.zoneId)
+        const next = hasZone
+          ? existing.map((z) => (z.zoneId === updated.zoneId ? updated : z))
+          : [...existing, updated]
+
+        return { ...prev, [updated.eventId]: next }
+      })
     })
 
     connection.start().catch((err) => console.error('No se pudo conectar al hub de aforo', err))
@@ -59,27 +66,22 @@ export default function App() {
       .withAutomaticReconnect()
       .build()
 
-    // El hub emite para todas las entradas de todos los eventos; se filtra aquí por el evento
-    // seleccionado (vía ref, la suscripción solo se monta una vez) y se resuelve el nombre de la
-    // zona con las zonas ya cargadas — sin pedir la entrada completa por separado.
     connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
-      if (update.eventId !== selectedEventIdRef.current) return
       if (update.status !== 'AwaitingPayment' && update.status !== 'Confirmed' && update.status !== 'Rejected') return
 
-      const zone = zonesRef.current.find((z) => z.zoneId === update.zoneId)
+      const zone = zonesByEventRef.current[update.eventId]?.find((z) => z.zoneId === update.zoneId)
 
-      setActivity((prev) =>
-        [
-          {
-            id: `${update.ticketId}-${update.status}`,
-            zoneName: zone?.name ?? 'Zona desconocida',
-            status: update.status,
-            rejectionReason: update.rejectionReason,
-            atUtc: new Date().toISOString(),
-          },
-          ...prev,
-        ].slice(0, MAX_ACTIVITY_ENTRIES),
-      )
+      setActivityByEvent((prev) => {
+        const existing = prev[update.eventId] ?? []
+        const entry: ActivityEntry = {
+          id: `${update.ticketId}-${update.status}`,
+          zoneName: zone?.name ?? 'Zona desconocida',
+          status: update.status,
+          rejectionReason: update.rejectionReason,
+          atUtc: new Date().toISOString(),
+        }
+        return { ...prev, [update.eventId]: [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES) }
+      })
     })
 
     connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
@@ -89,21 +91,24 @@ export default function App() {
     }
   }, [])
 
+  // Carga perezosa por pestaña: solo se piden zonas la primera vez que se activa un evento — las
+  // visitas siguientes reutilizan lo que ya está en zonesByEvent (mantenido fresco por el socket
+  // de arriba aunque la pestaña no esté montada).
   useEffect(() => {
-    if (selectedEventId === null) {
-      setZones([])
-      return
-    }
-
-    setActivity([])
-    loadZones(selectedEventId)
-  }, [selectedEventId])
+    if (activeId === NEW_EVENT_TAB_ID) return
+    if (zonesByEventRef.current[activeId] !== undefined) return
+    loadZones(activeId)
+  }, [activeId])
 
   function loadZones(eventId: string) {
     fetch(`/api/access-control/api/zones?eventId=${eventId}`)
       .then((r) => r.json())
-      .then(setZones)
-      .catch(() => setZones([]))
+      .then((zones: ZoneOccupancy[]) => setZonesByEvent((prev) => ({ ...prev, [eventId]: zones })))
+      .catch(() => setZonesByEvent((prev) => ({ ...prev, [eventId]: [] })))
+  }
+
+  function updateEvent(updated: EventSummary) {
+    setEvents((prev) => prev.map((ev) => (ev.id === updated.id ? updated : ev)))
   }
 
   async function scanTicket(ticketId: string): Promise<ScanResult> {
@@ -115,38 +120,33 @@ export default function App() {
     return { kind: 'error', message: body.error ?? 'No se pudo hacer el check-in' }
   }
 
-  const selectedEvent = events.find((ev) => ev.id === selectedEventId)
+  const activeEvent = events.find((ev) => ev.id === activeId)
 
   return (
     <div className="venue-ops">
       <SiteHeader />
 
-      <label className="event-selector">
-        Evento
-        <select value={selectedEventId ?? ''} onChange={(e) => setSelectedEventId(e.target.value)}>
-          {events.map((ev) => (
-            <option key={ev.id} value={ev.id}>{ev.name}</option>
-          ))}
-        </select>
-      </label>
+      <EventTabs events={events} activeId={activeId} onSelect={setActiveId} />
 
-      {selectedEvent && selectedEventId !== null && (
-        <SimulationPanel
-          eventId={selectedEventId}
-          eventStartsAtUtc={selectedEvent.startsAtUtc}
-          onSimulationEnded={() => loadZones(selectedEventId)}
+      {activeId === NEW_EVENT_TAB_ID || !activeEvent ? (
+        <EventCreateForm
+          onCreated={(created) => {
+            setEvents((prev) => [...prev, created])
+            setActiveId(created.id)
+          }}
+          onCancel={() => setActiveId(events[0]?.id ?? NEW_EVENT_TAB_ID)}
+        />
+      ) : (
+        <EventWorkspace
+          key={activeEvent.id}
+          event={activeEvent}
+          zones={zonesByEvent[activeEvent.id] ?? []}
+          activity={activityByEvent[activeEvent.id] ?? []}
+          onZonesReload={() => loadZones(activeEvent.id)}
+          scanTicket={scanTicket}
+          onEventUpdated={updateEvent}
         />
       )}
-
-      {selectedEvent && selectedEventId !== null && (
-        <PredictionPanel eventId={selectedEventId} eventStartsAtUtc={selectedEvent.startsAtUtc} />
-      )}
-
-      <ScanPanel onScan={scanTicket} />
-
-      <ZonesDashboard zones={zones} />
-
-      <ActivityFeed entries={activity} />
     </div>
   )
 }

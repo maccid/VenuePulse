@@ -1,4 +1,4 @@
-import type { ZoneOccupancy } from '../types'
+import type { VenueOpsMode, ZoneOccupancy } from '../types'
 
 interface ZoneLayout {
   x: number
@@ -25,13 +25,15 @@ const CONCERT_LAYOUT: Record<string, ZoneLayout> = {
 
 interface Props {
   zones: ZoneOccupancy[]
+  mode?: VenueOpsMode
 }
 
-// Ocupación de VENTA (reservado + confirmado), no de torniquete: mientras se venden entradas
-// (antes del evento) es la señal que de verdad se mueve — checkedIn se queda a 0 hasta el día del
-// evento, y con eso el plano se vería siempre vacío durante la fase de venta.
-function occupancyRatio(zone: ZoneOccupancy): number {
+// Ocupación de VENTA (reservado + confirmado) en modo 'sales' — antes del evento es la señal que
+// de verdad se mueve, checkedIn se queda a 0 hasta el día del evento. En modo 'checkin' (torniquete,
+// Bloque 18) se colorea por el aforo que ya ha entrado físicamente — ver ADR 0022.
+function occupancyRatio(zone: ZoneOccupancy, mode: VenueOpsMode): number {
   if (zone.capacity === 0) return 0
+  if (mode === 'checkin') return Math.min(1, Math.max(0, zone.checkedIn / zone.capacity))
   return Math.min(1, Math.max(0, (zone.capacity - zone.availableToSell) / zone.capacity))
 }
 
@@ -41,7 +43,12 @@ function occupancyTier(ratio: number): 'low' | 'mid' | 'high' {
   return 'low'
 }
 
-export default function StadiumMap({ zones }: Props) {
+const LEGEND_LABEL: Record<VenueOpsMode, { low: string; mid: string; high: string }> = {
+  sales: { low: '< 70% vendido', mid: '70–90% vendido', high: '> 90% vendido' },
+  checkin: { low: '< 70% dentro', mid: '70–90% dentro', high: '> 90% dentro' },
+}
+
+export default function StadiumMap({ zones, mode = 'sales' }: Props) {
   const isConcert = zones.some((z) => z.name === 'Pista')
   const layout = isConcert ? CONCERT_LAYOUT : MATCH_LAYOUT
   const laidOut = zones.filter((z) => layout[z.name])
@@ -68,7 +75,7 @@ export default function StadiumMap({ zones }: Props) {
 
         {laidOut.map((zone) => {
           const zoneLayout = layout[zone.name]
-          const tier = occupancyTier(occupancyRatio(zone))
+          const tier = occupancyTier(occupancyRatio(zone, mode))
 
           return (
             <g key={zone.zoneId} className={`stadium-map__zone stadium-map__zone--${tier}`}>
@@ -95,9 +102,9 @@ export default function StadiumMap({ zones }: Props) {
       )}
 
       <ul className="stadium-map__legend">
-        <li className="stadium-map__legend-item stadium-map__legend-item--low">&lt; 70% vendido</li>
-        <li className="stadium-map__legend-item stadium-map__legend-item--mid">70–90% vendido</li>
-        <li className="stadium-map__legend-item stadium-map__legend-item--high">&gt; 90% vendido</li>
+        <li className="stadium-map__legend-item stadium-map__legend-item--low">{LEGEND_LABEL[mode].low}</li>
+        <li className="stadium-map__legend-item stadium-map__legend-item--mid">{LEGEND_LABEL[mode].mid}</li>
+        <li className="stadium-map__legend-item stadium-map__legend-item--high">{LEGEND_LABEL[mode].high}</li>
       </ul>
     </div>
   )

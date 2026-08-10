@@ -1,9 +1,46 @@
+export type EventType = 'Match' | 'Concert'
+export type EventStatus = 'OnSale' | 'SalesClosed' | 'Cancelled'
+export type EventRelevance = 'Standard' | 'Special'
+
 export interface EventSummary {
   id: string
   name: string
   venueName: string
   startsAtUtc: string
+  type: EventType
+  status: EventStatus
+  relevance: EventRelevance
 }
+
+export interface CreateEventRequest {
+  name: string
+  startsAtUtc: string
+  type: EventType
+  relevance: EventRelevance
+}
+
+export interface EventRevenueDto {
+  eventId: string
+  confirmedRevenue: number
+  confirmedCount: number
+  pendingRevenue: number
+  pendingCount: number
+}
+
+// Price es el precio de catálogo; EffectivePrice/PriceTier son el resultado de la heurística de
+// demanda (Bloque 9, ADR 0016), recalculados en cada lectura. Copia conceptual del tipo homónimo
+// de ticket-checkout (sin código compartido entre micro frontends, ADR 0004).
+export interface TicketType {
+  id: string
+  eventId: string
+  name: string
+  price: number
+  description: string | null
+  effectivePrice: number
+  priceTier: string
+}
+
+export type VenueOpsMode = 'sales' | 'checkin'
 
 export interface ZoneOccupancy {
   zoneId: string
