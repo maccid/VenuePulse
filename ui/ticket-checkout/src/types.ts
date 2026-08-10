@@ -18,7 +18,11 @@ export interface TicketType {
   id: string
   eventId: string
   name: string
+  // Precio de catálogo puro (sin relevancia ni demanda, ver ADR 0019).
   price: number
+  // Precio de catálogo con el multiplicador de relevancia aplicado (p. ej. x1.5 en eventos
+  // especiales) — es el precio de referencia antes de la heurística de demanda.
+  basePrice: number
   description: string | null
   effectivePrice: number
   priceTier: string

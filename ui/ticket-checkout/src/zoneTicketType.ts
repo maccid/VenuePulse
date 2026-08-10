@@ -23,7 +23,7 @@ export function pricingByZoneId(
     const ticketType = matchTicketType(zone.name, ticketTypes)
     if (ticketType) {
       result[zone.zoneId] = {
-        price: ticketType.price,
+        price: ticketType.basePrice,
         effectivePrice: ticketType.effectivePrice,
         priceTier: ticketType.priceTier,
       }

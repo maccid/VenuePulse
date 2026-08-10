@@ -38,7 +38,7 @@ public sealed class TicketingService(
                 // significar ocupación, nunca "es caro porque el evento es especial".
                 var adjustedBasePrice = t.Price * relevanceMultiplier;
                 var (effectivePrice, tier) = DynamicPricing.Apply(adjustedBasePrice, occupancyPercentage);
-                return new TicketTypeDto(t.Id, t.EventId, t.Name, t.Price, t.Description, effectivePrice, tier);
+                return new TicketTypeDto(t.Id, t.EventId, t.Name, t.Price, adjustedBasePrice, t.Description, effectivePrice, tier);
             })
             .ToList();
     }
