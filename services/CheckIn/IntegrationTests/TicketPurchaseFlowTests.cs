@@ -51,6 +51,9 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
             // del host + 3 Testcontainers en una máquina bajo carga puede comerse buena parte de
             // ese margen antes de que la primera reserva real llegue a completarse.
             builder.UseSetting("Saga:ReservationTimeoutSeconds", "60");
+            // A cero en tests: el delay artificial de "Procesando pago" (ADR 0021) es solo para que
+            // el presentador lo perciba en la demo en vivo, no para el arnés de Testcontainers.
+            builder.UseSetting("Saga:PaymentProcessingDelaySeconds", "0");
         });
 
         _client = _apiFactory.CreateClient();
@@ -108,14 +111,42 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
         status.RejectionReason.Should().Be("PaymentFailed");
     }
 
-    private async Task<Guid> PurchaseAsync()
+    /// <summary>
+    /// Cubre la cascada de cancelación (ADR 0021): una entrada ya confirmada se reembolsa, una
+    /// que todavía no eligió pago se rechaza vía la propia Saga — con infraestructura real, no el
+    /// arnés in-memory (que ya cubre las dos ramas por separado en <c>TicketPurchaseSagaTests</c>).
+    /// </summary>
+    [Fact]
+    public async Task Cancelar_el_evento_reembolsa_las_confirmadas_y_rechaza_las_pendientes()
+    {
+        var eventId = Guid.NewGuid();
+
+        var confirmedTicketId = await PurchaseAsync(eventId);
+        await PollUntilAsync(confirmedTicketId, s => s.Status is "AwaitingPayment" or "Rejected", TimeSpan.FromSeconds(90));
+        await PayAsync(confirmedTicketId, "Card");
+        await PollUntilAsync(confirmedTicketId, s => s.Status is "Confirmed" or "Rejected", TimeSpan.FromSeconds(90));
+
+        var pendingTicketId = await PurchaseAsync(eventId);
+        await PollUntilAsync(pendingTicketId, s => s.Status is "AwaitingPayment" or "Rejected", TimeSpan.FromSeconds(90));
+
+        await _fakeAccessControlBus.Publish(new EventCancelled(eventId));
+
+        var confirmedStatus = await PollUntilAsync(confirmedTicketId, s => s.Status is "Refunded", TimeSpan.FromSeconds(90));
+        confirmedStatus.Status.Should().Be("Refunded");
+
+        var pendingStatus = await PollUntilAsync(pendingTicketId, s => s.Status is "Rejected", TimeSpan.FromSeconds(90));
+        pendingStatus.RejectionReason.Should().Be("EventCancelled");
+    }
+
+    private async Task<Guid> PurchaseAsync(Guid? eventId = null)
     {
         var response = await _client.PostAsJsonAsync("/api/tickets", new
         {
-            EventId = Guid.NewGuid(),
+            EventId = eventId ?? Guid.NewGuid(),
             TicketTypeId = Guid.NewGuid(),
             ZoneId = Guid.NewGuid(),
             Holder = "Ana",
+            Price = 40.00m,
         });
 
         response.EnsureSuccessStatusCode();

@@ -26,6 +26,9 @@ public static class DependencyInjection
         services.AddSingleton<ReservationTimeoutTracker>();
         services.AddHostedService<ReservationTimeoutMonitor>();
 
+        services.AddSingleton(new PaymentProcessingOptions(
+            Delay: TimeSpan.FromSeconds(int.Parse(configuration["Saga:PaymentProcessingDelaySeconds"] ?? "3"))));
+
         services.AddVenuePulseMessaging<CheckInDbContext>(
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",
             x =>
@@ -35,9 +38,12 @@ public static class DependencyInjection
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
 
                 x.AddConsumer<TicketReadyForPaymentConsumer>();
+                x.AddConsumer<TicketProcessingPaymentConsumer>();
                 x.AddConsumer<TicketPurchaseConfirmedConsumer>();
                 x.AddConsumer<TicketPurchaseRejectedConsumer>();
                 x.AddConsumer<ReservationWatchdogConsumer>();
+                x.AddConsumer<EventCancelledConsumer>();
+                x.AddConsumer<TicketRefundedConsumer>();
             });
 
         return services;

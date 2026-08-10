@@ -213,6 +213,9 @@ namespace VenuePulse.CheckIn.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");

@@ -25,8 +25,9 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
     public Event<ZoneSlotConfirmed> SlotConfirmed { get; private set; } = null!;
     public Event<ZoneSlotReleased> SlotReleased { get; private set; } = null!;
     public Event<ReservationTimedOut> TimedOut { get; private set; } = null!;
+    public Event<TicketPurchaseCancelled> Cancelled { get; private set; } = null!;
 
-    public TicketPurchaseSaga()
+    public TicketPurchaseSaga(PaymentProcessingOptions paymentOptions)
     {
         InstanceState(x => x.CurrentState);
 
@@ -37,6 +38,7 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
         Event(() => SlotConfirmed, x => x.CorrelateById(m => m.Message.CorrelationId));
         Event(() => SlotReleased, x => x.CorrelateById(m => m.Message.CorrelationId));
         Event(() => TimedOut, x => x.CorrelateById(m => m.Message.CorrelationId));
+        Event(() => Cancelled, x => x.CorrelateById(m => m.Message.CorrelationId));
 
         Initially(
             When(PurchaseRequested)
@@ -73,12 +75,25 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
                 .Then(context => context.Saga.RejectionReason = "ReservationTimedOut")
                 .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "ReservationTimedOut"))
                 .TransitionTo(Rejected)
+                .Finalize(),
+            // El evento se canceló (ver EventCancelledConsumer, ADR 0021) antes de que AccessControl
+            // respondiera. El aforo nunca llegó a reservarse en este punto — igual que TimedOut aquí,
+            // se rechaza sin publicar ReleaseZoneSlot.
+            When(Cancelled)
+                .Then(context => context.Saga.RejectionReason = "EventCancelled")
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "EventCancelled"))
+                .TransitionTo(Rejected)
                 .Finalize());
 
         During(AwaitingPayment,
             When(PaymentSubmitted)
+                // Publicado ANTES del delay para que el timeline por SignalR muestre "Procesando
+                // pago" como un paso real (ver ADR 0021), no una transición instantánea.
+                .Publish(context => new TicketProcessingPayment(context.Saga.CorrelationId))
                 .ThenAsync(async context =>
                 {
+                    await Task.Delay(paymentOptions.Delay, context.CancellationToken);
+
                     if (context.Message.SimulateFailure)
                         await context.Publish(new ReleaseZoneSlot(context.Saga.CorrelationId, context.Saga.ZoneId));
                     else
@@ -90,9 +105,23 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
             When(TimedOut)
                 .Then(context => context.Saga.RejectionReason = "PaymentTimedOut")
                 .Publish(context => new ReleaseZoneSlot(context.Saga.CorrelationId, context.Saga.ZoneId))
+                .TransitionTo(Confirming),
+            // El evento se canceló mientras el cliente todavía no había elegido método de pago —
+            // el aforo SÍ está reservado de verdad aquí, así que hace falta liberarlo (mismo camino
+            // que TimedOut: Confirming resuelve el rechazo final al ver SlotReleased).
+            When(Cancelled)
+                .Then(context => context.Saga.RejectionReason = "EventCancelled")
+                .Publish(context => new ReleaseZoneSlot(context.Saga.CorrelationId, context.Saga.ZoneId))
                 .TransitionTo(Confirming));
 
         During(Confirming,
+            // Ventana de carrera aceptada (ver ADR 0021, mismo tipo de riesgo que ADR 0010): si
+            // EventCancelled llega justo cuando la Saga ya pasó a Confirming (pago ya enviado), el
+            // Ticket en Postgres puede seguir en "AwaitingPayment"/"ProcessingPayment" un instante y
+            // la cascada de cancelación le publica un Cancelled que ya no tiene rama declarada aquí.
+            // Se ignora en vez de dejar que MassTransit lance UnhandledEventException — el pago ya
+            // en curso resuelve solo (Confirmado/Rechazado), sin relación con la cancelación.
+            Ignore(Cancelled),
             When(SlotConfirmed)
                 .Publish(context => new TicketPurchaseConfirmed(context.Saga.CorrelationId))
                 .TransitionTo(Completed)

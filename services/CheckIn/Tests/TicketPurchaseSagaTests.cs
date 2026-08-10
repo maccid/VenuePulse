@@ -17,6 +17,10 @@ public class TicketPurchaseSagaTests
     private static async Task<(ServiceProvider Provider, ITestHarness Harness)> StartHarnessAsync()
     {
         var provider = new ServiceCollection()
+            // Delay a cero: el arnés in-memory prueba la lógica de la state machine, no el paso
+            // del tiempo real — mismo criterio que Saga:PaymentProcessingDelaySeconds=0 en
+            // IntegrationTests (ver .ia/KNOWN-ISSUES.md sobre no añadir flakiness al arnés).
+            .AddSingleton(new PaymentProcessingOptions(TimeSpan.Zero))
             .AddMassTransitTestHarness(x =>
             {
                 x.AddSagaStateMachine<TicketPurchaseSaga, TicketPurchaseSagaState>()
@@ -54,6 +58,9 @@ public class TicketPurchaseSagaTests
         (await harness.Published.Any<TicketAwaitingPayment>()).Should().BeTrue();
 
         await harness.Bus.Publish(new TicketPaymentSubmitted(ticketId, SimulateFailure: false));
+        // Publicado ANTES de resolver Confirmado/Rechazado (ver ADR 0021) — ilumina el timeline
+        // por SignalR mientras la Saga "procesa" el pago (delay a cero en este arnés).
+        (await harness.Published.Any<TicketProcessingPayment>()).Should().BeTrue();
         (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeTrue();
 
         await harness.Bus.Publish(new ZoneSlotConfirmed(ticketId, zoneId));
@@ -62,6 +69,52 @@ public class TicketPurchaseSagaTests
         // SetCompletedWhenFinalized() borra la instancia del repositorio al finalizar —
         // por eso la prueba de "llegó a Completed" es la publicación de TicketPurchaseConfirmed
         // (arriba), no una consulta de existencia contra un estado final ya eliminado.
+    }
+
+    [Fact]
+    public async Task Cancelacion_de_evento_en_Reserving_rechaza_sin_liberar_aforo()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+
+        // El aforo todavía no llegó a reservarse en este punto — el evento se cancela antes de que
+        // AccessControl responda (ver ADR 0021, mismo razonamiento que TimedOut en Reserving).
+        await harness.Bus.Publish(new TicketPurchaseCancelled(ticketId));
+        await harness.Consumed.Any<TicketPurchaseCancelled>();
+
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "EventCancelled")).Should().BeTrue();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Cancelacion_de_evento_en_AwaitingPayment_libera_el_aforo_ya_reservado()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReserved>();
+
+        // El cliente todavía no eligió método de pago — a diferencia de la cancelación en
+        // Reserving, aquí el aforo SÍ está reservado de verdad y hace falta liberarlo.
+        await harness.Bus.Publish(new TicketPurchaseCancelled(ticketId));
+        await harness.Consumed.Any<TicketPurchaseCancelled>();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeTrue();
+
+        await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReleased>();
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "EventCancelled")).Should().BeTrue();
     }
 
     [Fact]

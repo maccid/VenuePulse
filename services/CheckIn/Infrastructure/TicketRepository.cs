@@ -16,6 +16,12 @@ public sealed class TicketRepository(CheckInDbContext dbContext) : ITicketReposi
             .OrderByDescending(t => t.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Ticket>> GetByEventIdAsync(Guid eventId, CancellationToken cancellationToken) =>
+        await dbContext.Tickets
+            .AsNoTracking()
+            .Where(t => t.EventId == eventId)
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(Ticket ticket, CancellationToken cancellationToken) =>
         await dbContext.Tickets.AddAsync(ticket, cancellationToken);
 

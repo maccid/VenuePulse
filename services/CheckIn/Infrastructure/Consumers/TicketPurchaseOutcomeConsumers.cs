@@ -38,6 +38,34 @@ public sealed class TicketReadyForPaymentConsumer(
     }
 }
 
+/// <summary>
+/// Publicado por la propia Saga justo antes de esperar el delay configurable de "Procesando
+/// pago" (ver ADR 0021) — refleja ese paso transitorio en el Ticket para que el timeline por
+/// SignalR lo muestre como un paso real, mismo patrón que <see cref="TicketReadyForPaymentConsumer"/>.
+/// </summary>
+public sealed class TicketProcessingPaymentConsumer(
+    ITicketRepository repository,
+    ITicketStatusNotifier notifier,
+    ILogger<TicketProcessingPaymentConsumer> logger) : IConsumer<TicketProcessingPayment>
+{
+    public async Task Consume(ConsumeContext<TicketProcessingPayment> context)
+    {
+        var ticket = await repository.GetByIdAsync(context.Message.CorrelationId, context.CancellationToken);
+        if (ticket is null)
+        {
+            logger.LogWarning("TicketProcessingPayment para una entrada inexistente {TicketId}", context.Message.CorrelationId);
+            return;
+        }
+
+        ticket.MarkProcessingPayment();
+        await repository.SaveChangesAsync(context.CancellationToken);
+
+        await notifier.NotifyStatusChangedAsync(
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null),
+            context.CancellationToken);
+    }
+}
+
 public sealed class TicketPurchaseConfirmedConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,

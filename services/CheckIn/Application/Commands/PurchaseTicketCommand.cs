@@ -9,7 +9,8 @@ public sealed record PurchaseTicketCommand(
     Guid EventId,
     Guid TicketTypeId,
     Guid ZoneId,
-    string Holder) : IRequest<Guid>;
+    string Holder,
+    decimal Price) : IRequest<Guid>;
 
 /// <summary>
 /// Escritura compleja: crea la entrada (Pending) y dispara la Saga publicando el evento
@@ -22,7 +23,7 @@ public sealed class PurchaseTicketCommandHandler(ITicketRepository repository, I
 {
     public async Task<Guid> Handle(PurchaseTicketCommand request, CancellationToken cancellationToken)
     {
-        var ticket = new Ticket(Guid.NewGuid(), request.EventId, request.TicketTypeId, request.ZoneId, request.Holder);
+        var ticket = new Ticket(Guid.NewGuid(), request.EventId, request.TicketTypeId, request.ZoneId, request.Holder, request.Price);
 
         await repository.AddAsync(ticket, cancellationToken);
 
