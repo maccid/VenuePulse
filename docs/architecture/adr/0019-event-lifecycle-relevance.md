@@ -79,8 +79,9 @@ necesitan que `SaveChangesAsync` detecte el cambio de estado sobre la misma inst
 
 Los tipos de entrada por defecto de cada `EventType` (`DefaultTicketTypeCatalog`, `Ticketing.Domain`)
 quedan fijados en este bloque junto con las zonas equivalentes en `AccessControl` (Bloque 16, ver
-`.ia/TODO.md`) — 2 tipos para partido (`General`/`VIP`, 4 zonas), 4 para concierto (`Pista VIP`/
-`Pista`/`Grada Frontal`/`Grada Lateral`, 5 zonas).
+`.ia/TODO.md`). El set se alineó al resolver el merge con el Bloque 16-A (set de zonas 3+3 de
+`develop`, ver ADR 0018): partido `General`/`Grada VIP` (zonas `Puerta Norte`/`Puerta Sur`/
+`Grada VIP`), concierto `Pista`/`Grada Norte`/`Grada Sur` (zonas con el mismo nombre).
 
 ## Alternativas descartadas
 
