@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type { ActivityEntry, EventSummary, ScanResult, TicketStatusUpdate, ZoneOccupancy } from './types'
 import SiteHeader from './components/SiteHeader'
-import EventTabs, { NEW_EVENT_TAB_ID } from './components/EventTabs'
+import EventList from './components/EventList'
 import EventCreateForm from './components/EventCreateForm'
 import EventWorkspace from './components/EventWorkspace'
+import Modal from './components/Modal'
 import './App.css'
 
 const MAX_ACTIVITY_ENTRIES = 20
 
 export default function App() {
   const [events, setEvents] = useState<EventSummary[]>([])
-  const [activeId, setActiveId] = useState<string>(NEW_EVENT_TAB_ID)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [zonesByEvent, setZonesByEvent] = useState<Record<string, ZoneOccupancy[]>>({})
   const [activityByEvent, setActivityByEvent] = useState<Record<string, ActivityEntry[]>>({})
 
@@ -28,6 +30,7 @@ export default function App() {
       .then((evs: EventSummary[]) => {
         setEvents(evs)
         if (evs[0]) setActiveId(evs[0].id)
+        else setShowCreateModal(true)
       })
       .catch(() => setEvents([]))
 
@@ -38,7 +41,7 @@ export default function App() {
 
     // Un único socket para todos los eventos (Bloque 18): solo aplica la actualización a pestañas
     // que ya han hecho su carga perezosa inicial (existing !== undefined) — evita reconstruir un
-    // aforo a medias para una pestaña que el operador nunca ha abierto.
+    // aforo a medias para un evento que el operador nunca ha abierto.
     connection.on('occupancyChanged', (updated: ZoneOccupancy) => {
       setZonesByEvent((prev) => {
         const existing = prev[updated.eventId]
@@ -91,11 +94,11 @@ export default function App() {
     }
   }, [])
 
-  // Carga perezosa por pestaña: solo se piden zonas la primera vez que se activa un evento — las
+  // Carga perezosa por evento: solo se piden zonas la primera vez que se selecciona — las
   // visitas siguientes reutilizan lo que ya está en zonesByEvent (mantenido fresco por el socket
-  // de arriba aunque la pestaña no esté montada).
+  // de arriba aunque el detalle no esté montado).
   useEffect(() => {
-    if (activeId === NEW_EVENT_TAB_ID) return
+    if (activeId === null) return
     if (zonesByEventRef.current[activeId] !== undefined) return
     loadZones(activeId)
   }, [activeId])
@@ -120,32 +123,43 @@ export default function App() {
     return { kind: 'error', message: body.error ?? 'No se pudo hacer el check-in' }
   }
 
-  const activeEvent = events.find((ev) => ev.id === activeId)
+  const activeEvent = activeId === null ? undefined : events.find((ev) => ev.id === activeId)
 
   return (
     <div className="venue-ops">
-      <SiteHeader />
+      <SiteHeader onCreateEvent={() => setShowCreateModal(true)} />
 
-      <EventTabs events={events} activeId={activeId} onSelect={setActiveId} />
+      <div className="venue-ops__layout">
+        <EventList events={events} activeId={activeId} onSelect={setActiveId} />
 
-      {activeId === NEW_EVENT_TAB_ID || !activeEvent ? (
-        <EventCreateForm
-          onCreated={(created) => {
-            setEvents((prev) => [...prev, created])
-            setActiveId(created.id)
-          }}
-          onCancel={() => setActiveId(events[0]?.id ?? NEW_EVENT_TAB_ID)}
-        />
-      ) : (
-        <EventWorkspace
-          key={activeEvent.id}
-          event={activeEvent}
-          zones={zonesByEvent[activeEvent.id] ?? []}
-          activity={activityByEvent[activeEvent.id] ?? []}
-          onZonesReload={() => loadZones(activeEvent.id)}
-          scanTicket={scanTicket}
-          onEventUpdated={updateEvent}
-        />
+        {activeEvent ? (
+          <EventWorkspace
+            key={activeEvent.id}
+            event={activeEvent}
+            zones={zonesByEvent[activeEvent.id] ?? []}
+            activity={activityByEvent[activeEvent.id] ?? []}
+            onZonesReload={() => loadZones(activeEvent.id)}
+            scanTicket={scanTicket}
+            onEventUpdated={updateEvent}
+          />
+        ) : (
+          <div className="venue-ops__empty card">
+            <p>Selecciona un evento del listado para ver sus operaciones.</p>
+          </div>
+        )}
+      </div>
+
+      {showCreateModal && (
+        <Modal title="Nuevo evento" size="large" onClose={() => setShowCreateModal(false)}>
+          <EventCreateForm
+            onCreated={(created) => {
+              setEvents((prev) => [...prev, created])
+              setActiveId(created.id)
+              setShowCreateModal(false)
+            }}
+            onCancel={() => setShowCreateModal(false)}
+          />
+        </Modal>
       )}
     </div>
   )
