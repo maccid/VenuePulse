@@ -127,3 +127,34 @@ compensar si falla.
 que detecte eventos sin zonas serían las mitigaciones típicas en producción, pero se descartan por
 ahora por no tener necesidad real demostrada en esta demo (ADR 0006). Candidato a revisar si algún
 día se demuestra que el fallo ocurre con frecuencia suficiente para justificarlo.
+
+## `ticket-checkout`: la fusión zona↔tipo de entrada no encuentra `Grada VIP` → `VIP` (PENDIENTE)
+
+**Síntoma**: `ui/ticket-checkout/src/zoneTicketType.ts` (`matchTicketType`) fusiona zona (`Zone`,
+AccessControl) con tipo de entrada (`TicketType`, Ticketing) por **igualdad exacta** de nombre. Con
+los datos reales del seed y de `DefaultTicketTypeCatalog` (partido: zona `Grada VIP`, tipo de
+entrada `VIP`), esa igualdad nunca se cumple — la zona `Grada VIP` no encuentra ningún tipo cuyo
+nombre sea exactamente `"Grada VIP"`, así que cae al *fallback* `General`. Un fan que compra en
+`Grada VIP` vería (y pagaría) el precio de `General`, no el de `VIP` — el popup de compra
+(`ZonePopup.tsx`) y el precio final estarían mal para esa zona en concreto. Las zonas de "puerta"
+(`Puerta Norte`/`Sur`) no se ven afectadas porque su *fallback* a `General` ya es el resultado
+correcto por casualidad.
+
+**Verificado contra el stack real** (`docker compose up --build`, Bloque 18) consultando
+`GET /api/ticketing/api/events/{id}/ticket-types` y `GET /api/access-control/api/zones?eventId=`
+para un evento de partido: tipos `General`/`VIP`, zonas `Puerta Norte`/`Puerta Sur`/`Grada VIP` — el
+único nombre de zona que coincide con su tipo por igualdad exacta es el caso de concierto (`Pista`
+zona = `Pista` tipo); `Grada VIP` nunca coincide con `VIP` por igualdad exacta.
+
+**Causa raíz**: el nombre de la zona "especial" de cada `EventType` se eligió como `Grada VIP`/
+`Pista` para que coincidiera con su tipo de entrada correspondiente (ver comentario de
+`ZoneService.cs`), pero solo funciona por coincidencia exacta cuando ambos nombres son literalmente
+idénticos (`Pista`=`Pista`) — no cuando el nombre de zona es más largo (`Grada VIP`≠`VIP`).
+
+**Sin corregir desde `venue-ops` (Bloque 18)**: `zoneTicketType.ts` vive en `ticket-checkout`, que
+`opencode` está tocando en paralelo (Bloques 19/20) sobre la misma base de datos del stack —
+corregirlo desde otra rama arriesgaría un conflicto de merge sin necesidad real. La copia nueva
+equivalente en `venue-ops` (Bloque 18, `ui/venue-ops/src/zoneTicketType.ts`, para estimar ingresos
+con venta simulada) ya nace con la regla corregida: igualdad exacta → nombre de tipo de entrada
+contenido en el nombre de zona (el más largo que coincida) → `General`/primero. Candidato a portar
+la misma corrección a `ticket-checkout` cuanto antes, porque afecta al precio real que paga un fan.
