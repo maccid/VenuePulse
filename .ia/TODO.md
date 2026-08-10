@@ -30,11 +30,22 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
 (ticket-checkout, opencode). Bloque 20 (shell, opencode, se cuela en la rama del 19) sin ADR.
 
 - **Oleada 1 (en paralelo desde ya)**:
-  - Claude Code → **Bloque 15** `feature/event-lifecycle-pricing` (`Ticketing`): `EventStatus`/
-    `EventRelevance` en `Event`, `POST /api/events` (alta desde Operaciones, primer endpoint de
-    escritura de `Event`), `POST /events/{id}/close-sales`, `POST /events/{id}/cancel` (publica
-    `EventCancelled` nuevo), `EventSummaryDto` con `Status`/`Relevance`, orden de aplicación
-    relevancia→dynamic pricing, seeder actualizado a las zonas/precios ya fijados en el plan.
+  - [x] Claude Code → **Bloque 15** `feature/event-lifecycle-pricing` (`Ticketing`, **mergeado a
+    `develop`**): `EventStatus` (`OnSale`/`SalesClosed`/`Cancelled`, transiciones solo válidas
+    desde `OnSale`) y `EventRelevance` (`Standard`/`Special` ×1.5) en `Event`. `POST /api/events`
+    (alta desde Operaciones, primer endpoint de escritura de `Event`, mismo patrón
+    Add→Publish→SaveChanges que ya usa CheckIn), `POST /events/{id}/close-sales`,
+    `POST /events/{id}/cancel` (publica `EventCancelled` nuevo en
+    `Core.Messaging.Contracts.EventLifecycleMessages.cs`, todavía sin consumers — los añaden los
+    Bloques 16/17). `EventSummaryDto` con `Status`/`Relevance`, relevancia aplicada antes y fuera
+    de `DynamicPricing` (sin tocar ese fichero). `DefaultTicketTypeCatalog` con los tipos de
+    entrada por defecto por `EventType` (partido: `General`/`VIP`; concierto: `Pista VIP`/`Pista`/
+    `Grada Frontal`/`Grada Lateral`), migración `AddEventLifecycleAndRelevance` (aditiva). ADR
+    0019. Tests: Ticketing 33/33 (harness in-memory de MassTransit para `IPublishEndpoint` real),
+    sin regresión en el resto (CheckIn 15/15, AccessControl 39/39, Architecture 7/7). **Verificado
+    en real con `docker compose up --build`**: alta/cierre/cancelación de evento y precio efectivo
+    con relevancia aplicada (95€→128,25€ con `Special` ×1.5 y tier "Demanda baja" -10%) probados
+    contra el gateway real, sin romper el pipeline existente de zonas/pricing dinámico.
   - opencode → **Bloque 16, sub-fase A** `feature/access-control-cancellation` (`AccessControl`,
     solo zonas realistas — 4 en partido/5 en concierto, sin migración, sin dependencias).
     **Implementado en rama** (`ZoneService` + `ZoneServiceTests` a los nombres/aforos fijados en
