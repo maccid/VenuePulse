@@ -8,6 +8,58 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
 > `C:\Users\miguel.cidgarcia\.claude\plans\clever-percolating-cat.md` (solo accesible desde
 > Claude Code), pero **este fichero es el que deben leer ambas IAs** antes de tocar código.
 
+## Reparto en oleadas (ronda 3, gestión de eventos + rediseño Operaciones/Checkout)
+
+Plan detallado en `C:\Users\miguel.cidgarcia\.claude\plans\hazy-stirring-melody.md` (solo
+accesible desde Claude Code, igual que el plan de la ronda 2) — **este fichero es el que deben
+leer ambas IAs** antes de tocar código. Objetivo: alta de eventos desde Operaciones (tabs estilo
+Chrome), ciclo de vida del evento (venta abierta/cerrada/cancelada con reembolso vía RabbitMQ),
+zonas más realistas (4 zonas en partido, 5 en concierto) con precio por zona, selector genérico
+de "relevancia" del evento como multiplicador de precio, dinero/ingresos visibles en Operaciones,
+predicción solo cuando hay ventas, rediseño de `venue-ops` (modos Ventas/Ocupación en grid) y de
+`ticket-checkout` (cabecera de evento, plano en sección propia, total de pago agrupado), y delay
+artificial en "Procesando pago". Decisiones ya fijadas (ver el plan para el detalle): el filtro
+de "no pasados" solo aplica al catálogo de `shell` (Operaciones ve siempre todo); un evento solo
+se cancela mientras está `OnSale`; partido mantiene `Puerta Norte`/`Puerta Sur` y añade una
+segunda `Grada VIP` simétrica (4 zonas); Mongo sigue reservado solo para el estado de la Saga, el
+dinero vive en `Ticket.Price` (CheckIn).
+
+Reserva de ADR para esta ronda (próximo libre tras `0018`): `0019` → Bloque 15 (Ticketing,
+Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021` → Bloque 17
+(CheckIn, Claude Code). `0022` → Bloque 18 (venue-ops, Claude Code). `0023` → Bloque 19
+(ticket-checkout, opencode). Bloque 20 (shell, opencode, se cuela en la rama del 19) sin ADR.
+
+- **Oleada 1 (en paralelo desde ya)**:
+  - Claude Code → **Bloque 15** `feature/event-lifecycle-pricing` (`Ticketing`): `EventStatus`/
+    `EventRelevance` en `Event`, `POST /api/events` (alta desde Operaciones, primer endpoint de
+    escritura de `Event`), `POST /events/{id}/close-sales`, `POST /events/{id}/cancel` (publica
+    `EventCancelled` nuevo), `EventSummaryDto` con `Status`/`Relevance`, orden de aplicación
+    relevancia→dynamic pricing, seeder actualizado a las zonas/precios ya fijados en el plan.
+  - opencode → **Bloque 16, sub-fase A** `feature/access-control-cancellation` (`AccessControl`,
+    solo zonas realistas — 4 en partido/5 en concierto, sin migración, sin dependencias). La
+    sub-fase B (cancelación: `Zone.Cancelled`, `ReleaseConfirmedZoneSlot`, consumer de
+    `EventCancelled`) espera a la Oleada 2, tras que el Bloque 15 publique el contrato.
+- **Oleada 2 (tras merge de Bloque 15 y 16-A a `develop`)**:
+  - Claude Code → **Bloque 17** `feature/checkin-revenue-cancellation` (`CheckIn`): `Ticket.Price`,
+    `TicketStatus.Refunded`/`ProcessingPayment`, cascada de cancelación (consumer +
+    `TicketRefundedConsumer`), dos ramas nuevas en `TicketPurchaseSaga` (`Cancelled` en
+    `Reserving`/`AwaitingPayment`), delay configurable de "Procesando pago"
+    (`Saga:PaymentProcessingDelaySeconds`), endpoint de ingresos agregados.
+  - opencode → **Bloque 16, sub-fase B** (`AccessControl`, cancelación, mismo servicio donde ya
+    trabajó en la Oleada 1).
+- **Oleada 3 (tras merge de Bloque 16-B y 17)** — solo frontend, apps independientes sin build
+  compartido (ADR 0004), sin riesgo de choque entre IAs:
+  - Claude Code → **Bloque 18** `feature/venue-ops-tabs-redesign` (`venue-ops`): `EventTabs` +
+    `EventCreateForm` (tabs estilo Chrome, alta de evento con `+`), carga perezosa por pestaña,
+    `ModeToggle` Ventas/Ocupación en grid, `RevenueWidget`, `StadiumMap` con `mode: sales|checkin`,
+    `PredictionPanel` condicionado a `confirmedCount > 0`.
+  - opencode → **Bloque 19 + 20** `feature/checkout-header-total` (`ticket-checkout` + `shell`,
+    misma rama): `CheckoutHeader` con info de evento + botón volver (evento `CustomEvent` hacia
+    `shell`), plano en sección propia, total visible en el botón de pago (el pago ya se agrupa a
+    nivel funcional), filtro de "no pasados" en el catálogo de `shell`.
+- **Diferido al final, sin bloquear nada**: SVG del `StadiumMap` más realista visualmente
+  (asientos, escenario) — pospuesto explícitamente por el usuario.
+
 ## Reparto en oleadas (ronda 2, tras Bloque 1/5/6/7)
 
 Objetivo: maximizar paralelismo real sin que las dos IAs toquen el mismo servicio (riesgo de
