@@ -1,17 +1,5 @@
 import type { ZoneOccupancy } from '../types'
-
-interface ZoneLayout {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-interface ZonePricing {
-  price: number
-  effectivePrice: number
-  priceTier: string
-}
+import ZoneShape, { type ZoneLayout, type ZonePricing } from './ZoneShape'
 
 // Las zonas son fijas por tipo de evento (ver ZoneService en AccessControl: partido vs.
 // concierto), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
@@ -126,61 +114,28 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
         {laidOut.map((zone) => {
           const zoneLayout = layout[zone.name]
           const tier = occupancyTier(occupancyRatio(zone))
-          const isSelected = zone.zoneId === selectedZoneId
-          const pricing = pricingByZoneId?.[zone.zoneId]
-          const classes = [
-            'stadium-map__zone',
-            isConcert ? `stadium-map__zone--${tier}` : 'stadium-map__zone--stand',
-            isSelected ? 'stadium-map__zone--selected' : '',
-            interactive ? 'stadium-map__zone--interactive' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')
 
           return (
-            <g
-              key={zone.zoneId}
-              className={classes}
-              onClick={interactive ? () => onSelect?.(zone.zoneId) : undefined}
-              role={interactive ? 'button' : undefined}
-              aria-pressed={interactive ? isSelected : undefined}
-              tabIndex={interactive ? 0 : undefined}
-              onKeyDown={
-                interactive
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        onSelect?.(zone.zoneId)
-                      }
-                    }
-                  : undefined
-              }
-            >
-              <rect x={zoneLayout.x} y={zoneLayout.y} width={zoneLayout.width} height={zoneLayout.height} rx={4} />
-              <text
-                x={zoneLayout.x + zoneLayout.width / 2}
-                y={zoneLayout.y + zoneLayout.height / 2 - (pricing ? 7 : 0)}
-                textAnchor="middle"
-                dominantBaseline="middle"
-              >
-                {zone.name}
-              </text>
-              {pricing && (
-                <text
-                  x={zoneLayout.x + zoneLayout.width / 2}
-                  y={zoneLayout.y + zoneLayout.height / 2 + 10}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="stadium-map__zone-price"
-                >
-                  {pricing.effectivePrice.toFixed(2)} €
-                </text>
-              )}
-              {/* Grada: color azul fijo, la ocupación se indica con una luz sutil parpadeante en
-                  vez de teñir todo el bloque (semáforo verde/naranja/rojo del concierto se queda
-                  igual). */}
+            <g key={zone.zoneId}>
+              <ZoneShape
+                name={zone.name}
+                layout={zoneLayout}
+                tier={tier}
+                variant={isConcert ? 'tiered' : 'stand'}
+                isSelected={zone.zoneId === selectedZoneId}
+                interactive={interactive}
+                pricing={pricingByZoneId?.[zone.zoneId]}
+                onSelect={interactive ? () => onSelect?.(zone.zoneId) : undefined}
+              />
+              {/* Grada de partido: color azul fijo (ver ZoneShape variant="stand"), la ocupación
+                  se indica con esta luz sutil parpadeante en vez de teñir todo el bloque (el
+                  semáforo verde/naranja/rojo de concierto se queda igual). pointer-events: none
+                  para que el clic siga cayendo sobre el <rect> de la grada. */}
               {!isConcert && (
-                <g transform={`translate(${zoneLayout.x + zoneLayout.width - 10}, ${zoneLayout.y + 10})`}>
+                <g
+                  transform={`translate(${zoneLayout.x + zoneLayout.width - 10}, ${zoneLayout.y + 10})`}
+                  className="stadium-map__zone-light"
+                >
                   <circle r={7} className={`stadium-map__zone-light-halo stadium-map__zone-light--${tier}`} />
                   <circle r={3} className={`stadium-map__zone-light-core stadium-map__zone-light--${tier}`} />
                 </g>

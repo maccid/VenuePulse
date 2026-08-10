@@ -42,7 +42,10 @@ public static class DependencyInjection
                 x.AddConsumer<TicketPurchaseConfirmedConsumer>();
                 x.AddConsumer<TicketPurchaseRejectedConsumer>();
                 x.AddConsumer<ReservationWatchdogConsumer>();
-                x.AddConsumer<EventCancelledConsumer>();
+                // Nombre de cola explícito: mismo motivo que en AccessControl.Infrastructure.
+                // DependencyInjection — sin esto, ambos EventCancelledConsumer comparten cola.
+                x.AddConsumer<EventCancelledConsumer>()
+                    .Endpoint(e => e.Name = "CheckIn.EventCancelled");
                 x.AddConsumer<TicketRefundedConsumer>();
             });
 

@@ -1,11 +1,5 @@
 import type { VenueOpsMode, ZoneOccupancy } from '../types'
-
-interface ZoneLayout {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+import ZoneShape, { type ZoneLayout } from './ZoneShape'
 
 // Las zonas son fijas por tipo de evento (partido vs. concierto, ver ZoneService en
 // AccessControl), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
@@ -74,24 +68,14 @@ export default function StadiumMap({ zones, mode = 'sales' }: Props) {
           </>
         )}
 
-        {laidOut.map((zone) => {
-          const zoneLayout = layout[zone.name]
-          const tier = occupancyTier(occupancyRatio(zone, mode))
-
-          return (
-            <g key={zone.zoneId} className={`stadium-map__zone stadium-map__zone--${tier}`}>
-              <rect x={zoneLayout.x} y={zoneLayout.y} width={zoneLayout.width} height={zoneLayout.height} rx={4} />
-              <text
-                x={zoneLayout.x + zoneLayout.width / 2}
-                y={zoneLayout.y + zoneLayout.height / 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-              >
-                {zone.name}
-              </text>
-            </g>
-          )
-        })}
+        {laidOut.map((zone) => (
+          <ZoneShape
+            key={zone.zoneId}
+            name={zone.name}
+            layout={layout[zone.name]}
+            tier={occupancyTier(occupancyRatio(zone, mode))}
+          />
+        ))}
       </svg>
 
       {unmapped.length > 0 && (

@@ -256,6 +256,10 @@
   cursor: pointer;
 }
 
+.stadium-map__zone-light {
+  pointer-events: none;
+}
+
 .stadium-map__zone-light-halo {
   opacity: 0.35;
   animation: zone-light-glow 1.8s ease-in-out infinite;

@@ -66,7 +66,7 @@ public class TicketingServiceTests
         var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
 
         ticketTypes.Should().ContainSingle().Which.Should().Match<TicketTypeDto>(
-            t => t.Price == 100m && t.EffectivePrice == 100m && t.PriceTier == DynamicPricing.TierNormal);
+            t => t.Price == 100m && t.BasePrice == 100m && t.EffectivePrice == 100m && t.PriceTier == DynamicPricing.TierNormal);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class TicketingServiceTests
         var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
 
         ticketTypes.Should().ContainSingle().Which.Should().Match<TicketTypeDto>(
-            t => t.Price == 100m && t.EffectivePrice == 130m && t.PriceTier == DynamicPricing.TierUltimas);
+            t => t.Price == 100m && t.BasePrice == 100m && t.EffectivePrice == 130m && t.PriceTier == DynamicPricing.TierUltimas);
     }
 
     [Fact]
@@ -95,10 +95,11 @@ public class TicketingServiceTests
 
         var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
 
-        // Sin datos de demanda: EffectivePrice ya refleja la relevancia (100 x 1.5), el tier
-        // sigue siendo "Normal" porque DynamicPricing no sabe que la relevancia existe (ADR 0019).
+        // Sin datos de demanda: BasePrice ya refleja la relevancia (100 x 1.5) y EffectivePrice
+        // también (por eso BasePrice y EffectivePrice coinciden aquí); el tier sigue siendo
+        // "Normal" porque DynamicPricing no sabe que la relevancia existe (ADR 0019).
         ticketTypes.Should().ContainSingle().Which.Should().Match<TicketTypeDto>(
-            t => t.Price == 100m && t.EffectivePrice == 150m && t.PriceTier == DynamicPricing.TierNormal);
+            t => t.Price == 100m && t.BasePrice == 150m && t.EffectivePrice == 150m && t.PriceTier == DynamicPricing.TierNormal);
     }
 
     [Fact]
