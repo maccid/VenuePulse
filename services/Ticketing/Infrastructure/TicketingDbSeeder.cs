@@ -4,6 +4,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using VenuePulse.Core.Domain;
 using VenuePulse.Core.Messaging.Contracts;
+using VenuePulse.Ticketing.Domain;
 using Event = VenuePulse.Ticketing.Domain.Event;
 
 /// <summary>
@@ -30,14 +31,17 @@ public static class TicketingDbSeeder
         if (await dbContext.Events.AnyAsync(cancellationToken))
             return;
 
+        // El derbi es el ejemplo vivo de EventRelevance.Special (multiplicador de precio, ver
+        // ADR 0019) — un partido de máxima rivalidad es justo el caso de uso que motiva el selector.
         var derbi = new Event(
             Guid.NewGuid(),
             "Derbi de la ciudad",
             Venue,
             DateTimeOffset.UtcNow.AddDays(7),
-            EventType.Match);
-        derbi.AddTicketType(Guid.NewGuid(), "General", 45.00m, "Grada general, sin asiento numerado");
-        derbi.AddTicketType(Guid.NewGuid(), "VIP", 180.00m, "Zona VIP con acceso a hospitality");
+            EventType.Match,
+            EventRelevance.Special);
+        foreach (var (name, price, description) in DefaultTicketTypeCatalog.For(EventType.Match))
+            derbi.AddTicketType(Guid.NewGuid(), name, price, description);
 
         var concierto = new Event(
             Guid.NewGuid(),
@@ -45,8 +49,8 @@ public static class TicketingDbSeeder
             Venue,
             DateTimeOffset.UtcNow.AddDays(14),
             EventType.Concert);
-        concierto.AddTicketType(Guid.NewGuid(), "General", 30.00m, null);
-        concierto.AddTicketType(Guid.NewGuid(), "Pista", 60.00m, "Acceso a pista, de pie");
+        foreach (var (name, price, description) in DefaultTicketTypeCatalog.For(EventType.Concert))
+            concierto.AddTicketType(Guid.NewGuid(), name, price, description);
 
         dbContext.Events.AddRange(derbi, concierto);
 
