@@ -17,10 +17,6 @@ export default function EventCard({ event, onSelect }: Props) {
   const weekday = date.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')
   const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 
-  // SalesClosed con fecha futura se muestra en el catálogo (el filtro de "no pasados" vive en
-  // EventCatalog) pero no se puede comprar — badge y botón deshabilitado.
-  const salesClosed = event.status === 'SalesClosed'
-
   return (
     <li className="flex items-center gap-4 p-4">
       <div className="flex w-14 shrink-0 flex-col items-center rounded-md bg-accent-bg py-1.5 text-accent">
@@ -36,15 +32,8 @@ export default function EventCard({ event, onSelect }: Props) {
         <p className="truncate text-sm text-text-muted">{event.venueName}</p>
       </div>
 
-      {salesClosed && (
-        <span className="shrink-0 rounded-full bg-accent-bg px-2.5 py-1 text-xs font-semibold text-accent">
-          Ventas cerradas
-        </span>
-      )}
-
       <button
         className="flex shrink-0 items-center gap-1 px-4 py-2 text-sm"
-        disabled={salesClosed}
         onClick={() => onSelect(event.id)}
       >
         Entradas

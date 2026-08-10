@@ -11,23 +11,12 @@ function dateKey(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10)
 }
 
-// El catálogo vende entradas para el futuro: un evento cancelado nunca aparece, y uno con la
-// venta cerrada desaparece una vez pasada su fecha. Un SalesClosed con fecha futura SÍ se ve,
-// con badge "Ventas cerradas" y sin botón (ver Bloque 20).
-function isPastEvent(ev: EventSummary): boolean {
-  return new Date(ev.startsAtUtc).getTime() <= Date.now()
-}
-
+// El catálogo vende entradas para el futuro: solo se listan los eventos abiertos (OnSale).
+// Con venta cerrada o cancelados quedan fuera, aunque tengan fecha futura.
 export default function EventCatalog({ events, onSelectEvent }: Props) {
   const [dateFilter, setDateFilter] = useState('all')
 
-  const visibleEvents = useMemo(
-    () =>
-      events.filter(
-        (ev) => ev.status !== 'Cancelled' && !(ev.status === 'SalesClosed' && isPastEvent(ev)),
-      ),
-    [events],
-  )
+  const visibleEvents = useMemo(() => events.filter((ev) => ev.status === 'OnSale'), [events])
 
   const dateOptions = useMemo(() => {
     const unique = Array.from(new Set(visibleEvents.map((ev) => dateKey(ev.startsAtUtc)))).sort()
