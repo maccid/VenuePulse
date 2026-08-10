@@ -32,6 +32,10 @@ public class SimulationEngineTests
 
         public Task ReleaseSlotAsync(Guid zoneId, CancellationToken cancellationToken) => throw new NotImplementedException();
 
+        public Task CancelEventZonesAsync(Guid eventId, CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public Task ReleaseConfirmedSlotAsync(Guid zoneId, CancellationToken cancellationToken) => throw new NotImplementedException();
+
         public Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken) => throw new NotImplementedException();
 
         public Task ProvisionZonesForEventAsync(Guid eventId, EventType eventType, CancellationToken cancellationToken) => throw new NotImplementedException();
@@ -103,7 +107,7 @@ public class SimulationEngineTests
     private static readonly Guid ZoneId = Guid.NewGuid();
 
     private static ZoneOccupancyDto CreateZone(int capacity = 100) =>
-        new(ZoneId, EventId, "Puerta Norte", capacity, capacity, 0, 0);
+        new(ZoneId, EventId, "Puerta Norte", capacity, capacity, 0, 0, false);
 
     private static SimulationStartRequest SalesRequest(DateTimeOffset eventStartsAtUtc) =>
         new(SimulationMode.Sales, eventStartsAtUtc, DurationSeconds: 100, TargetSoldPct: 0.8, NoShowPct: 0.08);

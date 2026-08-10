@@ -28,6 +28,9 @@ namespace VenuePulse.AccessControl.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("Cancelled")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Capacity")
                         .HasColumnType("integer");
 

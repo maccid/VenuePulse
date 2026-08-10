@@ -47,9 +47,15 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
     con relevancia aplicada (95€→128,25€ con `Special` ×1.5 y tier "Demanda baja" -10%) probados
     contra el gateway real, sin romper el pipeline existente de zonas/pricing dinámico.
   - opencode → **Bloque 16, sub-fase A** `feature/access-control-cancellation` (`AccessControl`,
-    solo zonas realistas — 4 en partido/5 en concierto, sin migración, sin dependencias). La
-    sub-fase B (cancelación: `Zone.Cancelled`, `ReleaseConfirmedZoneSlot`, consumer de
-    `EventCancelled`) espera a la Oleada 2, tras que el Bloque 15 publique el contrato.
+    solo zonas realistas — 4 en partido/5 en concierto, sin migración, sin dependencias).
+    **Implementado en rama** (`ZoneService` + `ZoneServiceTests` a los nombres/aforos fijados en
+    la sección 1 del plan: partido `Puerta Norte/Sur`(45) + `Grada VIP Este/Oeste`(20); concierto
+    `Pista VIP`/`Pista`/`Grada Frontal`/`Grada Lateral Este/Oeste`). Sin ADR (las decisiones de
+    zonas quedan en el plan; ADR 0020 va con la sub-fase B). **Al mergear con el Bloque 15**:
+    verificar que los `TicketType` del seeder de `Ticketing` casan por nombre con estas zonas y
+    que `ui/*/zoneTicketType.ts` gana el matching por prefijo (Oleada 3, Bloque 19). La sub-fase B
+    (cancelación: `Zone.Cancelled`, `ReleaseConfirmedZoneSlot`, consumer de `EventCancelled`)
+    espera a la Oleada 2, tras que el Bloque 15 publique el contrato.
 - **Oleada 2 (tras merge de Bloque 15 y 16-A a `develop`)**:
   - Claude Code → **Bloque 17** `feature/checkin-revenue-cancellation` (`CheckIn`): `Ticket.Price`,
     `TicketStatus.Refunded`/`ProcessingPayment`, cascada de cancelación (consumer +

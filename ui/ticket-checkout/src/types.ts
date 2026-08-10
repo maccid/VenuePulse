@@ -21,6 +21,7 @@ export interface ZoneOccupancy {
   availableToSell: number
   confirmedSold: number
   checkedIn: number
+  cancelled: boolean
 }
 
 // "AwaitingPayment" es un estado real del Ticket (no solo interno de la Saga, ver ADR de la

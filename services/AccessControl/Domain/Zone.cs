@@ -26,6 +26,10 @@ public sealed class Zone : Entity<Guid>
     /// <summary>Personas físicamente dentro ahora mismo — lo que alimenta el dashboard en vivo.</summary>
     public int CheckedIn { get; private set; }
 
+    /// <summary>Zona cerrada por cancelación del evento (ADR 0019/0020): el evento solo se cancela
+    /// mientras está OnSale, así que nunca habrá gente dentro (CheckedIn == 0).</summary>
+    public bool Cancelled { get; private set; }
+
     public int AvailableToSell => Capacity - Reserved - ConfirmedSold;
 
     private Zone()
@@ -65,6 +69,30 @@ public sealed class Zone : Entity<Guid>
             throw new InvalidOperationException("No hay ninguna reserva pendiente que liberar.");
 
         Reserved--;
+    }
+
+    /// <summary>Cancela la zona (evento cancelado, ADR 0020). Idempotente a propósito: la redelivery
+    /// de <c>EventCancelled</c> (Inbox genérico aparte) o una llamada repetida no deben fallar.
+    /// No toca los contadores — el aforo confirmado lo libera CheckIn ticket a ticket vía
+    /// <see cref="ReleaseConfirmedSlot"/>.</summary>
+    public void Cancel()
+    {
+        if (CheckedIn > 0)
+            throw new InvalidOperationException($"La zona '{Name}' no se puede cancelar con gente dentro.");
+
+        Cancelled = true;
+    }
+
+    /// <summary>Compensación por cancelación del evento: libera una entrada YA confirmada
+    /// (decrementa <see cref="ConfirmedSold"/>), no una reserva en curso — eso es
+    /// <see cref="ReleaseSlot"/>. Antes de este comando, <c>ConfirmedSold</c> solo subía; ver
+    /// ADR 0020.</summary>
+    public void ReleaseConfirmedSlot()
+    {
+        if (ConfirmedSold <= 0)
+            throw new InvalidOperationException("No hay entradas confirmadas que liberar.");
+
+        ConfirmedSold--;
     }
 
     public void RecordCheckIn()
