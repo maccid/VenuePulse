@@ -20,8 +20,10 @@ predicción solo cuando hay ventas, rediseño de `venue-ops` (modos Ventas/Ocupa
 `ticket-checkout` (cabecera de evento, plano en sección propia, total de pago agrupado), y delay
 artificial en "Procesando pago". Decisiones ya fijadas (ver el plan para el detalle): el filtro
 de "no pasados" solo aplica al catálogo de `shell` (Operaciones ve siempre todo); un evento solo
-se cancela mientras está `OnSale`; partido mantiene `Puerta Norte`/`Puerta Sur` y añade una
-segunda `Grada VIP` simétrica (4 zonas); Mongo sigue reservado solo para el estado de la Saga, el
+se cancela mientras está `OnSale`; set de zonas por tipo de evento resuelto al mergear con el
+Bloque 15 (partido 3 zonas: `Puerta Norte`/`Puerta Sur` + `Grada VIP`; concierto 3 zonas: `Pista`
++ `Grada Norte`/`Grada Sur` — `Grada VIP`/`Pista` casan por nombre con los `TicketType`, ver
+Blque 16 en Oleada 1); Mongo sigue reservado solo para el estado de la Saga, el
 dinero vive en `Ticket.Price` (CheckIn).
 
 Reserva de ADR para esta ronda (próximo libre tras `0018`): `0019` → Bloque 15 (Ticketing,
@@ -46,24 +48,32 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
     en real con `docker compose up --build`**: alta/cierre/cancelación de evento y precio efectivo
     con relevancia aplicada (95€→128,25€ con `Special` ×1.5 y tier "Demanda baja" -10%) probados
     contra el gateway real, sin romper el pipeline existente de zonas/pricing dinámico.
-  - opencode → **Bloque 16, sub-fase A** `feature/access-control-cancellation` (`AccessControl`,
-    solo zonas realistas — 4 en partido/5 en concierto, sin migración, sin dependencias).
-    **Implementado en rama** (`ZoneService` + `ZoneServiceTests` a los nombres/aforos fijados en
-    la sección 1 del plan: partido `Puerta Norte/Sur`(45) + `Grada VIP Este/Oeste`(20); concierto
-    `Pista VIP`/`Pista`/`Grada Frontal`/`Grada Lateral Este/Oeste`). Sin ADR (las decisiones de
-    zonas quedan en el plan; ADR 0020 va con la sub-fase B). **Al mergear con el Bloque 15**:
-    verificar que los `TicketType` del seeder de `Ticketing` casan por nombre con estas zonas y
-    que `ui/*/zoneTicketType.ts` gana el matching por prefijo (Oleada 3, Bloque 19). La sub-fase B
-    (cancelación: `Zone.Cancelled`, `ReleaseConfirmedZoneSlot`, consumer de `EventCancelled`)
-    espera a la Oleada 2, tras que el Bloque 15 publique el contrato.
+  - [x] opencode → **Bloque 16** `feature/access-control-cancellation` (`AccessControl`, 2
+    sub-fases, **mergeado a `develop`**):
+    - **Sub-fase A** (zonas realistas por tipo de evento): se implementó 4 en partido/5 en
+      concierto, pero al mergear con el Bloque 15 se resolvió **a favor del set de develop**
+      (3+3, ver commit `fix: keep develop zone set after merge`): partido `Puerta Norte/Sur`(40)
+      + `Grada VIP`(15); concierto `Pista`(60) + `Grada Norte/Sur`(20) — `Grada VIP`/`Pista`
+      casan por nombre con los `TicketType` de Ticketing para que el frontend fusione zona+tipo
+      sin relación cruzada en el backend. Sin ADR propio (las decisiones de zonas quedan en el
+      plan y en el comentario de `ZoneService.cs`).
+    - **Sub-fase B** (cancelación, ADR 0020): `Zone.Cancelled` (flag idempotente, guarda solo
+      con gente dentro), `CancelEventZonesAsync` + consumer de `EventCancelled`,
+      `ReleaseConfirmedZoneSlot` (nuevo contrato, decrementa `ConfirmedSold` ticket a ticket;
+      lo publica CheckIn en el Bloque 17) + consumer, `TryReserveSlotAsync` rechaza la reserva
+      en zona cancelada, migración aditiva `AddZoneCancelled`, `ZoneOccupancyDto.Cancelled`
+      expuesto (TS de `venue-ops`/`ticket-checkout` actualizado). Tests: AccessControl 46/46,
+      sin regresión (Ticketing 33/33, CheckIn 15/15, Architecture 7/7).
 - **Oleada 2 (tras merge de Bloque 15 y 16-A a `develop`)**:
   - Claude Code → **Bloque 17** `feature/checkin-revenue-cancellation` (`CheckIn`): `Ticket.Price`,
     `TicketStatus.Refunded`/`ProcessingPayment`, cascada de cancelación (consumer +
     `TicketRefundedConsumer`), dos ramas nuevas en `TicketPurchaseSaga` (`Cancelled` en
     `Reserving`/`AwaitingPayment`), delay configurable de "Procesando pago"
-    (`Saga:PaymentProcessingDelaySeconds`), endpoint de ingresos agregados.
-  - opencode → **Bloque 16, sub-fase B** (`AccessControl`, cancelación, mismo servicio donde ya
-    trabajó en la Oleada 1).
+    (`Saga:PaymentProcessingDelaySeconds`), endpoint de ingresos agregados. Publica
+    `ReleaseConfirmedZoneSlot` por entrada reembolsada (ya disponible en
+    `Core.Messaging.Contracts`, consumer en AccessControl desde el Bloque 16-B).
+  - [x] opencode → **Bloque 16, sub-fase B** (`AccessControl`, cancelación, mismo servicio donde
+    ya trabajó en la Oleada 1) — **mergeado a `develop`**, ver arriba.
 - **Oleada 3 (tras merge de Bloque 16-B y 17)** — solo frontend, apps independientes sin build
   compartido (ADR 0004), sin riesgo de choque entre IAs:
   - Claude Code → **Bloque 18** `feature/venue-ops-tabs-redesign` (`venue-ops`): `EventTabs` +
