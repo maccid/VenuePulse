@@ -26,6 +26,10 @@ Bloque 15 (partido 3 zonas: `Puerta Norte`/`Puerta Sur` + `Grada VIP`; concierto
 Blque 16 en Oleada 1); Mongo sigue reservado solo para el estado de la Saga, el
 dinero vive en `Ticket.Price` (CheckIn).
 
+> **Actualización (Bloque 21, ADR 0024):** el set de 3 zonas de partido de este párrafo quedó
+> revertido — ahora son 4 (`Puerta Norte`/`Puerta Sur` + `Grada Este VIP`/`Grada Oeste VIP`), a
+> petición directa del usuario. Concierto no cambia.
+
 Reserva de ADR para esta ronda (próximo libre tras `0018`): `0019` → Bloque 15 (Ticketing,
 Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021` → Bloque 17
 (CheckIn, Claude Code). `0022` → Bloque 18 (venue-ops, Claude Code). `0023` → Bloque 19
@@ -149,6 +153,18 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
     `Grada Sur`), con tests de Ticketing actualizados.
 - **Diferido al final, sin bloquear nada**: SVG del `StadiumMap` más realista visualmente
   (asientos, escenario) — pospuesto explícitamente por el usuario.
+- [x] **Bloque 21 — `feature/match-map-4-zones`** (Claude Code, petición directa del usuario tras
+  cerrar la ronda 3): **revierte la decisión de 3 zonas de partido del Bloque 15/16** — vuelve a
+  4 zonas reales y comprables (`Puerta Norte`/`Puerta Sur` + `Grada Este VIP`/`Grada Oeste VIP` en
+  vez de una `Grada VIP` única), con `DefaultTicketTypeCatalog` de partido pasando de 2 a 3 tipos
+  a juego. `StadiumMap` de `ticket-checkout` (partido) rediseñado a petición del usuario: fondo
+  gris de estadio, campo verde con líneas realistas (áreas, círculo central, punto de penalti,
+  decorativo), y las 4 gradas en azul fijo con una luz de estado pequeña y parpadeante (CSS) en
+  vez del semáforo verde/naranja/rojo que sigue usando el concierto (sin tocar, rediseño propio
+  pendiente). `StadiumMap` de `venue-ops` solo actualiza coordenadas de las 4 zonas nuevas, sin
+  tocar su semáforo. `CheckoutHeader` pasa a fila con el botón "Volver al catálogo" pegado a la
+  derecha. ADR 0024. Build/tests de `ticket-checkout`/`venue-ops` en verde; tests de
+  `AccessControl`/`Ticketing` actualizados a las 4/3 zonas y tipos nuevos.
 
 ## Reparto en oleadas (ronda 2, tras Bloque 1/5/6/7)
 

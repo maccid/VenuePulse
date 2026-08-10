@@ -118,7 +118,7 @@ public class TicketingServiceTests
     }
 
     [Fact]
-    public async Task Crear_un_evento_de_partido_anade_general_y_grada_vip_por_defecto()
+    public async Task Crear_un_evento_de_partido_anade_general_y_gradas_vip_por_defecto()
     {
         var (provider, _, service, _) = await StartAsync();
         await using var _p = provider;
@@ -129,9 +129,10 @@ public class TicketingServiceTests
 
         var ticketTypes = await service.GetTicketTypesAsync(created.Id, CancellationToken.None);
 
-        ticketTypes.Should().HaveCount(2);
+        ticketTypes.Should().HaveCount(3);
         ticketTypes.Should().Contain(t => t.Name == "General" && t.Price == 40.00m);
-        ticketTypes.Should().Contain(t => t.Name == "Grada VIP" && t.Price == 90.00m);
+        ticketTypes.Should().Contain(t => t.Name == "Grada Este VIP" && t.Price == 90.00m);
+        ticketTypes.Should().Contain(t => t.Name == "Grada Oeste VIP" && t.Price == 90.00m);
     }
 
     [Fact]

@@ -28,10 +28,6 @@ export default function CheckoutHeader({ event }: Props) {
 
   return (
     <header className="checkout-header">
-      <button type="button" className="checkout-header__back" onClick={handleBack}>
-        ← Volver al catálogo
-      </button>
-
       <div className="checkout-header__card">
         <div className="checkout-header__date">
           <span className="checkout-header__month">{month}</span>
@@ -46,6 +42,10 @@ export default function CheckoutHeader({ event }: Props) {
           <p className="checkout-header__venue">{event.venueName}</p>
         </div>
       </div>
+
+      <button type="button" className="checkout-header__back" onClick={handleBack}>
+        ← Volver al catálogo
+      </button>
     </header>
   )
 }
