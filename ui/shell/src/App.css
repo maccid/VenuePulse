@@ -37,17 +37,3 @@
   display: flex;
   flex-direction: column;
 }
-
-.back-link {
-  align-self: flex-start;
-  background: none;
-  color: var(--vp-accent);
-  font-weight: 500;
-  padding: var(--vp-space-1) 0 var(--vp-space-4);
-}
-
-.back-link:hover {
-  background: none;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
