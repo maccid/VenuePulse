@@ -5,26 +5,21 @@ using VenuePulse.Core.Domain;
 public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
     // Set de zonas fijo por tipo de evento — igual para cualquier partido/concierto (sin
-    // geometría real, ver ADR sobre StadiumMap). Los nombres y aforos quedan fijados en el plan de
-    // la ronda (sección "zonas y precios por tipo de evento"): 4 zonas en partido (2 puertas
-    // generales + 2 gradas VIP simétricas) y 5 en concierto (pista VIP + pista + frontal +
-    // laterales). El emparejamiento zona↔tipo de entrada lo resuelve el frontend por nombre
-    // (coincidencia exacta → prefijo, ver ADR 0016/0018), sin relación real en el backend.
+    // geometría real, ver ADR sobre StadiumMap): "Grada VIP"/"Pista" son las zonas "especiales"
+    // cuyo nombre coincide a propósito con el TicketType correspondiente en Ticketing, para que el
+    // frontend pueda fusionar zona+tipo de entrada por nombre sin inventar una relación cruzada.
     private static readonly (string Name, int Capacity)[] MatchZones =
     [
-        ("Puerta Norte", 45),
-        ("Puerta Sur", 45),
-        ("Grada VIP Este", 20),
-        ("Grada VIP Oeste", 20),
+        ("Puerta Norte", 40),
+        ("Puerta Sur", 40),
+        ("Grada VIP", 15),
     ];
 
     private static readonly (string Name, int Capacity)[] ConcertZones =
     [
-        ("Pista VIP", 15),
-        ("Pista", 55),
-        ("Grada Frontal", 15),
-        ("Grada Lateral Este", 25),
-        ("Grada Lateral Oeste", 25),
+        ("Pista", 60),
+        ("Grada Norte", 20),
+        ("Grada Sur", 20),
     ];
 
     private static (string Name, int Capacity)[] ZonesFor(EventType eventType) => eventType switch
