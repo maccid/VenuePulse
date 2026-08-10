@@ -117,7 +117,9 @@ export default function App({ eventId, holder }: Props) {
         const response = await fetch('/api/checkin/api/tickets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventId, ticketTypeId, zoneId, holder: holderName }),
+          // Precio efectivo mostrado en el popup en el momento de la compra — CheckIn lo exige
+          // desde el Bloque 17 y lo guarda tal cual, sin revalidar contra Ticketing (ADR 0021).
+          body: JSON.stringify({ eventId, ticketTypeId, zoneId, holder: holderName, price: ticketType.effectivePrice }),
         })
         if (!response.ok) return null
         const { ticketId } = await response.json()
