@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ActivityEntry, EventRevenueDto, EventSummary, ScanResult, TicketType, VenueOpsMode, ZoneOccupancy } from '../types'
 import { matchTicketType } from '../zoneTicketType'
 import ModeToggle from './ModeToggle'
+import SalesSummary from './SalesSummary'
 import RevenueWidget from './RevenueWidget'
 import SimulationPanel from './SimulationPanel'
 import PredictionPanel from './PredictionPanel'
@@ -9,6 +10,7 @@ import ActivityFeed from './ActivityFeed'
 import StadiumMap from './StadiumMap'
 import ZonesDashboard from './ZonesDashboard'
 import ScanPanel from './ScanPanel'
+import Modal from './Modal'
 
 interface Props {
   event: EventSummary
@@ -21,11 +23,25 @@ interface Props {
 
 const REVENUE_POLL_MS = 3000
 
-// Un workspace por pestaña, montado solo mientras esa pestaña está activa (carga perezosa, ver
-// App.tsx) — dos modos en grid en vez del apilado vertical anterior (ver ADR 0022). "Cerrar
-// venta"/"Cancelar evento" solo tienen sentido con el evento en OnSale (Event.CloseSales/Cancel en
-// Ticketing ya lo exigen server-side; aquí solo se ocultan los botones para no ofrecer una acción
-// que el backend rechazaría con 409).
+const CONFIRM_CONTENT: Record<'close-sales' | 'cancel', { title: string; message: string; nextStatus: EventSummary['status'] }> = {
+  'close-sales': {
+    title: 'Cerrar venta',
+    message: '¿Cerrar la venta de este evento? No se podrán comprar más entradas.',
+    nextStatus: 'SalesClosed',
+  },
+  cancel: {
+    title: 'Cancelar evento',
+    message: '¿Cancelar este evento? Las entradas confirmadas se reembolsarán.',
+    nextStatus: 'Cancelled',
+  },
+}
+
+// Un workspace por evento, montado solo mientras ese evento está seleccionado (carga perezosa, ver
+// App.tsx). El detalle es un único cuadro blanco que, en modo Ventas, se divide en cabecera (resumen
+// de ventas y ocupación + acciones del ciclo de vida), plano + simulación, y actividad + ingresos.
+// "Cerrar venta"/"Cancelar evento" abren un modal en vez del window.confirm anterior, y solo tienen
+// sentido con el evento en OnSale (Event.CloseSales/Cancel en Ticketing ya lo exigen server-side;
+// aquí solo se ocultan los botones y la simulación para no ofrecer algo que el backend rechazaría).
 export default function EventWorkspace({ event, zones, activity, onZonesReload, scanTicket, onEventUpdated }: Props) {
   const [mode, setMode] = useState<VenueOpsMode>('sales')
   const [revenue, setRevenue] = useState<EventRevenueDto | null>(null)
@@ -33,6 +49,7 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionBusy, setActionBusy] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'close-sales' | 'cancel' | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -93,9 +110,7 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
     return sum + (ticketType?.effectivePrice ?? 0) * zone.confirmedSold
   }, 0)
 
-  async function runLifecycleAction(kind: 'close-sales' | 'cancel', confirmMessage: string, nextStatus: EventSummary['status']) {
-    if (!window.confirm(confirmMessage)) return
-
+  async function runLifecycleAction(kind: 'close-sales' | 'cancel') {
     setActionError(null)
     setActionBusy(true)
     try {
@@ -104,55 +119,86 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
         setActionError('La acción no se pudo completar (el evento ya no está en venta).')
         return
       }
-      onEventUpdated({ ...event, status: nextStatus })
+      onEventUpdated({ ...event, status: CONFIRM_CONTENT[kind].nextStatus })
     } catch {
       setActionError('La acción no se pudo completar.')
     } finally {
       setActionBusy(false)
+      setPendingAction(null)
     }
   }
 
   const isOnSale = event.status === 'OnSale'
   const occupancyDefaultSimulationMode = isOnSale ? 'Sales' : 'Arrivals'
+
+  function openConfirm(kind: 'close-sales' | 'cancel') {
+    setActionError(null)
+    setPendingAction(kind)
+  }
   // Ojo: NO se puede usar revenue.confirmedCount aquí (CheckIn, solo compras reales) — el motor de
   // simulación (Bloque 8) es el camino principal para animar la demo y mueve ConfirmedSold de la
   // zona directamente en AccessControl sin pasar nunca por CheckIn, así que revenue se quedaría
   // siempre a 0 en ese camino y el panel no se montaría jamás. zones.confirmedSold sí sube en
   // ambos caminos (compra real o simulada).
   const hasConfirmedSales = zones.some((z) => z.confirmedSold > 0)
+  const totalSold = zones.reduce((sum, z) => sum + z.confirmedSold, 0)
+  const totalCapacity = zones.reduce((sum, z) => sum + z.capacity, 0)
+  const occupancyPct = totalCapacity === 0 ? 0 : Math.round((totalSold / totalCapacity) * 100)
+  const confirm = pendingAction === null ? null : CONFIRM_CONTENT[pendingAction]
 
   return (
-    <div className="event-workspace">
+    <div className="ops-detail">
       <ModeToggle mode={mode} onChange={setMode} />
 
       {mode === 'sales' ? (
-        <div className="mode-grid">
-          <SimulationPanel eventId={event.id} eventStartsAtUtc={event.startsAtUtc} onSimulationEnded={onZonesReload} defaultMode="Sales" />
-          <RevenueWidget revenue={revenue} error={revenueError} estimatedRevenue={estimatedRevenue} />
-          <StadiumMap zones={zones} mode="sales" />
-          <ActivityFeed entries={activity} />
+        <div className="sales-layout">
+          <div className="sales-layout__header">
+            <SalesSummary sold={totalSold} capacity={totalCapacity} occupancyPct={occupancyPct} />
 
-          {isOnSale && (
-            <section className="card event-actions">
-              <h2>Ciclo de vida del evento</h2>
-              <div className="event-actions__buttons">
+            {isOnSale && (
+              <div className="sales-layout__actions">
                 <button
-                  onClick={() => runLifecycleAction('close-sales', '¿Cerrar la venta de este evento? No se podrán comprar más entradas.', 'SalesClosed')}
+                  type="button"
+                  className="sales-layout__close"
+                  onClick={() => openConfirm('close-sales')}
                   disabled={actionBusy}
                 >
                   Cerrar venta
                 </button>
                 <button
-                  className="event-actions__cancel"
-                  onClick={() => runLifecycleAction('cancel', '¿Cancelar este evento? Las entradas confirmadas se reembolsarán.', 'Cancelled')}
+                  type="button"
+                  className="sales-layout__cancel"
+                  onClick={() => openConfirm('cancel')}
                   disabled={actionBusy}
                 >
                   Cancelar evento
                 </button>
               </div>
-              {actionError && <p className="scan-result scan-result--error">{actionError}</p>}
+            )}
+          </div>
+
+          <div className="sales-layout__main">
+            <section className="sales-layout__panel">
+              <h2>Plano del recinto</h2>
+              <StadiumMap zones={zones} mode="sales" />
             </section>
-          )}
+
+            {isOnSale && (
+              <SimulationPanel
+                eventId={event.id}
+                eventStartsAtUtc={event.startsAtUtc}
+                onSimulationEnded={onZonesReload}
+                defaultMode="Sales"
+              />
+            )}
+          </div>
+
+          <div className="sales-layout__footer">
+            <section className="sales-layout__panel">
+              <ActivityFeed entries={activity} />
+            </section>
+            <RevenueWidget revenue={revenue} error={revenueError} estimatedRevenue={estimatedRevenue} />
+          </div>
         </div>
       ) : (
         <div className="mode-grid">
@@ -170,6 +216,26 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
             <PredictionPanel eventId={event.id} eventStartsAtUtc={event.startsAtUtc} />
           )}
         </div>
+      )}
+
+      {confirm && pendingAction !== null && (
+        <Modal title={confirm.title} onClose={() => setPendingAction(null)}>
+          <p className="modal__text">{confirm.message}</p>
+          {actionError && <p className="scan-result scan-result--error">{actionError}</p>}
+          <div className="modal__actions">
+            <button
+              type="button"
+              className={pendingAction === 'cancel' ? 'sales-layout__cancel' : 'sales-layout__close'}
+              onClick={() => void runLifecycleAction(pendingAction)}
+              disabled={actionBusy}
+            >
+              {actionBusy ? 'Procesando…' : pendingAction === 'cancel' ? 'Cancelar evento' : 'Cerrar venta'}
+            </button>
+            <button type="button" className="modal__secondary" onClick={() => setPendingAction(null)} disabled={actionBusy}>
+              Volver
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   )
