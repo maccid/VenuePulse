@@ -57,13 +57,29 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
     (cancelación: `Zone.Cancelled`, `ReleaseConfirmedZoneSlot`, consumer de `EventCancelled`)
     espera a la Oleada 2, tras que el Bloque 15 publique el contrato.
 - **Oleada 2 (tras merge de Bloque 15 y 16-A a `develop`)**:
-  - Claude Code → **Bloque 17** `feature/checkin-revenue-cancellation` (`CheckIn`): `Ticket.Price`,
-    `TicketStatus.Refunded`/`ProcessingPayment`, cascada de cancelación (consumer +
-    `TicketRefundedConsumer`), dos ramas nuevas en `TicketPurchaseSaga` (`Cancelled` en
-    `Reserving`/`AwaitingPayment`), delay configurable de "Procesando pago"
-    (`Saga:PaymentProcessingDelaySeconds`), endpoint de ingresos agregados.
+  - [x] Claude Code → **Bloque 17** `feature/checkin-revenue-cancellation` (`CheckIn`).
+    **Implementado en rama** (Bloque 16 ya mergeado completo — sub-fases A y B — antes de empezar,
+    así que `EventCancelled` y `ReleaseConfirmedZoneSlot` ya tenían consumer al otro lado):
+    `Ticket.Price` (decimal inmutable, fijado en la compra sin revalidar contra `Ticketing`,
+    migración aditiva `AddTicketPrice`); `TicketStatus` gana `ProcessingPayment` (transitorio,
+    entre `AwaitingPayment` y `Confirmed`/`Rejected`) y `Refunded` (terminal, distinto de
+    `Rejected` porque la entrada sí llegó a completarse). Cascada de cancelación
+    (`EventCancelledConsumer`, nunca muta el `Ticket` — solo publica `TicketRefunded` para
+    `Confirmed` o `TicketPurchaseCancelled` para `Pending`/`AwaitingPayment`; la mutación la hace
+    `TicketRefundedConsumer` o la propia Saga) más dos ramas nuevas en `TicketPurchaseSaga`
+    (`When(Cancelled)` en `Reserving` y en `AwaitingPayment`, reutilizando el mismo camino de
+    resolución que ya usaban las ramas `TimedOut`; `Ignore(Cancelled)` en `Confirming` para la
+    ventana de carrera con un pago ya en curso). Delay configurable de "Procesando pago"
+    (`Saga:PaymentProcessingDelaySeconds`, default 3s, publicando `TicketProcessingPayment` antes
+    del `Task.Delay` dentro del propio `ThenAsync`, a 0 en tests). `GET /api/tickets/events/{id}/revenue`
+    agregando `Ticket.Price` por estado (confirmados vs. pendientes; `Refunded`/`Rejected` fuera
+    por construcción). ADR 0021. Tests: 101/101 en verde (unitarios de dominio/Saga + integración
+    de extremo a extremo con Testcontainers, incluida la cascada de cancelación real), sin
+    regresión en el resto del solution. **Pendiente**: verificación manual con
+    `docker compose up --build` y merge a `develop`.
   - opencode → **Bloque 16, sub-fase B** (`AccessControl`, cancelación, mismo servicio donde ya
-    trabajó en la Oleada 1).
+    trabajó en la Oleada 1). **Mergeado a `develop`** junto con la sub-fase A (ver ADR 0020) antes
+    de que empezara este bloque.
 - **Oleada 3 (tras merge de Bloque 16-B y 17)** — solo frontend, apps independientes sin build
   compartido (ADR 0004), sin riesgo de choque entre IAs:
   - Claude Code → **Bloque 18** `feature/venue-ops-tabs-redesign` (`venue-ops`): `EventTabs` +
