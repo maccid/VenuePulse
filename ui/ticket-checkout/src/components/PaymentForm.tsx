@@ -3,6 +3,7 @@ import type { PaymentMethod } from '../types'
 
 interface Props {
   holder: string
+  total: number
   disabled: boolean
   onSubmit: (method: PaymentMethod) => void
 }
@@ -11,7 +12,7 @@ interface Props {
 // texto libre) — el nombre real que viaja con cada entrada es el que ya se pidió antes de poder
 // añadir nada al carrito. Pedirlos aquí de nuevo es una confirmación de datos, no una segunda
 // fuente de verdad.
-export default function PaymentForm({ holder, disabled, onSubmit }: Props) {
+export default function PaymentForm({ holder, total, disabled, onSubmit }: Props) {
   const [surname, setSurname] = useState('')
   const [email, setEmail] = useState('')
   const [method, setMethod] = useState<PaymentMethod | null>(null)
@@ -60,7 +61,7 @@ export default function PaymentForm({ holder, disabled, onSubmit }: Props) {
       </div>
 
       <button type="submit" disabled={disabled || !method}>
-        {disabled ? 'Procesando pago…' : 'Confirmar y pagar'}
+        {disabled ? 'Procesando pago…' : `Pagar todo — ${total.toFixed(2)} €`}
       </button>
     </form>
   )

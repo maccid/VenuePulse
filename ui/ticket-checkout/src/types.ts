@@ -1,3 +1,19 @@
+export type EventType = 'Match' | 'Concert'
+export type EventStatus = 'OnSale' | 'SalesClosed' | 'Cancelled'
+
+// La cabecera necesita el nombre/categoría/fecha del evento, que el Web Component no recibe por
+// atributo — se obtiene con el GET /api/events existente y se busca por id (sin endpoint nuevo,
+// ver ADR 0023). El Status decide si el flujo de compra se muestra o se sustituye por un aviso.
+export interface EventSummary {
+  id: string
+  name: string
+  venueName: string
+  startsAtUtc: string
+  type: EventType
+  status: EventStatus
+  relevance: 'Standard' | 'Special'
+}
+
 export interface TicketType {
   id: string
   eventId: string

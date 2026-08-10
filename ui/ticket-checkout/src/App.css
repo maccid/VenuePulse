@@ -56,6 +56,89 @@
   color: var(--tc-text);
 }
 
+.ticket-checkout__notice {
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed var(--tc-border-strong);
+  border-radius: var(--tc-radius-md);
+  background: var(--tc-accent-bg);
+  color: var(--tc-text);
+  font-size: 14px;
+}
+
+/* Cabecera del checkout: info del evento (estilo EventCard de shell) + volver al catálogo.
+   El botón avisa al shell con un CustomEvent (ver CheckoutHeader.tsx y ADR 0023). */
+.checkout-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkout-header__back {
+  align-self: flex-start;
+  background: none;
+  color: var(--tc-accent);
+  font-weight: 600;
+  padding: 0;
+}
+
+.checkout-header__back:hover {
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.checkout-header__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.checkout-header__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 56px;
+  border-radius: var(--tc-radius-sm);
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent);
+  padding: 6px 0;
+}
+
+.checkout-header__month {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.checkout-header__day {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.checkout-header__info {
+  min-width: 0;
+}
+
+.checkout-header__meta {
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--tc-muted);
+}
+
+.checkout-header__title {
+  margin: 0;
+  color: var(--tc-text);
+  font-size: 18px;
+}
+
+.checkout-header__venue {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tc-muted);
+}
+
 .field-label {
   margin: 0 0 4px;
   font-size: 13px;
@@ -76,16 +159,24 @@
   }
 }
 
-.purchase-flow__map-column {
+.purchase-flow__main {
   display: flex;
   flex-direction: column;
   gap: 14px;
   position: relative;
 }
 
+/* El plano vive en su propia sección, ya no encajonado en la misma columna que el carrito:
+   ocupa todo el ancho de la columna principal y el SVG crece con ella. */
+.purchase-flow__map-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .stadium-map__svg {
   width: 100%;
-  max-width: 320px;
+  max-width: 460px;
   height: auto;
 }
 
