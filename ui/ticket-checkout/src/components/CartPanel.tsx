@@ -50,7 +50,9 @@ export default function CartPanel({ cart, holder, isPaying, onSubmitPayment }: P
             {activeLines.length} / {MAX_TICKETS_PER_PURCHASE} entradas
           </p>
 
-          {awaitingPayment && <PaymentForm holder={holder} disabled={isPaying} onSubmit={onSubmitPayment} />}
+          {awaitingPayment && (
+            <PaymentForm holder={holder} total={total} disabled={isPaying} onSubmit={onSubmitPayment} />
+          )}
 
           {allResolved && !awaitingPayment && (
             <p className="cart-panel__done">

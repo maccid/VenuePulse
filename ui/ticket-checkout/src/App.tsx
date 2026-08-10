@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import type { CartLine, PaymentMethod, PricingChanged, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
+import type { CartLine, EventSummary, PaymentMethod, PricingChanged, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
 import PurchaseFlow from './components/PurchaseFlow'
+import CheckoutHeader from './components/CheckoutHeader'
 import './App.css'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function App({ eventId, holder }: Props) {
+  const [event, setEvent] = useState<EventSummary | undefined>(undefined)
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
   const [holderName, setHolderName] = useState(holder)
@@ -17,6 +19,14 @@ export default function App({ eventId, holder }: Props) {
   const [isPaying, setIsPaying] = useState(false)
 
   useEffect(() => {
+    // La cabecera necesita nombre/categoría/fecha del evento, que el Web Component no recibe por
+    // atributo — se obtiene con el GET /api/events existente y se busca por id (sin endpoint
+    // nuevo, ver ADR 0023). El Status decide si se muestra la compra o el aviso de "no a la venta".
+    fetch('/api/ticketing/api/events')
+      .then((r) => r.json())
+      .then((events: EventSummary[]) => setEvent(events.find((e) => e.id === eventId)))
+      .catch(() => setEvent(undefined))
+
     fetch(`/api/ticketing/api/events/${eventId}/ticket-types`)
       .then((r) => r.json())
       .then(setTicketTypes)
@@ -148,18 +158,24 @@ export default function App({ eventId, holder }: Props) {
 
   return (
     <div className="ticket-checkout">
-      <h3 className="ticket-checkout__title">Comprar entrada</h3>
+      <CheckoutHeader event={event} />
 
-      <PurchaseFlow
-        ticketTypes={ticketTypes}
-        zones={zones}
-        holder={holderName}
-        onHolderChange={setHolderName}
-        cart={cart}
-        isPaying={isPaying}
-        onAddToCart={addToCart}
-        onSubmitPayment={submitPayment}
-      />
+      {event && event.status !== 'OnSale' ? (
+        <p className="ticket-checkout__notice">
+          Este evento ya no está a la venta.
+        </p>
+      ) : (
+        <PurchaseFlow
+          ticketTypes={ticketTypes}
+          zones={zones}
+          holder={holderName}
+          onHolderChange={setHolderName}
+          cart={cart}
+          isPaying={isPaying}
+          onAddToCart={addToCart}
+          onSubmitPayment={submitPayment}
+        />
+      )}
     </div>
   )
 }

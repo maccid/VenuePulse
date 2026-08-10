@@ -39,7 +39,7 @@ export default function PurchaseFlow({
 
   return (
     <div className="purchase-flow">
-      <div className="purchase-flow__map-column">
+      <div className="purchase-flow__main">
         <label className="field">
           Tu nombre
           <input
@@ -50,13 +50,15 @@ export default function PurchaseFlow({
           />
         </label>
 
-        <p className="field-label">Zona / puerta de acceso</p>
-        <StadiumMap
-          zones={zones}
-          selectedZoneId={selectedZoneId ?? undefined}
-          onSelect={setSelectedZoneId}
-          pricingByZoneId={pricing}
-        />
+        <section className="purchase-flow__map-section">
+          <p className="field-label">Zona / puerta de acceso</p>
+          <StadiumMap
+            zones={zones}
+            selectedZoneId={selectedZoneId ?? undefined}
+            onSelect={setSelectedZoneId}
+            pricingByZoneId={pricing}
+          />
+        </section>
 
         {selectedZone && selectedTicketType && (
           <ZonePopup

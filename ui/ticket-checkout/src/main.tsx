@@ -70,4 +70,12 @@ if (standaloneRoot) {
   element.setAttribute('event-id', new URLSearchParams(location.search).get('eventId') ?? '')
   element.setAttribute('holder', 'Ana (dev)')
   standaloneRoot.appendChild(element)
+
+  // En modo standalone no hay shell que escuche 'back-to-catalog' (lo hace CheckoutPanel allí),
+  // así que se recarga sin el eventId — el equivalente dev de "volver al catálogo".
+  window.addEventListener('back-to-catalog', () => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('eventId')
+    window.location.assign(url.toString())
+  })
 }

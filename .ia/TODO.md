@@ -135,6 +135,18 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
     misma rama): `CheckoutHeader` con info de evento + botón volver (evento `CustomEvent` hacia
     `shell`), plano en sección propia, total visible en el botón de pago (el pago ya se agrupa a
     nivel funcional), filtro de "no pasados" en el catálogo de `shell`.
+    **Implementado en rama** (ADR 0023): `CheckoutHeader` obtiene el evento con `GET /api/events`
+    (sin endpoint nuevo) y despacha `CustomEvent('back-to-catalog', {bubbles, composed})` que
+    `CheckoutPanel` (shell) escucha — en standalone, `main.tsx` escucha y recarga sin `eventId`.
+    El plano vive en su propia sección más amplia (CSS/grid, sin cambios de props) y el botón de
+    pago muestra "Pagar todo — {total} €". Si el evento no está `OnSale`, la compra se sustituye
+    por un aviso. `shell`: `EventSummary` gana `Status`/`Relevance`; el catálogo oculta
+    `Cancelled` y `SalesClosed` con fecha ya alcanzada, y un `SalesClosed` con fecha futura se
+    muestra con badge "Ventas cerradas" y botón deshabilitado. De paso, al verificar el
+    catálogo de `TicketType` contra las zonas 3+3 se detectó y corrigió que estaba desalineado
+    (partido `General`/`VIP`, concierto `Pista VIP`/`Pista`/`Grada Frontal`/`Grada Lateral` →
+    alineado con ADR 0018: partido `General`/`Grada VIP`, concierto `Pista`/`Grada Norte`/
+    `Grada Sur`), con tests de Ticketing actualizados.
 - **Diferido al final, sin bloquear nada**: SVG del `StadiumMap` más realista visualmente
   (asientos, escenario) — pospuesto explícitamente por el usuario.
 
