@@ -6,7 +6,7 @@ using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Application.Commands;
 using VenuePulse.CheckIn.Application.Queries;
 
-public sealed record PurchaseTicketRequest(Guid EventId, Guid TicketTypeId, Guid ZoneId, string Holder);
+public sealed record PurchaseTicketRequest(Guid EventId, Guid TicketTypeId, Guid ZoneId, string Holder, decimal Price);
 
 // "Card" | "Bizum" — Bizum es el gatillo determinista de la demo para forzar la compensación en
 // vivo (ver TicketPaymentSubmitted); cualquier otro valor se trata como pago exitoso.
@@ -20,7 +20,7 @@ public sealed class TicketsController(ISender sender) : ControllerBase
     public async Task<ActionResult<object>> Purchase(PurchaseTicketRequest request, CancellationToken cancellationToken)
     {
         var ticketId = await sender.Send(
-            new PurchaseTicketCommand(request.EventId, request.TicketTypeId, request.ZoneId, request.Holder),
+            new PurchaseTicketCommand(request.EventId, request.TicketTypeId, request.ZoneId, request.Holder, request.Price),
             cancellationToken);
 
         return Accepted(new { ticketId });
@@ -54,5 +54,12 @@ public sealed class TicketsController(ISender sender) : ControllerBase
     {
         var result = await sender.Send(new CheckInCommand(ticketId), cancellationToken);
         return result.IsSuccess ? Ok() : BadRequest(new { error = result.Error });
+    }
+
+    [HttpGet("events/{eventId:guid}/revenue")]
+    public async Task<ActionResult<EventRevenueDto>> GetRevenue(Guid eventId, CancellationToken cancellationToken)
+    {
+        var revenue = await sender.Send(new GetEventRevenueQuery(eventId), cancellationToken);
+        return Ok(revenue);
     }
 }

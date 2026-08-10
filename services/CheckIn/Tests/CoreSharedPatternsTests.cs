@@ -23,7 +23,7 @@ public class CoreSharedPatternsTests
     public async Task El_interceptor_de_auditoria_rellena_CreatedAtUtc_al_anadir()
     {
         await using var dbContext = CreateContext();
-        var ticket = new Ticket(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Ada Lovelace");
+        var ticket = new Ticket(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Ada Lovelace", 40.00m);
 
         await dbContext.Tickets.AddAsync(ticket);
         await dbContext.SaveChangesAsync();
@@ -36,12 +36,13 @@ public class CoreSharedPatternsTests
     public async Task El_interceptor_de_auditoria_actualiza_solo_UpdatedAtUtc_al_modificar()
     {
         await using var dbContext = CreateContext();
-        var ticket = new Ticket(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Ada Lovelace");
+        var ticket = new Ticket(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Ada Lovelace", 40.00m);
         await dbContext.Tickets.AddAsync(ticket);
         await dbContext.SaveChangesAsync();
         var createdAtUtc = ticket.CreatedAtUtc;
 
         ticket.MarkAwaitingPayment();
+        ticket.MarkProcessingPayment();
         ticket.Confirm();
         await dbContext.SaveChangesAsync();
 
@@ -54,7 +55,7 @@ public class CoreSharedPatternsTests
     {
         await using var dbContext = CreateContext();
         for (var i = 0; i < 5; i++)
-            await dbContext.Tickets.AddAsync(new Ticket(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), $"Fan {i}"));
+            await dbContext.Tickets.AddAsync(new Ticket(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), $"Fan {i}", 40.00m));
         await dbContext.SaveChangesAsync();
 
         var page = await dbContext.Tickets.OrderBy(t => t.Holder).ToPagedResultAsync(pageNumber: 2, pageSize: 2, CancellationToken.None);

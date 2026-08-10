@@ -31,3 +31,26 @@ public sealed record TicketPurchaseRejected(Guid CorrelationId, string Reason) :
 /// <c>Reserving</c> sin respuesta de AccessControl — ver ADR 0010.
 /// </summary>
 public sealed record ReservationTimedOut(Guid CorrelationId, Guid ZoneId) : IntegrationEvent;
+
+/// <summary>
+/// Publicado por la propia Saga justo antes de esperar <c>Saga:PaymentProcessingDelaySeconds</c>
+/// (ver ADR 0021) — ilumina el paso "Procesando pago" del timeline por SignalR mientras la Saga
+/// resuelve confirmación/rechazo, en vez de que ese paso sea instantáneo e imperceptible.
+/// </summary>
+public sealed record TicketProcessingPayment(Guid CorrelationId) : IntegrationEvent;
+
+/// <summary>
+/// Publicado por <see cref="VenuePulse.Core.Messaging.Contracts.EventCancelled"/> → cascada en
+/// CheckIn (ADR 0021) para una entrada ya <c>Confirmed</c> cuando su evento se cancela. Distinto
+/// de <see cref="TicketPurchaseRejected"/>: una entrada reembolsada sí llegó a completarse, no es
+/// un rechazo del flujo de compra.
+/// </summary>
+public sealed record TicketRefunded(Guid CorrelationId) : IntegrationEvent;
+
+/// <summary>
+/// Publicado por la cascada de <see cref="VenuePulse.Core.Messaging.Contracts.EventCancelled"/>
+/// (ADR 0021) para una entrada todavía <c>Pending</c>/<c>AwaitingPayment</c> cuando su evento se
+/// cancela — correlacionado por <c>CorrelationId</c> con la propia <c>TicketPurchaseSaga</c>, que
+/// lo consume como una compensación más (mismo patrón que <see cref="ReservationTimedOut"/>).
+/// </summary>
+public sealed record TicketPurchaseCancelled(Guid CorrelationId) : IntegrationEvent;

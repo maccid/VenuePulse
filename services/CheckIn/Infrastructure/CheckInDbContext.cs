@@ -17,6 +17,7 @@ public sealed class CheckInDbContext(DbContextOptions<CheckInDbContext> options)
             builder.Property(t => t.Holder).HasMaxLength(200).IsRequired();
             builder.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
             builder.Property(t => t.RejectionReason).HasMaxLength(200);
+            builder.Property(t => t.Price).HasColumnType("decimal(10,2)");
             builder.Ignore(t => t.DomainEvents);
         });
 

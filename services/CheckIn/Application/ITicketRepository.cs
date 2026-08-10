@@ -14,6 +14,10 @@ public interface ITicketRepository
 
     Task<IReadOnlyList<Ticket>> GetByHolderAsync(string holder, CancellationToken cancellationToken);
 
+    /// <summary>Usado por la cascada de cancelación (ADR 0021) y por el agregado de ingresos —
+    /// ambos necesitan ver todos los estados de las entradas del evento, no solo una parte.</summary>
+    Task<IReadOnlyList<Ticket>> GetByEventIdAsync(Guid eventId, CancellationToken cancellationToken);
+
     Task AddAsync(Ticket ticket, CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);

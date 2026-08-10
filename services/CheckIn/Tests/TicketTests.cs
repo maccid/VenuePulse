@@ -5,15 +5,26 @@ using VenuePulse.CheckIn.Domain;
 
 public class TicketTests
 {
-    private static Ticket NewPendingTicket() =>
-        new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Ana");
+    private static Ticket NewPendingTicket(decimal price = 40.00m) =>
+        new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Ana", price);
 
     [Fact]
-    public void Una_entrada_nace_pendiente()
+    public void Una_entrada_nace_pendiente_con_su_precio()
     {
-        var ticket = NewPendingTicket();
+        var ticket = NewPendingTicket(95.00m);
 
         ticket.Status.Should().Be(TicketStatus.Pending);
+        ticket.Price.Should().Be(95.00m);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    public void No_se_puede_crear_una_entrada_con_precio_no_positivo(decimal price)
+    {
+        var act = () => NewPendingTicket(price);
+
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
@@ -42,6 +53,7 @@ public class TicketTests
     {
         var ticket = NewPendingTicket();
         ticket.MarkAwaitingPayment();
+        ticket.MarkProcessingPayment();
         ticket.Confirm();
         ticket.MarkCheckedIn();
 
@@ -61,10 +73,22 @@ public class TicketTests
     }
 
     [Fact]
-    public void Confirmar_una_entrada_esperando_pago_funciona()
+    public void No_se_puede_confirmar_una_entrada_esperando_pago_sin_pasar_por_procesando_pago()
     {
         var ticket = NewPendingTicket();
         ticket.MarkAwaitingPayment();
+
+        var act = ticket.Confirm;
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Confirmar_una_entrada_procesando_pago_funciona()
+    {
+        var ticket = NewPendingTicket();
+        ticket.MarkAwaitingPayment();
+        ticket.MarkProcessingPayment();
 
         ticket.Confirm();
 
@@ -81,5 +105,40 @@ public class TicketTests
         ticket.Reject("PaymentFailed");
 
         ticket.Status.Should().Be(TicketStatus.Rejected);
+    }
+
+    [Fact]
+    public void Se_puede_rechazar_una_entrada_procesando_pago()
+    {
+        var ticket = NewPendingTicket();
+        ticket.MarkAwaitingPayment();
+        ticket.MarkProcessingPayment();
+
+        ticket.Reject("PaymentFailed");
+
+        ticket.Status.Should().Be(TicketStatus.Rejected);
+    }
+
+    [Fact]
+    public void Solo_una_entrada_confirmada_se_puede_reembolsar()
+    {
+        var ticket = NewPendingTicket();
+
+        var act = ticket.Refund;
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Reembolsar_una_entrada_confirmada_la_deja_en_estado_terminal_Refunded()
+    {
+        var ticket = NewPendingTicket();
+        ticket.MarkAwaitingPayment();
+        ticket.MarkProcessingPayment();
+        ticket.Confirm();
+
+        ticket.Refund();
+
+        ticket.Status.Should().Be(TicketStatus.Refunded);
     }
 }
