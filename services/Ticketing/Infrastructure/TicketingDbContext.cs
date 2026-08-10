@@ -3,6 +3,7 @@ namespace VenuePulse.Ticketing.Infrastructure;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using VenuePulse.Core.Domain;
+using VenuePulse.Ticketing.Domain;
 using Event = VenuePulse.Ticketing.Domain.Event;
 
 public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> options) : DbContext(options)
@@ -20,6 +21,8 @@ public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> opti
             builder.Property(e => e.VenueName).HasMaxLength(200).IsRequired();
             builder.Property(e => e.StartsAtUtc).IsRequired();
             builder.Property(e => e.Type).HasConversion<string>().HasMaxLength(20).HasDefaultValue(EventType.Match);
+            builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20).HasDefaultValue(EventStatus.OnSale);
+            builder.Property(e => e.Relevance).HasConversion<string>().HasMaxLength(20).HasDefaultValue(EventRelevance.Standard);
             builder.Ignore(e => e.DomainEvents);
 
             builder.OwnsMany(e => e.TicketTypes, tt =>
