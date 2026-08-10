@@ -7,4 +7,5 @@ public sealed record ZoneOccupancyDto(
     int Capacity,
     int AvailableToSell,
     int ConfirmedSold,
-    int CheckedIn);
+    int CheckedIn,
+    bool Cancelled);

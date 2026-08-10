@@ -21,6 +21,16 @@ public interface IZoneService
 
     Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken);
 
+    /// <summary>Cancela todas las zonas de un evento (evento cancelado, ADR 0020). Idempotente:
+    /// <see cref="Domain.Zone.Cancel"/> solo fija un flag, así que la redelivery de EventCancelled
+    /// (Inbox genérico) no cambia nada.</summary>
+    Task CancelEventZonesAsync(Guid eventId, CancellationToken cancellationToken);
+
+    /// <summary>Libera una entrada YA confirmada de una zona (compensación por cancelación del
+    /// evento, ADR 0020): lo publica CheckIn ticket a ticket — decrementa ConfirmedSold, no
+    /// Reserved.</summary>
+    Task ReleaseConfirmedSlotAsync(Guid zoneId, CancellationToken cancellationToken);
+
     /// <summary>Aprovisiona las 3 zonas fijas del recinto para un evento nuevo — el set depende
     /// del tipo de evento (partido: gradas/puertas; concierto: pista + gradas). Idempotente:
     /// si el evento ya tiene zonas (redelivery de EventCreated) no hace nada.</summary>

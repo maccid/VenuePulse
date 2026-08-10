@@ -9,6 +9,11 @@ public sealed record ConfirmZoneSlot(Guid CorrelationId, Guid ZoneId) : Integrat
 
 public sealed record ReleaseZoneSlot(Guid CorrelationId, Guid ZoneId) : IntegrationEvent;
 
+// Compensación por cancelación del evento (Bloque 16-B, ADR 0020): lo publica CheckIn ticket a
+// ticket al reembolsar una entrada YA confirmada. Es simétrico pero distinto de ReleaseZoneSlot:
+// esto decrementa ConfirmedSold, no Reserved (una reserva a medio hacer la libera ReleaseZoneSlot).
+public sealed record ReleaseConfirmedZoneSlot(Guid CorrelationId, Guid ZoneId) : IntegrationEvent;
+
 public sealed record RecordZoneCheckIn(Guid CorrelationId, Guid ZoneId, Guid TicketId) : IntegrationEvent;
 
 // Eventos que AccessControl publica de vuelta a la Saga.

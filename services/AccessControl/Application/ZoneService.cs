@@ -50,7 +50,10 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
             ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
 
-        if (zone.AvailableToSell <= 0)
+        // Zona cancelada = evento cancelado (ADR 0020): la reserva se rechaza igual que si estuviera
+        // llena. El motivo "ZoneFull" en el fallo es un pelo impreciso, pero la Saga solo necesita
+        // saber "no se pudo reservar" para rechazar la compra — no merece un tipo de fallo nuevo.
+        if (zone.Cancelled || zone.AvailableToSell <= 0)
             return false;
 
         zone.ReserveSlot();
@@ -75,6 +78,27 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
             ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
 
         zone.ReleaseSlot();
+        await zoneRepository.SaveAsync(zone, cancellationToken);
+        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
+    }
+
+    public async Task CancelEventZonesAsync(Guid eventId, CancellationToken cancellationToken)
+    {
+        var zones = await zoneRepository.GetAllAsync(eventId, cancellationToken);
+        foreach (var zone in zones)
+        {
+            zone.Cancel();
+            await zoneRepository.SaveAsync(zone, cancellationToken);
+            await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
+        }
+    }
+
+    public async Task ReleaseConfirmedSlotAsync(Guid zoneId, CancellationToken cancellationToken)
+    {
+        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
+            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
+
+        zone.ReleaseConfirmedSlot();
         await zoneRepository.SaveAsync(zone, cancellationToken);
         await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
     }
@@ -156,5 +180,5 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
     }
 
     private static ZoneOccupancyDto ToDto(Domain.Zone zone) =>
-        new(zone.Id, zone.EventId, zone.Name, zone.Capacity, zone.AvailableToSell, zone.ConfirmedSold, zone.CheckedIn);
+        new(zone.Id, zone.EventId, zone.Name, zone.Capacity, zone.AvailableToSell, zone.ConfirmedSold, zone.CheckedIn, zone.Cancelled);
 }

@@ -13,6 +13,7 @@ export interface ZoneOccupancy {
   availableToSell: number
   confirmedSold: number
   checkedIn: number
+  cancelled: boolean
 }
 
 export type ScanResult = { kind: 'idle' } | { kind: 'ok' } | { kind: 'error'; message: string }

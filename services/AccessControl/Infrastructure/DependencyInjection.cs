@@ -37,6 +37,8 @@ public static class DependencyInjection
                 x.AddConsumer<ReleaseZoneSlotConsumer>();
                 x.AddConsumer<RecordZoneCheckInConsumer>();
                 x.AddConsumer<EventCreatedConsumer>();
+                x.AddConsumer<EventCancelledConsumer>();
+                x.AddConsumer<ReleaseConfirmedZoneSlotConsumer>();
             },
             (context, cfg) => cfg.UseConsumeFilter(typeof(InboxDeduplicationFilter<>), context));
 

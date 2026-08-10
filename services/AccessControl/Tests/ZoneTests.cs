@@ -59,4 +59,50 @@ public class ZoneTests
 
         zone.CheckedIn.Should().Be(1);
     }
+
+    [Fact]
+    public void Cancelar_la_zona_fija_el_flag_y_es_idempotente()
+    {
+        var zone = new Zone(Guid.NewGuid(), Guid.NewGuid(), "Puerta Norte", capacity: 10);
+
+        zone.Cancel();
+        zone.Cancel();
+
+        zone.Cancelled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void No_se_puede_cancelar_una_zona_con_gente_dentro()
+    {
+        var zone = new Zone(Guid.NewGuid(), Guid.NewGuid(), "Puerta Norte", capacity: 10);
+        zone.ReserveSlot();
+        zone.ConfirmSlot();
+        zone.RecordCheckIn();
+
+        var act = zone.Cancel;
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Liberar_una_entrada_confirmada_decrementa_vendidas()
+    {
+        var zone = new Zone(Guid.NewGuid(), Guid.NewGuid(), "Puerta Norte", capacity: 10);
+        zone.ReserveSlot();
+        zone.ConfirmSlot();
+
+        zone.ReleaseConfirmedSlot();
+
+        zone.ConfirmedSold.Should().Be(0);
+    }
+
+    [Fact]
+    public void Liberar_una_entrada_confirmada_sin_confirmadas_falla()
+    {
+        var zone = new Zone(Guid.NewGuid(), Guid.NewGuid(), "Puerta Norte", capacity: 10);
+
+        var act = zone.ReleaseConfirmedSlot;
+
+        act.Should().Throw<InvalidOperationException>();
+    }
 }
