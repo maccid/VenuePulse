@@ -37,7 +37,12 @@ public static class DependencyInjection
                 x.AddConsumer<ReleaseZoneSlotConsumer>();
                 x.AddConsumer<RecordZoneCheckInConsumer>();
                 x.AddConsumer<EventCreatedConsumer>();
-                x.AddConsumer<EventCancelledConsumer>();
+                // Nombre de cola explícito: CheckIn también tiene un EventCancelledConsumer, y
+                // por convención MassTransit nombra la cola por el tipo del consumer sin el
+                // sufijo "Consumer" — sin esto, los dos servicios comparten una única cola
+                // "EventCancelled" y compiten por cada mensaje en vez de recibirlo cada uno.
+                x.AddConsumer<EventCancelledConsumer>()
+                    .Endpoint(e => e.Name = "AccessControl.EventCancelled");
                 x.AddConsumer<ReleaseConfirmedZoneSlotConsumer>();
             },
             (context, cfg) => cfg.UseConsumeFilter(typeof(InboxDeduplicationFilter<>), context));
