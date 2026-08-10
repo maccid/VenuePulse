@@ -65,7 +65,8 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
       expuesto (TS de `venue-ops`/`ticket-checkout` actualizado). Tests: AccessControl 46/46,
       sin regresión (Ticketing 33/33, CheckIn 15/15, Architecture 7/7).
 - **Oleada 2 (tras merge de Bloque 15 y 16-A a `develop`)**:
-  - [x] Claude Code → **Bloque 17** `feature/checkin-revenue-cancellation` (`CheckIn`).
+  - [x] Claude Code → **Bloque 17** `feature/checkin-revenue-cancellation` (`CheckIn`, **mergeado a
+    `develop`**).
     **Implementado en rama** (Bloque 16 ya mergeado completo — sub-fases A y B — antes de empezar,
     así que `EventCancelled` y `ReleaseConfirmedZoneSlot` ya tenían consumer al otro lado):
     `Ticket.Price` (decimal inmutable, fijado en la compra sin revalidar contra `Ticketing`,
@@ -83,11 +84,10 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
     agregando `Ticket.Price` por estado (confirmados vs. pendientes; `Refunded`/`Rejected` fuera
     por construcción). ADR 0021. Tests: 101/101 en verde (unitarios de dominio/Saga + integración
     de extremo a extremo con Testcontainers, incluida la cascada de cancelación real), sin
-    regresión en el resto del solution. **Pendiente**: verificación manual con
-    `docker compose up --build`.
-  - [x] opencode → **Bloque 16, sub-fase B** (`AccessControl`, cancelación, mismo servicio donde
-    ya trabajó en la Oleada 1) — **mergeado a `develop`**, ver arriba.
-- **Oleada 3 (tras merge de Bloque 16-B y 17)** — solo frontend, apps independientes sin build
+    regresión en el resto del solution.
+  - [x] opencode → **Bloque 16, sub-fase B** (`AccessControl`, cancelación) — **mergeado a
+    `develop`**, ver Oleada 1.
+- **Oleada 3 (en paralelo desde ya)** — solo frontend, apps independientes sin build
   compartido (ADR 0004), sin riesgo de choque entre IAs:
   - Claude Code → **Bloque 18** `feature/venue-ops-tabs-redesign` (`venue-ops`): `EventTabs` +
     `EventCreateForm` (tabs estilo Chrome, alta de evento con `+`), carga perezosa por pestaña,
