@@ -15,16 +15,28 @@ interface Props {
   name: string
   layout: ZoneLayout
   tier: 'low' | 'mid' | 'high'
+  // 'stand' = grada de partido: azul fijo (la ocupación la indica una luz aparte, ver
+  // StadiumMap.tsx), en vez del semáforo verde/naranja/rojo de 'tiered' (concierto).
+  variant?: 'tiered' | 'stand'
   isSelected: boolean
   interactive: boolean
   pricing?: ZonePricing
   onSelect?: () => void
 }
 
-export default function ZoneShape({ name, layout, tier, isSelected, interactive, pricing, onSelect }: Props) {
+export default function ZoneShape({
+  name,
+  layout,
+  tier,
+  variant = 'tiered',
+  isSelected,
+  interactive,
+  pricing,
+  onSelect,
+}: Props) {
   const classes = [
     'stadium-map__zone',
-    `stadium-map__zone--${tier}`,
+    variant === 'stand' ? 'stadium-map__zone--stand' : `stadium-map__zone--${tier}`,
     isSelected ? 'stadium-map__zone--selected' : '',
     interactive ? 'stadium-map__zone--interactive' : '',
   ]
