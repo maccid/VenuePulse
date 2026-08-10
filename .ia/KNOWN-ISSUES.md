@@ -128,7 +128,7 @@ que detecte eventos sin zonas serían las mitigaciones típicas en producción, 
 ahora por no tener necesidad real demostrada en esta demo (ADR 0006). Candidato a revisar si algún
 día se demuestra que el fallo ocurre con frecuencia suficiente para justificarlo.
 
-## `ticket-checkout`: la fusión zona↔tipo de entrada no encuentra `Grada VIP` → `VIP` (PENDIENTE)
+## `ticket-checkout`: la fusión zona↔tipo de entrada no encontraba `Grada VIP` → `VIP` (RESUELTO)
 
 **Síntoma**: `ui/ticket-checkout/src/zoneTicketType.ts` (`matchTicketType`) fusiona zona (`Zone`,
 AccessControl) con tipo de entrada (`TicketType`, Ticketing) por **igualdad exacta** de nombre. Con
@@ -156,5 +156,12 @@ idénticos (`Pista`=`Pista`) — no cuando el nombre de zona es más largo (`Gra
 corregirlo desde otra rama arriesgaría un conflicto de merge sin necesidad real. La copia nueva
 equivalente en `venue-ops` (Bloque 18, `ui/venue-ops/src/zoneTicketType.ts`, para estimar ingresos
 con venta simulada) ya nace con la regla corregida: igualdad exacta → nombre de tipo de entrada
-contenido en el nombre de zona (el más largo que coincida) → `General`/primero. Candidato a portar
-la misma corrección a `ticket-checkout` cuanto antes, porque afecta al precio real que paga un fan.
+contenido en el nombre de zona (el más largo que coincida) → `General`/primero.
+
+**Resuelto en el Bloque 19+20 (mergeado a `develop`) por otra vía**: en vez de cambiar la regla de
+fusión, se alineó `DefaultTicketTypeCatalog` con el set de zonas 3+3 (ADR 0018) — el tipo de entrada
+"especial" de cada `EventType` ahora se llama igual que su zona (`Grada VIP` en partido, `Pista` en
+concierto, y `Grada Norte`/`Grada Sur` que ya coincidían), de modo que la **igualdad exacta** de
+`matchTicketType` vuelve a casar sin tocar la regla. Queda como nota histórica; si algún día se
+añade una zona sin tipo de entrada homónimo, la regla de `venue-ops` (`includes`) sigue siendo el
+candidato a portar a `ticket-checkout`.
