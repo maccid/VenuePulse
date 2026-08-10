@@ -100,3 +100,30 @@ pasos y sí anima en vivo el salto "Reservando aforo → Esperando pago" por Sig
 la Saga). **Sigue pendiente de re-verificar con el mismo procedimiento** (cliente SignalR real vía
 `/hubs/tickets`) antes de cerrar el ítem del todo — esta nota solo confirma que el código ya emite
 el paso intermedio, no que se haya vuelto a comprobar en vivo tras el merge.
+
+## Sin estrategia de reintento si falla el aprovisionamiento de zonas al crear un evento
+
+**Síntoma**: si `EventCreatedConsumer` (`AccessControl`) lanza una excepción al aprovisionar las
+zonas de un evento recién creado (en `Ticketing`, vía `POST /api/events` desde el Bloque 15, o vía
+seed data), el evento queda "vivo" en el catálogo (`Ticketing` ya confirmó su propio Outbox, eso no
+falla) pero **sin ninguna zona** en `AccessControl` — nadie puede reservar aforo para él, y el
+plano del checkout se vería vacío indefinidamente.
+
+**Causa raíz**: `MessagingExtensions.cs` (wiring compartido de MassTransit) no configura ningún
+`UseMessageRetry` en ningún servicio. Sin política de reintento, el comportamiento por defecto de
+MassTransit ante un fallo del consumer es moverlo a la cola de error (`<cola>_error`) tras un único
+intento — no se pierde, pero tampoco se reprocesa solo; hace falta intervención manual (reencolar
+desde la consola de RabbitMQ, o arreglar el bug y republicar).
+
+**Por qué es distinto del caso de la compra** (que sí tiene una estrategia real, ver más arriba y
+ADR 0010/0018): `TicketPurchaseSaga` es una Saga orquestada que sabe explícitamente qué hacer si
+`AccessControl` no responde (timeout) o si el pago falla tras reservar (compensación con
+`ReleaseZoneSlot`). Aprovisionar zonas al recibir `EventCreated` es solo consumo "dispara y olvida"
+(choreography, no Saga) — nadie espera una respuesta, así que no hay a quién avisar ni qué
+compensar si falla.
+
+**Riesgo aceptado, sin acción por ahora**: mismo criterio que el resto de huecos documentados aquí
+— añadir `UseMessageRetry` con backoff, alertas sobre la cola de error, o un job de reconciliación
+que detecte eventos sin zonas serían las mitigaciones típicas en producción, pero se descartan por
+ahora por no tener necesidad real demostrada en esta demo (ADR 0006). Candidato a revisar si algún
+día se demuestra que el fallo ocurre con frecuencia suficiente para justificarlo.
