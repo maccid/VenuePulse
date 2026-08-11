@@ -13,6 +13,7 @@ using VenuePulse.Core.Messaging.Contracts;
 public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseSagaState>
 {
     public State Reserving { get; private set; } = null!;
+    public State AwaitingLateReservationOutcome { get; private set; } = null!;
     public State AwaitingPayment { get; private set; } = null!;
     public State Confirming { get; private set; } = null!;
     public State Completed { get; private set; } = null!;
@@ -66,22 +67,39 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
                 .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Message.Reason))
                 .TransitionTo(Rejected)
                 .Finalize(),
-            // AccessControl no respondió a tiempo (ver ADR 0010) — se rechaza en vez de dejar la
-            // Saga colgada en Reserving para siempre. Riesgo aceptado: si SlotReserved llega
-            // justo después de este timeout, la Saga ya está finalizada y ese aforo reservado no
-            // se libera solo (mismo tipo de trade-off ya aceptado en KNOWN-ISSUES.md). Sin
-            // ReleaseZoneSlot aquí porque el aforo nunca llegó a reservarse en este punto.
+            // AccessControl no respondió a tiempo (ver ADR 0010) — pero puede que sí haya llegado
+            // a reservar el aforo de verdad y su respuesta solo vaya tarde. En vez de rechazar y
+            // finalizar aquí mismo (lo que dejaba esa reserva tardía sin nadie que la compense,
+            // ver ADR 0027), pasamos a un estado que todavía espera esa respuesta real para saber
+            // si hace falta compensar o no.
             When(TimedOut)
                 .Then(context => context.Saga.RejectionReason = "ReservationTimedOut")
-                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "ReservationTimedOut"))
-                .TransitionTo(Rejected)
-                .Finalize(),
+                .TransitionTo(AwaitingLateReservationOutcome),
             // El evento se canceló (ver EventCancelledConsumer, ADR 0021) antes de que AccessControl
             // respondiera. El aforo nunca llegó a reservarse en este punto — igual que TimedOut aquí,
             // se rechaza sin publicar ReleaseZoneSlot.
             When(Cancelled)
                 .Then(context => context.Saga.RejectionReason = "EventCancelled")
                 .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "EventCancelled"))
+                .TransitionTo(Rejected)
+                .Finalize());
+
+        // Cierra la ventana de carrera de ADR 0010: aquí la Saga ya se rindió de cara al watchdog,
+        // pero todavía no sabemos si AccessControl SÍ llegó a reservar el aforo antes de que su
+        // respuesta se retrasara. Riesgo residual aceptado (ver ADR 0027 y .ia/KNOWN-ISSUES.md): si
+        // esa respuesta no solo tarda sino que se pierde del todo (AccessControl caído de verdad),
+        // la Saga se queda esperando aquí sin un segundo timeout propio — mismo tipo de trade-off ya
+        // aceptado en el resto del proyecto en vez de añadir un watchdog nuevo solo para este caso.
+        During(AwaitingLateReservationOutcome,
+            Ignore(Cancelled),
+            // La reserva sí llegó a completarse en AccessControl — hay que compensarla antes de
+            // rechazar definitivamente, no solo rechazar (igual que TimedOut en AwaitingPayment).
+            When(SlotReserved)
+                .Publish(context => new ReleaseZoneSlot(context.Saga.CorrelationId, context.Saga.ZoneId))
+                .TransitionTo(Confirming),
+            // Confirma que de verdad nunca llegó a reservarse — nada que compensar.
+            When(SlotReservationFailed)
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!))
                 .TransitionTo(Rejected)
                 .Finalize());
 
