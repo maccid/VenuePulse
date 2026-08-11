@@ -157,10 +157,11 @@ export default function App({ eventId, holder }: Props) {
   // Reiniciar la compra desde la fila de "Tu compra": solo aparece cuando todo está resuelto
   // (compra completada o fallida — en ese caso las reservas ya se liberaron solas por la
   // compensación de la Saga), así que limpiar el estado local es seguro y deja listo un carrito
-  // nuevo. Los datos del comprador se conservan para la siguiente compra.
+  // nuevo. El formulario de compra ("Mis Datos") también se resetea (ver feedback de usuario).
   function resetPurchase() {
     setCart([])
     setDraft([])
+    setBuyer({ nombre: '', apellidos: '', email: '' })
     setIsPaying(false)
     setIsReserving(false)
   }

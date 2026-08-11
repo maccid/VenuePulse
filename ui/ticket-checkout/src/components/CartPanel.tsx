@@ -62,6 +62,29 @@ function ReloadIcon() {
   )
 }
 
+// Icono de papelera para quitar una línea del borrador — el usuario lo pidió en vez del "×"
+// (ver feedback de usuario); misma traza lucide-style que el resto de iconos del checkout.
+function TrashIcon() {
+  return (
+    <svg
+      className="cart-panel__remove-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  )
+}
+
 function groupCartLines(cart: CartLine[]): CartGroup[] {
   const groups = new Map<string, CartGroup>()
   for (const line of cart) {
@@ -159,10 +182,6 @@ export default function CartPanel({
   // usuario). El hook vive aquí (no en un .map()) porque hay un único deadline por compra.
   const countdown = useCountdown(earliestExpiry(cart))
 
-  // "Reservar" exige al menos el Nombre (el holder real que viaja en cada entrada); Apellidos y
-  // Correo se piden — también obligatorios — en "Mis Datos" al pagar (ver feedback de usuario).
-  const canReserve = buyer.nombre.trim() !== ''
-
   return (
     <aside className="ticket-checkout cart-panel">
       <h3 className="cart-panel__title">
@@ -205,24 +224,13 @@ export default function CartPanel({
                       aria-label={`Quitar ${line.zoneName}`}
                       onClick={() => onRemoveDraftLine(line.zoneId, line.ticketTypeId)}
                     >
-                      ×
+                      <TrashIcon />
                     </button>
                   </span>
                 </div>
               </li>
             ))}
           </ul>
-
-          <label className="field">
-            Nombre
-            <input
-              type="text"
-              value={buyer.nombre}
-              onChange={(e) => onBuyerChange({ ...buyer, nombre: e.target.value })}
-              placeholder="Nombre del comprador"
-              required
-            />
-          </label>
 
           <p className="cart-panel__total">
             Total <strong>{draftTotal.toFixed(2)} €</strong>
@@ -231,7 +239,7 @@ export default function CartPanel({
             {draftCount} / {MAX_TICKETS_PER_PURCHASE} entradas
           </p>
 
-          <button type="button" disabled={isReserving || !canReserve} onClick={onReservar}>
+          <button type="button" disabled={isReserving} onClick={onReservar}>
             {isReserving ? 'Reservando…' : 'Reservar'}
           </button>
         </>
