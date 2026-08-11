@@ -79,7 +79,7 @@ export default function PurchaseFlow({
 
   return (
     <div className="purchase-flow">
-      <div className="purchase-flow__main">
+      <div className="ticket-checkout purchase-flow__main">
         <section className="purchase-flow__map-card">
           <div className="purchase-flow__map-card-header">
             <MapIcon />

@@ -22,6 +22,26 @@ interface CartGroup {
   lines: CartLine[]
 }
 
+// Icono de carrito (sin librería de iconos, mismo criterio que el resto del proyecto — ver ADR 0017).
+function CartIcon() {
+  return (
+    <svg
+      className="cart-panel__icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="21" r="1" />
+      <circle cx="19" cy="21" r="1" />
+      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+    </svg>
+  )
+}
+
 function groupCartLines(cart: CartLine[]): CartGroup[] {
   const groups = new Map<string, CartGroup>()
   for (const line of cart) {
@@ -123,8 +143,11 @@ export default function CartPanel({
   const groups = groupCartLines(cart)
 
   return (
-    <aside className="cart-panel">
-      <h3>{hasReservation ? 'Tu compra' : 'Tus Reservas'}</h3>
+    <aside className="ticket-checkout cart-panel">
+      <h3 className="cart-panel__title">
+        <CartIcon />
+        <span>{hasReservation ? 'Tu compra' : 'Tus Reservas'}</span>
+      </h3>
 
       {!hasReservation && draft.length === 0 && (
         <p className="cart-panel__empty">Elige una zona en el plano para añadir entradas.</p>
