@@ -59,9 +59,12 @@ export default function ZoneShape({ name, shape, tier, isSelected, interactive, 
       }
     : undefined
 
-  // El precio va debajo del nombre con aire extra para no pegarse al texto (Este/Oeste escriben
-  // el nombre en dos líneas y con el precio colgando justo debajo quedaba encajado).
-  const priceY = shape.labelY + shape.labelLines.length * 12 + 8
+  // El precio ya no se pinta sobre el plano: se solapaba con el semáforo (sobre todo en las gradas
+  // de abajo, ver feedback de usuario), así que ahora vive en un tooltip que aparece al pasar por
+  // la zona. Pulsar la zona sigue abriendo el popup de compra como siempre.
+  const priceLabel = pricing ? `${pricing.effectivePrice.toFixed(2)} €` : null
+  const tooltipWidth = priceLabel ? priceLabel.length * 5.8 + 14 : 0
+  const tooltipY = shape.lightY - 24
   const outline = shape.rect ? (
     <rect x={shape.rect.x} y={shape.rect.y} width={shape.rect.width} height={shape.rect.height} />
   ) : (
@@ -93,16 +96,12 @@ export default function ZoneShape({ name, shape, tier, isSelected, interactive, 
         ))}
       </text>
       {pricing && (
-        <text
-          x={shape.labelX}
-          y={priceY}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className="stadium-map__zone-price"
-          pointerEvents="none"
-        >
-          {pricing.effectivePrice.toFixed(2)} €
-        </text>
+        <g className="stadium-map__zone-tooltip" pointerEvents="none">
+          <rect x={shape.labelX - tooltipWidth / 2} y={tooltipY} width={tooltipWidth} height={17} rx={8.5} />
+          <text x={shape.labelX} y={tooltipY + 8.5} textAnchor="middle" dominantBaseline="middle">
+            {priceLabel}
+          </text>
+        </g>
       )}
       <g className="stadium-map__zone-light" transform={`translate(${shape.lightX}, ${shape.lightY})`}>
         <circle r={7} className={`stadium-map__zone-light-halo stadium-map__zone-light--${tier}`} />

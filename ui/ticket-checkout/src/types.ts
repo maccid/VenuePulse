@@ -60,6 +60,16 @@ export interface TicketStatusUpdate {
 
 export type PaymentMethod = 'Card' | 'Bizum'
 
+// Datos del comprador en el checkout: se capturan antes de reservar (junto a "Reservar", donde
+// el Nombre viaja como holder en cada entrada) y se confirman en "Mis Datos" al pagar — todos
+// obligatorios (ver feedback de usuario). Apellidos/correo son solo visuales: el backend solo
+// modela un holder de texto libre.
+export interface BuyerData {
+  nombre: string
+  apellidos: string
+  email: string
+}
+
 // Límite de entradas por compra — no es una limitación real del backend (cada entrada es una
 // petición independiente), es una barrera de producto para no dejar vaciar una zona entera de
 // una sentada en la demo.

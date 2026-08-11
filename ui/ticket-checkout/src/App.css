@@ -263,10 +263,6 @@ ticket-checkout-app {
   fill: #ffffff;
 }
 
-.stadium-map__zone--stand .stadium-map__zone-price {
-  fill: rgba(255, 255, 255, 0.9);
-}
-
 .stadium-map__zone--selected rect,
 .stadium-map__zone--selected path {
   stroke-width: 2.5;
@@ -279,6 +275,38 @@ ticket-checkout-app {
 
 .stadium-map__zone-light {
   pointer-events: none;
+}
+
+/* Precio como tooltip al pasar por la zona (el precio fijo pintado en el plano se solapaba con el
+   semáforo, feedback de usuario): píldora oscura centrada sobre la luz, visible solo en hover.
+   pointer-events: none para no robar eventos al bloque de la zona (el :hover se evalúa sobre la
+   geometría del propio bloque). */
+.stadium-map__zone-tooltip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.stadium-map__zone--interactive:hover .stadium-map__zone-tooltip {
+  opacity: 1;
+}
+
+.stadium-map__zone--stand .stadium-map__zone-tooltip rect {
+  fill: var(--tc-text);
+  fill-opacity: 1;
+}
+
+/* El pill del tooltip no debe heredar el borde de hover/selección que sí quieren el bloque de la
+   zona (reglas .stadium-map__zone--interactive:hover rect y --selected rect). */
+.stadium-map__zone--stand.stadium-map__zone--interactive:hover .stadium-map__zone-tooltip rect,
+.stadium-map__zone--stand.stadium-map__zone--selected .stadium-map__zone-tooltip rect {
+  stroke: none;
+}
+
+.stadium-map__zone--stand .stadium-map__zone-tooltip text {
+  fill: var(--tc-surface);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .stadium-map__zone-light-halo {
@@ -337,13 +365,6 @@ ticket-checkout-app {
   font-weight: 700;
   fill: var(--tc-surface);
   letter-spacing: 0.04em;
-}
-
-.stadium-map__zone-price {
-  font-size: 10px;
-  font-weight: 700;
-  fill: var(--tc-text);
-  pointer-events: none;
 }
 
 /* Popup de zona */
@@ -497,7 +518,9 @@ ticket-checkout-app {
   top: 12px;
 }
 
-/* Título con icono: mismo lenguaje que el header de la tarjeta del plano. */
+/* Título con icono: mismo lenguaje que el header de la tarjeta del plano. El contador de
+   expiración y el botón de recarga (compra resuelta) viven en esta misma fila, pegados a la
+   derecha (ver feedback de usuario). */
 .cart-panel__title {
   display: flex;
   align-items: center;
@@ -506,6 +529,39 @@ ticket-checkout-app {
   font-size: 13px;
   font-weight: 600;
   color: var(--tc-muted);
+}
+
+.cart-panel__countdown-inline {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-accent);
+  white-space: nowrap;
+}
+
+.ticket-checkout .cart-panel__reload {
+  margin-left: 2px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tc-muted);
+  border: 1px solid var(--tc-border-strong);
+}
+
+.ticket-checkout .cart-panel__reload:hover {
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent);
+  border-color: var(--tc-accent);
+}
+
+.cart-panel__reload-icon {
+  width: 15px;
+  height: 15px;
 }
 
 .cart-panel__icon {
@@ -549,6 +605,45 @@ ticket-checkout-app {
   margin-bottom: 8px;
 }
 
+/* Línea del borrador ("Tus Reservas"): igual que el header pero con botón para quitar la línea
+   entera antes de reservar (ver feedback de usuario). El subtotal y el botón se agrupan a la
+   derecha para que el justify-content del header los mantenga pegados. */
+.cart-panel__draft-line {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--tc-border);
+}
+
+.cart-panel__draft-line .cart-panel__line-header > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-panel__subtotal {
+  font-weight: 600;
+}
+
+.ticket-checkout .cart-panel__remove {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tc-muted);
+  border: 1px solid var(--tc-border-strong);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ticket-checkout .cart-panel__remove:hover {
+  background: var(--tc-danger-bg);
+  color: var(--tc-danger);
+  border-color: var(--tc-danger);
+}
+
 .cart-panel__total {
   display: flex;
   justify-content: space-between;
@@ -563,13 +658,6 @@ ticket-checkout-app {
   margin: -6px 0 0;
   font-size: 12px;
   color: var(--tc-muted);
-}
-
-.cart-panel__countdown {
-  margin: 8px 0 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--tc-accent);
 }
 
 .cart-panel__done {

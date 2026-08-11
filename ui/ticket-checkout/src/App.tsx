@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type {
+  BuyerData,
   CartLine,
   DraftLine,
   EventSummary,
@@ -25,6 +26,7 @@ export default function App({ eventId, holder }: Props) {
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
   const [draft, setDraft] = useState<DraftLine[]>([])
   const [cart, setCart] = useState<CartLine[]>([])
+  const [buyer, setBuyer] = useState<BuyerData>({ nombre: '', apellidos: '', email: '' })
   const [isReserving, setIsReserving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
 
@@ -146,6 +148,23 @@ export default function App({ eventId, holder }: Props) {
     })
   }
 
+  // Quitar una línea del borrador ("Tus Reservas") — no hay llamada al backend: todavía no se
+  // ha reservado nada de verdad (el aforo real no se toca hasta "Reservar", ver ADR 0025).
+  function removeDraftLine(zoneId: string, ticketTypeId: string) {
+    setDraft((prev) => prev.filter((line) => !(line.zoneId === zoneId && line.ticketTypeId === ticketTypeId)))
+  }
+
+  // Reiniciar la compra desde la fila de "Tu compra": solo aparece cuando todo está resuelto
+  // (compra completada o fallida — en ese caso las reservas ya se liberaron solas por la
+  // compensación de la Saga), así que limpiar el estado local es seguro y deja listo un carrito
+  // nuevo. Los datos del comprador se conservan para la siguiente compra.
+  function resetPurchase() {
+    setCart([])
+    setDraft([])
+    setIsPaying(false)
+    setIsReserving(false)
+  }
+
   // Único momento en que se llama al backend: reserva de verdad cada unidad del borrador (mismo
   // POST que antes disparaba cada "Añadir" individual) y solo entonces aparecen en `cart` — a
   // partir de aquí `occupancyChanged` (SignalR) refleja la selección y el semáforo del plano
@@ -165,7 +184,7 @@ export default function App({ eventId, holder }: Props) {
               eventId,
               ticketTypeId: line.ticketTypeId,
               zoneId: line.zoneId,
-              holder,
+              holder: buyer.nombre.trim() || holder,
               price: line.unitPrice,
             }),
           })
@@ -224,9 +243,13 @@ export default function App({ eventId, holder }: Props) {
           zones={zones}
           draft={draft}
           cart={cart}
+          buyer={buyer}
           isReserving={isReserving}
           isPaying={isPaying}
+          onBuyerChange={setBuyer}
           onAddToDraft={addToDraft}
+          onRemoveDraftLine={removeDraftLine}
+          onResetPurchase={resetPurchase}
           onReservar={reservar}
           onSubmitPayment={submitPayment}
         />

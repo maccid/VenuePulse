@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CartLine, DraftLine, PaymentMethod, TicketType, ZoneOccupancy } from '../types'
+import type { BuyerData, CartLine, DraftLine, PaymentMethod, TicketType, ZoneOccupancy } from '../types'
 import { MAX_TICKETS_PER_PURCHASE } from '../types'
 import { matchTicketType, pricingByZoneId } from '../zoneTicketType'
 import StadiumMap from './StadiumMap'
@@ -11,9 +11,13 @@ interface Props {
   zones: ZoneOccupancy[]
   draft: DraftLine[]
   cart: CartLine[]
+  buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  onBuyerChange: (buyer: BuyerData) => void
   onAddToDraft: (zoneId: string, ticketTypeId: string, quantity: number) => void
+  onRemoveDraftLine: (zoneId: string, ticketTypeId: string) => void
+  onResetPurchase: () => void
   onReservar: () => void
   onSubmitPayment: (method: PaymentMethod) => void
 }
@@ -43,9 +47,13 @@ export default function PurchaseFlow({
   zones,
   draft,
   cart,
+  buyer,
   isReserving,
   isPaying,
+  onBuyerChange,
   onAddToDraft,
+  onRemoveDraftLine,
+  onResetPurchase,
   onReservar,
   onSubmitPayment,
 }: Props) {
@@ -104,8 +112,12 @@ export default function PurchaseFlow({
       <CartPanel
         draft={draft}
         cart={cart}
+        buyer={buyer}
         isReserving={isReserving}
         isPaying={isPaying}
+        onBuyerChange={onBuyerChange}
+        onRemoveDraftLine={onRemoveDraftLine}
+        onResetPurchase={onResetPurchase}
         onReservar={onReservar}
         onSubmitPayment={onSubmitPayment}
       />
