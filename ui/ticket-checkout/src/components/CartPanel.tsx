@@ -1,4 +1,4 @@
-import type { CartLine, DraftLine, PaymentMethod, TicketStatus } from '../types'
+import type { BuyerData, CartLine, DraftLine, PaymentMethod } from '../types'
 import { MAX_TICKETS_PER_PURCHASE } from '../types'
 import { SagaTimeline } from '../SagaTimeline'
 import { formatCountdown, useCountdown } from '../useCountdown'
@@ -7,8 +7,12 @@ import PaymentForm from './PaymentForm'
 interface Props {
   draft: DraftLine[]
   cart: CartLine[]
+  buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  onBuyerChange: (buyer: BuyerData) => void
+  onRemoveDraftLine: (zoneId: string, ticketTypeId: string) => void
+  onResetPurchase: () => void
   onReservar: () => void
   onSubmitPayment: (method: PaymentMethod) => void
 }
@@ -16,7 +20,6 @@ interface Props {
 interface CartGroup {
   key: string
   zoneName: string
-  ticketTypeName: string
   lines: CartLine[]
 }
 
@@ -40,35 +43,39 @@ function CartIcon() {
   )
 }
 
+// Icono de recarga para reiniciar la compra desde la fila de "Tu compra" (ver feedback de usuario).
+function ReloadIcon() {
+  return (
+    <svg
+      className="cart-panel__reload-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <polyline points="21 3 21 9 15 9" />
+    </svg>
+  )
+}
+
 function groupCartLines(cart: CartLine[]): CartGroup[] {
   const groups = new Map<string, CartGroup>()
   for (const line of cart) {
     const key = `${line.zoneId}|${line.ticketTypeName}`
     const group = groups.get(key)
     if (group) group.lines.push(line)
-    else groups.set(key, { key, zoneName: line.zoneName, ticketTypeName: line.ticketTypeName, lines: [line] })
+    else groups.set(key, { key, zoneName: line.zoneName, lines: [line] })
   }
   return [...groups.values()]
 }
 
-// Estado agregado del grupo = el menos avanzado de sus líneas no rechazadas — si una entrada del
-// grupo sigue "Pending" mientras otra ya está "AwaitingPayment", el grupo se muestra como
-// "Pending" (el paso real por el que hay que esperar), ver ADR 0025.
-const STATUS_ORDER: TicketStatus[] = ['Pending', 'AwaitingPayment', 'Confirmed', 'CheckedIn']
-
-function groupStatus(group: CartGroup): { status: TicketStatus | 'Rejected'; rejectionReason: string | null } {
-  const active = group.lines.filter((l) => l.status !== 'Rejected')
-  if (active.length === 0) {
-    return { status: 'Rejected', rejectionReason: group.lines[0]?.rejectionReason ?? null }
-  }
-  const worst = active.reduce((worst, l) =>
-    STATUS_ORDER.indexOf(l.status) < STATUS_ORDER.indexOf(worst.status) ? l : worst,
-  )
-  return { status: worst.status, rejectionReason: null }
-}
-
-// Deadline de la cuenta atrás del grupo = la más próxima entre sus líneas activas (deberían
-// coincidir, al reservarse todas a la vez, pero se toma la más temprana por seguridad).
+// Deadline de la cuenta atrás de TODA la compra = la más próxima entre sus líneas activas
+// (deberían coincidir, al reservarse todas a la vez, pero se toma la más temprana por seguridad).
+// Se muestra en la fila del título "Tu compra", no por grupo (ver feedback de usuario).
 function earliestExpiry(lines: CartLine[]): string | null {
   const deadlines = lines
     .filter((l) => l.status !== 'Rejected' && l.expiresAtUtc)
@@ -77,23 +84,12 @@ function earliestExpiry(lines: CartLine[]): string | null {
   return deadlines.reduce((earliest, d) => (new Date(d) < new Date(earliest) ? d : earliest))
 }
 
-function rejectionReasonText(rejectionReason: string | null): string {
-  if (rejectionReason === 'ZoneFull') return 'la zona se llenó justo antes de confirmar'
-  if (rejectionReason === 'ReservationTimedOut') return 'no se pudo reservar el aforo a tiempo'
-  if (rejectionReason === 'PaymentTimedOut') return 'no se eligió método de pago a tiempo, el aforo se liberó'
-  return 'el pago simulado ha fallado (compensación real: aforo liberado)'
-}
-
-// Componente propio por fila para poder llamar a `useCountdown` una vez por grupo — el número de
-// grupos cambia con el carrito, así que el hook no puede vivir en el cuerpo de un `.map()` del
-// componente padre (violaría las reglas de hooks). El timeline de la saga es común a toda la
-// compra y se muestra una sola vez, debajo del método de pago.
+// Componente propio por grupo del carrito real ("Tu compra"): el motivo de rechazo ya no se
+// repite aquí por grupo — el timeline de la saga lo muestra una sola vez, al final (ver feedback
+// de usuario).
 function CartGroupRow({ group }: { group: CartGroup }) {
-  const { status, rejectionReason } = groupStatus(group)
-  const rejectedCount = group.lines.length - group.lines.filter((l) => l.status !== 'Rejected').length
   const confirmedTickets = group.lines.filter((l) => l.status === 'Confirmed' || l.status === 'CheckedIn')
   const groupSubtotal = group.lines.filter((l) => l.status !== 'Rejected').reduce((sum, l) => sum + l.unitPrice, 0)
-  const secondsLeft = useCountdown(earliestExpiry(group.lines))
 
   return (
     <li className="cart-panel__line">
@@ -103,18 +99,6 @@ function CartGroupRow({ group }: { group: CartGroup }) {
         </span>
         <span>{groupSubtotal.toFixed(2)} €</span>
       </div>
-      {secondsLeft !== null && secondsLeft > 0 && (
-        <p className="cart-panel__countdown">Reserva expira en {formatCountdown(secondsLeft)}</p>
-      )}
-      {status === 'Rejected' ? (
-        <p className="saga-rejection-reason">Motivo: {rejectionReasonText(rejectionReason)}</p>
-      ) : (
-        rejectedCount > 0 && (
-          <p className="saga-rejection-reason">
-            {rejectedCount} de {group.lines.length} entradas de esta zona se rechazaron.
-          </p>
-        )
-      )}
       {confirmedTickets.length > 0 && (
         <p className="ticket-id-hint">
           ID (para escanear en <em>venue-ops</em>):{' '}
@@ -133,8 +117,12 @@ function CartGroupRow({ group }: { group: CartGroup }) {
 export default function CartPanel({
   draft,
   cart,
+  buyer,
   isReserving,
   isPaying,
+  onBuyerChange,
+  onRemoveDraftLine,
+  onResetPurchase,
   onReservar,
   onSubmitPayment,
 }: Props) {
@@ -146,11 +134,12 @@ export default function CartPanel({
   const awaitingPayment = cart.some((l) => l.status === 'AwaitingPayment')
   const allResolved =
     cart.length > 0 && cart.every((l) => l.status === 'Confirmed' || l.status === 'Rejected' || l.status === 'CheckedIn')
-  const allRejected = cart.length > 0 && activeLines.length === 0
   const groups = groupCartLines(cart)
 
   // Timeline común de toda la compra (no por zona — ver feedback de producto): representa la saga
   // completa de reservar → esperar pago → procesar pago → confirmar → entrada emitida (ADR 0025).
+  // Si alguna línea se rechazó, el timeline marca el paso que falló y pinta el motivo UNA sola vez
+  // aquí abajo, en vez de repetirlo por grupo.
   const phase =
     isReserving
       ? 'Purchasing'
@@ -162,11 +151,37 @@ export default function CartPanel({
             ? 'Confirmed'
             : 'Pending'
 
+  const rejectedLine = cart.find((l) => l.status === 'Rejected')
+  const timelineStatus = rejectedLine ? 'Rejected' : phase
+  const timelineReason = rejectedLine?.rejectionReason ?? null
+
+  // Cuenta atrás de toda la compra en la fila del título, pegada a la derecha (ver feedback de
+  // usuario). El hook vive aquí (no en un .map()) porque hay un único deadline por compra.
+  const countdown = useCountdown(earliestExpiry(cart))
+
+  // "Reservar" exige al menos el Nombre (el holder real que viaja en cada entrada); Apellidos y
+  // Correo se piden — también obligatorios — en "Mis Datos" al pagar (ver feedback de usuario).
+  const canReserve = buyer.nombre.trim() !== ''
+
   return (
     <aside className="ticket-checkout cart-panel">
       <h3 className="cart-panel__title">
         <CartIcon />
         <span>{hasReservation ? 'Tu compra' : 'Tus Reservas'}</span>
+        {hasReservation && countdown !== null && countdown > 0 && (
+          <span className="cart-panel__countdown-inline">Reserva expira en {formatCountdown(countdown)}</span>
+        )}
+        {allResolved && (
+          <button
+            type="button"
+            className="cart-panel__reload"
+            onClick={onResetPurchase}
+            aria-label="Reiniciar compra"
+            title="Reiniciar compra"
+          >
+            <ReloadIcon />
+          </button>
+        )}
       </h3>
 
       {!hasReservation && draft.length === 0 && (
@@ -177,14 +192,37 @@ export default function CartPanel({
         <>
           <ul className="cart-panel__lines">
             {draft.map((line) => (
-              <li key={`${line.zoneId}-${line.ticketTypeId}`} className="cart-panel__line-header">
-                <span>
-                  {line.zoneName} × {line.quantity}
-                </span>
-                <span>{(line.unitPrice * line.quantity).toFixed(2)} €</span>
+              <li key={`${line.zoneId}-${line.ticketTypeId}`} className="cart-panel__draft-line">
+                <div className="cart-panel__line-header">
+                  <span>
+                    {line.zoneName} × {line.quantity}
+                  </span>
+                  <span>
+                    <span className="cart-panel__subtotal">{(line.unitPrice * line.quantity).toFixed(2)} €</span>
+                    <button
+                      type="button"
+                      className="cart-panel__remove"
+                      aria-label={`Quitar ${line.zoneName}`}
+                      onClick={() => onRemoveDraftLine(line.zoneId, line.ticketTypeId)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
+
+          <label className="field">
+            Nombre
+            <input
+              type="text"
+              value={buyer.nombre}
+              onChange={(e) => onBuyerChange({ ...buyer, nombre: e.target.value })}
+              placeholder="Nombre del comprador"
+              required
+            />
+          </label>
 
           <p className="cart-panel__total">
             Total <strong>{draftTotal.toFixed(2)} €</strong>
@@ -193,7 +231,7 @@ export default function CartPanel({
             {draftCount} / {MAX_TICKETS_PER_PURCHASE} entradas
           </p>
 
-          <button type="button" disabled={isReserving} onClick={onReservar}>
+          <button type="button" disabled={isReserving || !canReserve} onClick={onReservar}>
             {isReserving ? 'Reservando…' : 'Reservar'}
           </button>
         </>
@@ -215,7 +253,7 @@ export default function CartPanel({
           </p>
 
           {awaitingPayment && (
-            <PaymentForm total={cartTotal} disabled={isPaying} onSubmit={onSubmitPayment} />
+            <PaymentForm total={cartTotal} disabled={isPaying} buyer={buyer} onBuyerChange={onBuyerChange} onSubmit={onSubmitPayment} />
           )}
 
           {allResolved && !awaitingPayment && (
@@ -224,7 +262,7 @@ export default function CartPanel({
             </p>
           )}
 
-          {!allRejected && <SagaTimeline status={phase} rejectionReason={null} />}
+          <SagaTimeline status={timelineStatus} rejectionReason={timelineReason} />
         </>
       )}
     </aside>
