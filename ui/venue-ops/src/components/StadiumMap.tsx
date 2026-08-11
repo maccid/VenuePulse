@@ -53,7 +53,7 @@ export default function StadiumMap({ zones, mode = 'sales' }: Props) {
 
   return (
     <div className="stadium-map">
-      <svg viewBox="0 0 340 280" role="img" aria-label="Plano del recinto" className="stadium-map__svg">
+      <svg viewBox="0 0 340 280" role="img" aria-label="Mapa del evento" className="stadium-map__svg">
         <rect x="20" y="20" width="300" height="240" rx="6" className="stadium-map__pitch" />
 
         {isConcert ? (

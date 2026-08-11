@@ -5,7 +5,6 @@ import SiteHeader from './components/SiteHeader'
 import EventList from './components/EventList'
 import EventCreateForm from './components/EventCreateForm'
 import EventWorkspace from './components/EventWorkspace'
-import Modal from './components/Modal'
 import './App.css'
 
 const MAX_ACTIVITY_ENTRIES = 20
@@ -13,7 +12,7 @@ const MAX_ACTIVITY_ENTRIES = 20
 export default function App() {
   const [events, setEvents] = useState<EventSummary[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
   const [zonesByEvent, setZonesByEvent] = useState<Record<string, ZoneOccupancy[]>>({})
   const [activityByEvent, setActivityByEvent] = useState<Record<string, ActivityEntry[]>>({})
 
@@ -28,9 +27,10 @@ export default function App() {
     fetch('/api/ticketing/api/events')
       .then((r) => r.json())
       .then((evs: EventSummary[]) => {
-        setEvents(evs)
-        if (evs[0]) setActiveId(evs[0].id)
-        else setShowCreateModal(true)
+        const sorted = [...evs].sort((a, b) => b.startsAtUtc.localeCompare(a.startsAtUtc))
+        setEvents(sorted)
+        if (sorted[0]) setActiveId(sorted[0].id)
+        else setShowCreate(true)
       })
       .catch(() => setEvents([]))
 
@@ -127,12 +127,28 @@ export default function App() {
 
   return (
     <div className="venue-ops">
-      <SiteHeader onCreateEvent={() => setShowCreateModal(true)} />
+      <SiteHeader />
 
       <div className="venue-ops__layout">
-        <EventList events={events} activeId={activeId} onSelect={setActiveId} />
+        <EventList
+          events={events}
+          activeId={activeId}
+          onSelect={setActiveId}
+          onCreate={() => setShowCreate(true)}
+        />
 
-        {activeEvent ? (
+        {showCreate ? (
+          <div className="ops-new-event">
+            <EventCreateForm
+              onCreated={(created) => {
+                setEvents((prev) => [...prev, created])
+                setActiveId(created.id)
+                setShowCreate(false)
+              }}
+              onCancel={() => setShowCreate(false)}
+            />
+          </div>
+        ) : activeEvent ? (
           <EventWorkspace
             key={activeEvent.id}
             event={activeEvent}
@@ -148,19 +164,6 @@ export default function App() {
           </div>
         )}
       </div>
-
-      {showCreateModal && (
-        <Modal title="Nuevo evento" size="large" onClose={() => setShowCreateModal(false)}>
-          <EventCreateForm
-            onCreated={(created) => {
-              setEvents((prev) => [...prev, created])
-              setActiveId(created.id)
-              setShowCreateModal(false)
-            }}
-            onCancel={() => setShowCreateModal(false)}
-          />
-        </Modal>
-      )}
     </div>
   )
 }
