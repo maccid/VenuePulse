@@ -10,9 +10,9 @@ interface Props {
 }
 
 // "Mis Datos" es obligatorio: "Pagar todo" no se habilita hasta completar Nombre/Apellidos/Correo
-// (ver feedback de usuario). Apellidos/correo son solo visuales (no los persiste el
-// backend, que solo modela un "holder" de texto libre); el Nombre se capturó ya antes de reservar
-// y aquí se confirma pre-relleno.
+// (ver feedback de usuario). El Nombre ya no se pide en "Tus Reservas": se captura aquí, al pagar.
+// Apellidos/correo son solo visuales (no los persiste el backend, que solo modela un "holder" de
+// texto libre); el holder de cada entrada viaja en el POST de reserva con el nombre del widget.
 function CardIcon() {
   return (
     <svg

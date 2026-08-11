@@ -22,10 +22,12 @@ export default defineConfig({
   server: {
     port: 5174,
     proxy: {
-      '/api/ticketing': { target: 'http://localhost:5101', changeOrigin: true, rewrite: (p) => p.replace(/^\/api\/ticketing/, '/api') },
-      '/api/access-control': { target: 'http://localhost:5102', changeOrigin: true, rewrite: (p) => p.replace(/^\/api\/access-control/, '/api') },
-      '/api/checkin': { target: 'http://localhost:5103', changeOrigin: true, rewrite: (p) => p.replace(/^\/api\/checkin/, '/api') },
+      '/api/ticketing': { target: 'http://localhost:5101', changeOrigin: true, rewrite: (p) => p.replace(/^\/api\/ticketing/, '') },
+      '/api/access-control': { target: 'http://localhost:5102', changeOrigin: true, rewrite: (p) => p.replace(/^\/api\/access-control/, '') },
+      '/api/checkin': { target: 'http://localhost:5103', changeOrigin: true, rewrite: (p) => p.replace(/^\/api\/checkin/, '') },
       '/hubs/tickets': { target: 'http://localhost:5103', ws: true, changeOrigin: true },
+      '/hubs/occupancy': { target: 'http://localhost:5102', ws: true, changeOrigin: true },
+      '/hubs/pricing': { target: 'http://localhost:5101', ws: true, changeOrigin: true },
     },
   },
 })
