@@ -1,6 +1,7 @@
 import type { CartLine, DraftLine, PaymentMethod, TicketStatus } from '../types'
 import { MAX_TICKETS_PER_PURCHASE } from '../types'
 import { SagaTimeline } from '../SagaTimeline'
+import { formatCountdown, useCountdown } from '../useCountdown'
 import PaymentForm from './PaymentForm'
 
 interface Props {
@@ -46,6 +47,58 @@ function groupStatus(group: CartGroup): { status: TicketStatus | 'Rejected'; rej
     STATUS_ORDER.indexOf(l.status) < STATUS_ORDER.indexOf(worst.status) ? l : worst,
   )
   return { status: worst.status, rejectionReason: null }
+}
+
+// Deadline de la cuenta atrás del grupo = la más próxima entre sus líneas activas (deberían
+// coincidir, al reservarse todas a la vez, pero se toma la más temprana por seguridad).
+function earliestExpiry(lines: CartLine[]): string | null {
+  const deadlines = lines
+    .filter((l) => l.status !== 'Rejected' && l.expiresAtUtc)
+    .map((l) => l.expiresAtUtc as string)
+  if (deadlines.length === 0) return null
+  return deadlines.reduce((earliest, d) => (new Date(d) < new Date(earliest) ? d : earliest))
+}
+
+// Componente propio por fila para poder llamar a `useCountdown` una vez por grupo — el número de
+// grupos cambia con el carrito, así que el hook no puede vivir en el cuerpo de un `.map()` del
+// componente padre (violaría las reglas de hooks).
+function CartGroupRow({ group }: { group: CartGroup }) {
+  const { status, rejectionReason } = groupStatus(group)
+  const rejectedCount = group.lines.length - group.lines.filter((l) => l.status !== 'Rejected').length
+  const confirmedTickets = group.lines.filter((l) => l.status === 'Confirmed' || l.status === 'CheckedIn')
+  const groupSubtotal = group.lines.filter((l) => l.status !== 'Rejected').reduce((sum, l) => sum + l.unitPrice, 0)
+  const secondsLeft = useCountdown(earliestExpiry(group.lines))
+
+  return (
+    <li className="cart-panel__line">
+      <div className="cart-panel__line-header">
+        <span>
+          {group.zoneName} × {group.lines.length}
+        </span>
+        <span>{groupSubtotal.toFixed(2)} €</span>
+      </div>
+      <SagaTimeline status={status} rejectionReason={rejectionReason} />
+      {secondsLeft !== null && secondsLeft > 0 && (
+        <p className="cart-panel__countdown">Reserva expira en {formatCountdown(secondsLeft)}</p>
+      )}
+      {rejectedCount > 0 && status !== 'Rejected' && (
+        <p className="saga-rejection-reason">
+          {rejectedCount} de {group.lines.length} entradas de esta zona se rechazaron.
+        </p>
+      )}
+      {confirmedTickets.length > 0 && (
+        <p className="ticket-id-hint">
+          ID (para escanear en <em>venue-ops</em>):{' '}
+          {confirmedTickets.map((t, i) => (
+            <span key={t.ticketId}>
+              {i > 0 && ', '}
+              <code>{t.ticketId}</code>
+            </span>
+          ))}
+        </p>
+      )}
+    </li>
+  )
 }
 
 export default function CartPanel({
@@ -117,42 +170,9 @@ export default function CartPanel({
       {hasReservation && (
         <>
           <ul className="cart-panel__lines">
-            {groups.map((group) => {
-              const { status, rejectionReason } = groupStatus(group)
-              const rejectedCount = group.lines.length - group.lines.filter((l) => l.status !== 'Rejected').length
-              const confirmedTickets = group.lines.filter((l) => l.status === 'Confirmed' || l.status === 'CheckedIn')
-              const groupSubtotal = group.lines
-                .filter((l) => l.status !== 'Rejected')
-                .reduce((sum, l) => sum + l.unitPrice, 0)
-
-              return (
-                <li key={group.key} className="cart-panel__line">
-                  <div className="cart-panel__line-header">
-                    <span>
-                      {group.zoneName} × {group.lines.length}
-                    </span>
-                    <span>{groupSubtotal.toFixed(2)} €</span>
-                  </div>
-                  <SagaTimeline status={status} rejectionReason={rejectionReason} />
-                  {rejectedCount > 0 && status !== 'Rejected' && (
-                    <p className="saga-rejection-reason">
-                      {rejectedCount} de {group.lines.length} entradas de esta zona se rechazaron.
-                    </p>
-                  )}
-                  {confirmedTickets.length > 0 && (
-                    <p className="ticket-id-hint">
-                      ID (para escanear en <em>venue-ops</em>):{' '}
-                      {confirmedTickets.map((t, i) => (
-                        <span key={t.ticketId}>
-                          {i > 0 && ', '}
-                          <code>{t.ticketId}</code>
-                        </span>
-                      ))}
-                    </p>
-                  )}
-                </li>
-              )
-            })}
+            {groups.map((group) => (
+              <CartGroupRow key={group.key} group={group} />
+            ))}
           </ul>
 
           <p className="cart-panel__total">

@@ -59,7 +59,7 @@ export default function App({ eventId, holder }: Props) {
       setCart((prev) =>
         prev.map((line) =>
           line.ticketId === update.ticketId
-            ? { ...line, status: update.status, rejectionReason: update.rejectionReason }
+            ? { ...line, status: update.status, rejectionReason: update.rejectionReason, expiresAtUtc: update.expiresAtUtc }
             : line,
         ),
       )
@@ -181,6 +181,7 @@ export default function App({ eventId, holder }: Props) {
             priceTier: line.priceTier,
             status: 'Pending',
             rejectionReason: null,
+            expiresAtUtc: null,
           }
         }),
       ),

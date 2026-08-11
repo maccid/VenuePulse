@@ -53,6 +53,9 @@ export interface TicketStatusUpdate {
   ticketId: string
   status: TicketStatus
   rejectionReason: string | null
+  // Deadline de la reserva en curso (null si no hay ninguna vigente, p. ej. ya resuelta) — ver
+  // ReservationTimeoutTracker en CheckIn y ADR 0025.
+  expiresAtUtc: string | null
 }
 
 export type PaymentMethod = 'Card' | 'Bizum'
@@ -87,4 +90,5 @@ export interface CartLine {
   priceTier: string
   status: TicketStatus
   rejectionReason: string | null
+  expiresAtUtc: string | null
 }

@@ -521,6 +521,13 @@
   color: var(--tc-muted);
 }
 
+.cart-panel__countdown {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-accent);
+}
+
 .cart-panel__done {
   margin: 0;
   font-weight: 600;
