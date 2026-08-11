@@ -208,9 +208,13 @@ export default function App({ eventId, holder }: Props) {
     )
   }
 
+  // La cabecera va en su propia card a ancho completo; el plano y el carrito comparten fila en dos
+  // cards iguales (ver purchase-flow en App.css). El contenedor flex es el propio ticket-checkout-app.
   return (
-    <div className="ticket-checkout">
-      <CheckoutHeader event={event} />
+    <>
+      <div className="ticket-checkout">
+        <CheckoutHeader event={event} />
+      </div>
 
       {event && event.status !== 'OnSale' ? (
         <p className="ticket-checkout__notice">
@@ -231,6 +235,6 @@ export default function App({ eventId, holder }: Props) {
           onSubmitPayment={submitPayment}
         />
       )}
-    </div>
+    </>
   )
 }

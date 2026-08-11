@@ -37,14 +37,28 @@ export default function ZonePopup({ zone, ticketType, remainingQuota, onAdd, onC
         {maxQuantity > 0 ? (
           <>
             <label className="zone-popup__quantity">
-              Cantidad
-              <select value={quantity} onChange={(e) => setQuantity(Number(e.target.value))}>
-                {Array.from({ length: maxQuantity }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
+              <span>Cantidad</span>
+              <div className="stepper">
+                <button
+                  type="button"
+                  className="stepper__btn"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                  aria-label="Restar una entrada"
+                >
+                  −
+                </button>
+                <span className="stepper__value">{quantity}</span>
+                <button
+                  type="button"
+                  className="stepper__btn"
+                  onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                  disabled={quantity >= maxQuantity}
+                  aria-label="Sumar una entrada"
+                >
+                  +
+                </button>
+              </div>
             </label>
 
             <button type="button" onClick={() => onAdd(quantity)}>

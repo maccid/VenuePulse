@@ -20,6 +20,14 @@
   --radius-tc-md: var(--tc-radius-md);
 }
 
+/* El propio elemento host (light DOM, sin Shadow DOM — ADR 0004) hace de contenedor flex: cabecera
+   en su card a ancho completo arriba, y debajo el plano y el carrito en dos cards iguales. */
+ticket-checkout-app {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* Todo escopado bajo .ticket-checkout a propósito: este componente vive en light DOM dentro
    de la página de shell (sin Shadow DOM, ver ADR 0004), así que nunca toca :root/body/h1... */
 .ticket-checkout {
@@ -142,7 +150,7 @@
 
 .purchase-flow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
 }
@@ -380,7 +388,7 @@
   color: var(--tc-text);
 }
 
-.zone-popup__close {
+.ticket-checkout .zone-popup__close {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -391,7 +399,7 @@
   line-height: 1;
 }
 
-.zone-popup__close:hover {
+.ticket-checkout .zone-popup__close:hover {
   background: var(--tc-accent-bg);
 }
 
@@ -442,8 +450,41 @@
   gap: 8px !important;
 }
 
-.zone-popup__quantity select {
-  width: 70px;
+/* Stepper de cantidad: botones − / + con el valor centrado. El scoping bajo .ticket-checkout es
+   para ganar especificidad sobre .ticket-checkout button (ahora el popup vive dentro de la card). */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--tc-border-strong);
+  border-radius: var(--tc-radius-sm);
+  background: var(--tc-surface);
+  overflow: hidden;
+}
+
+.ticket-checkout .stepper__btn {
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--tc-accent);
+  border-radius: 0;
+}
+
+.ticket-checkout .stepper__btn:hover:not(:disabled) {
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent-hover);
+}
+
+.ticket-checkout .stepper__btn:disabled {
+  opacity: 0.4;
+}
+
+.stepper__value {
+  min-width: 40px;
+  padding: 8px 0;
+  text-align: center;
+  font-weight: 600;
+  color: var(--tc-text);
+  border-left: 1px solid var(--tc-border);
+  border-right: 1px solid var(--tc-border);
 }
 
 .zone-popup__hint {
@@ -452,22 +493,31 @@
   color: var(--tc-muted);
 }
 
-/* Carrito */
+/* Carrito. La tarjeta visual (fondo, borde, radio, padding, sombra) la aporta .ticket-checkout,
+   que ahora comparte con el plano para que ambas columnas se vean iguales. */
 .cart-panel {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border: 1px solid var(--tc-border);
-  border-radius: var(--tc-radius-md);
-  padding: 16px;
-  background: var(--tc-surface);
   position: sticky;
   top: 12px;
 }
 
-.cart-panel h3 {
+/* Título con icono: mismo lenguaje que el header de la tarjeta del plano. */
+.cart-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  color: var(--tc-text);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tc-muted);
+}
+
+.cart-panel__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .cart-panel__empty {
