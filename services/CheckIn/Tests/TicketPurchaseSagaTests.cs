@@ -33,6 +33,22 @@ public class TicketPurchaseSagaTests
         return (provider, harness);
     }
 
+    // Consumed.Any<T>() en este arnés in-memory puede resolver antes de que el Publish anidado
+    // dentro de ese mismo consumo (p.ej. la Saga publicando TicketPurchaseRejected como parte de
+    // procesar SlotReservationFailed) quede registrado en Published — reintenta en vez de asumir
+    // que un único chequeo inmediato ya refleja el efecto completo del mensaje consumido.
+    private static async Task<bool> EventuallyAsync(Func<Task<bool>> check, int timeoutMs = 3000)
+    {
+        var deadline = Environment.TickCount64 + timeoutMs;
+        do
+        {
+            if (await check()) return true;
+            await Task.Delay(20);
+        } while (Environment.TickCount64 < deadline);
+
+        return false;
+    }
+
     [Fact]
     public async Task Camino_feliz_confirma_la_compra()
     {
@@ -152,15 +168,52 @@ public class TicketPurchaseSagaTests
         await harness.Consumed.Any<TicketPurchaseRequested>();
         (await harness.Published.Any<ReserveZoneSlot>()).Should().BeTrue();
 
-        // AccessControl nunca responde — el watchdog (fuera de la Saga, ver ADR 0010) publica
-        // ReservationTimedOut tras el deadline. Como el aforo nunca llegó a reservarse, no hace
-        // falta compensar (sin ReleaseZoneSlot).
+        // El watchdog (fuera de la Saga, ver ADR 0010) publica ReservationTimedOut tras el
+        // deadline, pero la Saga ya no rechaza directamente (ver ADR 0027) — espera a saber de
+        // verdad si AccessControl llegó a reservar o no antes de decidir si hace falta compensar.
         await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
         await harness.Consumed.Any<ReservationTimedOut>();
+        (await harness.Published.Any<TicketPurchaseRejected>()).Should().BeFalse();
 
-        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "ReservationTimedOut")).Should().BeTrue();
+        // AccessControl confirma (aunque tarde) que el aforo nunca llegó a reservarse — nada que
+        // compensar.
+        await harness.Bus.Publish(new ZoneSlotReservationFailed(ticketId, zoneId, "ZoneFull"));
+
+        (await EventuallyAsync(() => harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "ReservationTimedOut"))).Should().BeTrue();
         (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeFalse();
         (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Reserva_confirmada_tras_el_timeout_se_libera_en_vez_de_quedar_fantasma()
+    {
+        // Reproduce el bug real (aforo "fantasma": reservado en AccessControl, nunca liberado ni
+        // confirmado) descrito en ADR 0027 — el watchdog se rinde justo antes de que la respuesta
+        // real de AccessControl (que SÍ reservó el aforo) llegue de vuelta a la Saga.
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+
+        await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
+        await harness.Consumed.Any<ReservationTimedOut>();
+        (await harness.Published.Any<TicketPurchaseRejected>()).Should().BeFalse();
+
+        // La respuesta real de AccessControl llega después de todo, confirmando que el aforo SÍ
+        // se reservó — antes de este fix, este mensaje se perdía (la Saga ya había finalizado) y
+        // el aforo se quedaba reservado para siempre.
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
+
+        (await EventuallyAsync(() => harness.Published.Any<ReleaseZoneSlot>())).Should().BeTrue();
+        (await harness.Published.Any<ConfirmZoneSlot>()).Should().BeFalse();
+
+        await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
+
+        (await EventuallyAsync(() => harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "ReservationTimedOut"))).Should().BeTrue();
     }
 
     [Fact]
