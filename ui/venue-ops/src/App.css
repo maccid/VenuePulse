@@ -217,6 +217,13 @@
   display: block;
 }
 
+/* Óvalo exterior del recinto (partido) — solo fondo, para que las gradas curvas (StandShape en
+   StadiumMap.tsx) encajen contra un borde real en vez de flotar sobre la tarjeta. */
+.stadium-map__exterior {
+  fill: var(--vp-bg);
+  stroke: var(--vp-border-strong);
+}
+
 .stadium-map__pitch {
   fill: var(--vp-accent-bg);
   stroke: var(--vp-border-strong);
@@ -240,7 +247,8 @@
   stroke: var(--vp-border-strong);
 }
 
-.stadium-map__zone rect {
+.stadium-map__zone rect,
+.stadium-map__zone path {
   stroke-width: 1;
 }
 
@@ -251,19 +259,25 @@
   pointer-events: none;
 }
 
-.stadium-map__zone--low rect {
+/* Gradas de partido: mismo color que las de concierto (rect), pero sobre el contorno curvo
+   (path) — el bloque entero sigue tiñéndose por tier, sin semáforo aparte (a diferencia de
+   ticket-checkout, ver ADR 0024: aquí se necesita ver la ocupación de un vistazo). */
+.stadium-map__zone--low rect,
+.stadium-map__zone--low path {
   fill: var(--vp-success);
   fill-opacity: 0.35;
   stroke: var(--vp-success);
 }
 
-.stadium-map__zone--mid rect {
+.stadium-map__zone--mid rect,
+.stadium-map__zone--mid path {
   fill: var(--vp-accent);
   fill-opacity: 0.35;
   stroke: var(--vp-accent);
 }
 
-.stadium-map__zone--high rect {
+.stadium-map__zone--high rect,
+.stadium-map__zone--high path {
   fill: var(--vp-danger);
   fill-opacity: 0.35;
   stroke: var(--vp-danger);
