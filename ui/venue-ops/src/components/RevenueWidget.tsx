@@ -7,14 +7,17 @@ interface Props {
   // única señal que sube tanto con compras reales como con el motor de simulación (Bloque 8), que
   // nunca toca CheckIn y por tanto nunca movería `revenue` por sí solo.
   estimatedRevenue: number
+  // Entradas vendidas del evento (confirmedSold). Se muestra junto al dinero porque el aforo como
+  // tal (capacidad/ocupación %) no aporta en esta vista — ver decisión de la sesión.
+  sold: number
 }
 
 const CURRENCY = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' })
 
-export default function RevenueWidget({ revenue, error, estimatedRevenue }: Props) {
+export default function RevenueWidget({ revenue, error, estimatedRevenue, sold }: Props) {
   return (
     <section className="card revenue-widget">
-      <h2>Ingresos</h2>
+      <h2>Ventas e ingresos</h2>
 
       {error && <p className="scan-result scan-result--error">{error}</p>}
 
@@ -22,6 +25,10 @@ export default function RevenueWidget({ revenue, error, estimatedRevenue }: Prop
 
       {!error && revenue !== null && (
         <div className="revenue-widget__stats">
+          <div className="prediction-stat">
+            <span className="prediction-stat__value">{sold}</span>
+            <span className="prediction-stat__label">entradas vendidas</span>
+          </div>
           <div className="prediction-stat">
             <span className="prediction-stat__value">{CURRENCY.format(revenue.confirmedRevenue)}</span>
             <span className="prediction-stat__label">confirmados · {revenue.confirmedCount} entradas</span>

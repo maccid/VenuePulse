@@ -140,3 +140,17 @@ input {
   background: var(--vp-surface);
   color: var(--vp-text);
 }
+
+select {
+  font: inherit;
+  padding: 9px 12px;
+  border: 1px solid var(--vp-border-strong);
+  border-radius: var(--vp-radius-md);
+  background: var(--vp-surface);
+  color: var(--vp-text);
+}
+
+select:focus-visible {
+  outline: 2px solid var(--vp-accent);
+  outline-offset: 2px;
+}

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import type { ActivityEntry, EventRevenueDto, EventSummary, ScanResult, TicketType, VenueOpsMode, ZoneOccupancy } from '../types'
+import type { ActivityEntry, EventRevenueDto, EventSummary, ScanResult, TicketType, ZoneOccupancy } from '../types'
 import { matchTicketType } from '../zoneTicketType'
-import ModeToggle from './ModeToggle'
-import SalesSummary from './SalesSummary'
+import PhaseIndicator from './PhaseIndicator'
 import RevenueWidget from './RevenueWidget'
 import SimulationPanel from './SimulationPanel'
 import PredictionPanel from './PredictionPanel'
@@ -37,13 +36,14 @@ const CONFIRM_CONTENT: Record<'close-sales' | 'cancel', { title: string; message
 }
 
 // Un workspace por evento, montado solo mientras ese evento está seleccionado (carga perezosa, ver
-// App.tsx). El detalle es un único cuadro blanco que, en modo Ventas, se divide en cabecera (resumen
-// de ventas y ocupación + acciones del ciclo de vida), plano + simulación, y actividad + ingresos.
-// "Cerrar venta"/"Cancelar evento" abren un modal en vez del window.confirm anterior, y solo tienen
-// sentido con el evento en OnSale (Event.CloseSales/Cancel en Ticketing ya lo exigen server-side;
-// aquí solo se ocultan los botones y la simulación para no ofrecer algo que el backend rechazaría).
+// App.tsx). La vista sigue al estado del evento — fases, no modos intercambiables: OnSale/Cancelled
+// muestran el detalle de venta (mapa del evento primero, simulación al lado, e ingresos + actividad
+// debajo) y SalesClosed el grid de ocupación. "Cerrar venta"/"Cancelar evento" abren un modal en
+// vez del window.confirm anterior, y solo tienen sentido con el evento en OnSale (Event.CloseSales/
+// Cancel en Ticketing ya lo exigen server-side; aquí solo se ocultan los botones y la simulación
+// para no ofrecer algo que el backend rechazaría). El cierre es 100% manual: una simulación nunca
+// cierra el evento (decisión de la sesión).
 export default function EventWorkspace({ event, zones, activity, onZonesReload, scanTicket, onEventUpdated }: Props) {
-  const [mode, setMode] = useState<VenueOpsMode>('sales')
   const [revenue, setRevenue] = useState<EventRevenueDto | null>(null)
   const [revenueError, setRevenueError] = useState<string | null>(null)
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
@@ -129,7 +129,7 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
   }
 
   const isOnSale = event.status === 'OnSale'
-  const occupancyDefaultSimulationMode = isOnSale ? 'Sales' : 'Arrivals'
+  const isOccupancy = event.status === 'SalesClosed'
 
   function openConfirm(kind: 'close-sales' | 'cancel') {
     setActionError(null)
@@ -142,44 +142,70 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
   // ambos caminos (compra real o simulada).
   const hasConfirmedSales = zones.some((z) => z.confirmedSold > 0)
   const totalSold = zones.reduce((sum, z) => sum + z.confirmedSold, 0)
-  const totalCapacity = zones.reduce((sum, z) => sum + z.capacity, 0)
-  const occupancyPct = totalCapacity === 0 ? 0 : Math.round((totalSold / totalCapacity) * 100)
   const confirm = pendingAction === null ? null : CONFIRM_CONTENT[pendingAction]
 
   return (
     <div className="ops-detail">
-      <ModeToggle mode={mode} onChange={setMode} />
+      <div className="ops-detail__toolbar">
+        <PhaseIndicator status={event.status} />
 
-      {mode === 'sales' ? (
-        <div className="sales-layout">
-          <div className="sales-layout__header">
-            <SalesSummary sold={totalSold} capacity={totalCapacity} occupancyPct={occupancyPct} />
-
-            {isOnSale && (
-              <div className="sales-layout__actions">
-                <button
-                  type="button"
-                  className="sales-layout__close"
-                  onClick={() => openConfirm('close-sales')}
-                  disabled={actionBusy}
-                >
-                  Cerrar venta
-                </button>
-                <button
-                  type="button"
-                  className="sales-layout__cancel"
-                  onClick={() => openConfirm('cancel')}
-                  disabled={actionBusy}
-                >
-                  Cancelar evento
-                </button>
-              </div>
-            )}
+        {isOnSale && (
+          <div className="sales-layout__actions">
+            <button
+              type="button"
+              className="sales-layout__close"
+              onClick={() => openConfirm('close-sales')}
+              disabled={actionBusy}
+            >
+              Cerrar venta
+            </button>
+            <button
+              type="button"
+              className="sales-layout__cancel"
+              onClick={() => openConfirm('cancel')}
+              disabled={actionBusy}
+            >
+              Cancelar evento
+            </button>
           </div>
+        )}
+      </div>
 
+      {isOccupancy ? (
+        <div className="mode-grid">
+          <ZonesDashboard zones={zones} />
+          <SimulationPanel
+            eventId={event.id}
+            eventStartsAtUtc={event.startsAtUtc}
+            onSimulationEnded={onZonesReload}
+            defaultMode="Arrivals"
+          />
+          <ScanPanel onScan={scanTicket} />
+          <StadiumMap zones={zones} mode="checkin" />
+          {hasConfirmedSales && (
+            <PredictionPanel eventId={event.id} eventStartsAtUtc={event.startsAtUtc} />
+          )}
+        </div>
+      ) : (
+        <div className="sales-layout">
           <div className="sales-layout__main">
             <section className="sales-layout__panel">
-              <h2>Plano del recinto</h2>
+              <h2 className="sales-layout__panel-title">
+                <svg
+                  className="sales-layout__panel-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                Mapa del evento
+              </h2>
               <StadiumMap zones={zones} mode="sales" />
             </section>
 
@@ -194,27 +220,16 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
           </div>
 
           <div className="sales-layout__footer">
+            <RevenueWidget
+              revenue={revenue}
+              error={revenueError}
+              estimatedRevenue={estimatedRevenue}
+              sold={totalSold}
+            />
             <section className="sales-layout__panel">
               <ActivityFeed entries={activity} />
             </section>
-            <RevenueWidget revenue={revenue} error={revenueError} estimatedRevenue={estimatedRevenue} />
           </div>
-        </div>
-      ) : (
-        <div className="mode-grid">
-          <ZonesDashboard zones={zones} />
-          <SimulationPanel
-            key={occupancyDefaultSimulationMode}
-            eventId={event.id}
-            eventStartsAtUtc={event.startsAtUtc}
-            onSimulationEnded={onZonesReload}
-            defaultMode={occupancyDefaultSimulationMode}
-          />
-          <ScanPanel onScan={scanTicket} />
-          <StadiumMap zones={zones} mode="checkin" />
-          {hasConfirmedSales && (
-            <PredictionPanel eventId={event.id} eventStartsAtUtc={event.startsAtUtc} />
-          )}
         </div>
       )}
 
