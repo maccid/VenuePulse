@@ -16,11 +16,18 @@ const RELEVANCE_LABELS: Record<EventRelevance, string> = {
   Special: 'Especial (×1,5 sobre el precio base)',
 }
 
+// Formato local de <input type="datetime-local"> (YYYY-MM-DDTHH:mm) con el momento actual: el
+// alta de evento abre con "hoy" prellenado y el operador solo ajusta fecha/hora.
+function toDatetimeLocal(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 export default function EventCreateForm({ onCreated, onCancel }: Props) {
   const [name, setName] = useState('')
   const [type, setType] = useState<EventType>('Match')
   const [relevance, setRelevance] = useState<EventRelevance>('Standard')
-  const [startsAt, setStartsAt] = useState('')
+  const [startsAt, setStartsAt] = useState(() => toDatetimeLocal(new Date()))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 

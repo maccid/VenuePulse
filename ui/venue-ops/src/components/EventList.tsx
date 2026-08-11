@@ -4,6 +4,7 @@ interface Props {
   events: EventSummary[]
   activeId: string | null
   onSelect: (id: string) => void
+  onCreate: () => void
 }
 
 const STATUS_BADGE: Partial<Record<EventSummary['status'], string>> = {
@@ -17,13 +18,17 @@ const TYPE_LABEL: Record<EventType, string> = {
 }
 
 // Listado por fechas al estilo del catálogo de `shell` (ADR 0022: Operaciones ve siempre todo,
-// sin filtro de "pasados") — sustituye a las pestañas estilo Chrome del Bloque 18.
-export default function EventList({ events, activeId, onSelect }: Props) {
-  const sorted = [...events].sort((a, b) => a.startsAtUtc.localeCompare(b.startsAtUtc))
+// sin filtro de "pasados") — sustituye a las pestañas estilo Chrome del Bloque 18. Orden
+// descendente (más futuro primero), como la lista de próximos eventos de `shell`.
+export default function EventList({ events, activeId, onSelect, onCreate }: Props) {
+  const sorted = [...events].sort((a, b) => b.startsAtUtc.localeCompare(a.startsAtUtc))
 
   return (
     <section className="event-list">
       <h2 className="event-list__title">Eventos</h2>
+      <button type="button" className="event-list__create" onClick={onCreate}>
+        Crear nuevo evento
+      </button>
 
       {sorted.length === 0 ? (
         <p className="event-list__empty">No hay eventos todavía.</p>
