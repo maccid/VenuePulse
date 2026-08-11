@@ -63,26 +63,28 @@ export default function PaymentForm({ total, disabled, buyer, onBuyerChange, onS
     >
       <h3>Mis Datos</h3>
 
-      <label className="field">
-        Nombre
-        <input
-          type="text"
-          value={buyer.nombre}
-          onChange={(e) => onBuyerChange({ ...buyer, nombre: e.target.value })}
-          disabled={disabled}
-          required
-        />
-      </label>
-      <label className="field">
-        Apellidos
-        <input
-          type="text"
-          value={buyer.apellidos}
-          onChange={(e) => onBuyerChange({ ...buyer, apellidos: e.target.value })}
-          disabled={disabled}
-          required
-        />
-      </label>
+      <div className="payment-form__row">
+        <label className="field">
+          Nombre
+          <input
+            type="text"
+            value={buyer.nombre}
+            onChange={(e) => onBuyerChange({ ...buyer, nombre: e.target.value })}
+            disabled={disabled}
+            required
+          />
+        </label>
+        <label className="field">
+          Apellidos
+          <input
+            type="text"
+            value={buyer.apellidos}
+            onChange={(e) => onBuyerChange({ ...buyer, apellidos: e.target.value })}
+            disabled={disabled}
+            required
+          />
+        </label>
+      </div>
       <label className="field">
         Correo
         <input

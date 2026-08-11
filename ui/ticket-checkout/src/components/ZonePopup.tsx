@@ -21,22 +21,30 @@ export default function ZonePopup({ zone, ticketType, remainingQuota, onAdd, onC
           ×
         </button>
 
-        <h3>{zone.name}</h3>
-        <p className="zone-popup__type">{ticketType.name}</p>
+        <h3 className="zone-popup__title">
+          {zone.name}
+          {zone.availableToSell > 0 && <span className="zone-popup__tier">{ticketType.priceTier}</span>}
+        </h3>
 
-        <p className="zone-popup__price">
-          {hasDiscount && <span className="zone-popup__price-old">{ticketType.basePrice.toFixed(2)} €</span>}
-          <span className="zone-popup__price-new">{ticketType.effectivePrice.toFixed(2)} €</span>
-          <span className="zone-popup__tier">{ticketType.priceTier}</span>
-        </p>
-
-        <p className="zone-popup__availability">
-          {zone.availableToSell > 0 ? `${zone.availableToSell} libres de ${zone.capacity}` : 'Sin aforo disponible'}
-        </p>
+        {zone.availableToSell > 0 && (
+          <>
+            <p className="zone-popup__meta">
+              <span className="zone-popup__type">{ticketType.name}</span>
+              - 
+              <span className="zone-popup__availability">
+                {zone.availableToSell} libres de {zone.capacity}
+              </span>
+            </p>
+            <p className="zone-popup__price">
+              {hasDiscount && <span className="zone-popup__price-old">{ticketType.basePrice.toFixed(2)} €</span>}
+              <span className="zone-popup__price-new">{ticketType.effectivePrice.toFixed(2)} €</span>
+            </p>
+          </>
+        )}
 
         {maxQuantity > 0 ? (
           <>
-            <label className="zone-popup__quantity">
+            <div className="zone-popup__quantity">
               <span>Cantidad</span>
               <div className="stepper">
                 <button
@@ -59,7 +67,7 @@ export default function ZonePopup({ zone, ticketType, remainingQuota, onAdd, onC
                   +
                 </button>
               </div>
-            </label>
+            </div>
 
             <button type="button" onClick={() => onAdd(quantity)}>
               Añadir {quantity > 1 ? `${quantity} entradas` : '1 entrada'}

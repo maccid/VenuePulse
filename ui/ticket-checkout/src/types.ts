@@ -46,8 +46,10 @@ export interface ZoneOccupancy {
 
 // "AwaitingPayment" es un estado real del Ticket (no solo interno de la Saga, ver ADR de la
 // partición de la Saga): el aforo ya está reservado de verdad y se espera a que el cliente elija
-// método de pago.
-export type TicketStatus = 'Pending' | 'AwaitingPayment' | 'Confirmed' | 'Rejected' | 'CheckedIn'
+// método de pago. "ProcessingPayment" es el estado intermedio publicado por la Saga mientras el
+// pago (mockeado) tarda en resolverse — en la UI se trata igual que AwaitingPayment para que la
+// información (formulario y "Procesando pago…") no desaparezca antes de que llegue el resultado.
+export type TicketStatus = 'Pending' | 'AwaitingPayment' | 'ProcessingPayment' | 'Confirmed' | 'Rejected' | 'CheckedIn'
 
 export interface TicketStatusUpdate {
   ticketId: string

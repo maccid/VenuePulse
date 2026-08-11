@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { BuyerData, CartLine, DraftLine, PaymentMethod } from '../types'
 import { MAX_TICKETS_PER_PURCHASE } from '../types'
 import { SagaTimeline } from '../SagaTimeline'
@@ -62,6 +63,23 @@ function ReloadIcon() {
   )
 }
 
+// Flecha para desplegar/plegar el resumen de entradas de "Tu compra" junto al precio total.
+function ChevronDownIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
+
 // Icono de papelera para quitar una línea del borrador — el usuario lo pidió en vez del "×"
 // (ver feedback de usuario); misma traza lucide-style que el resto de iconos del checkout.
 function TrashIcon() {
@@ -111,7 +129,6 @@ function earliestExpiry(lines: CartLine[]): string | null {
 // repite aquí por grupo — el timeline de la saga lo muestra una sola vez, al final (ver feedback
 // de usuario).
 function CartGroupRow({ group }: { group: CartGroup }) {
-  const confirmedTickets = group.lines.filter((l) => l.status === 'Confirmed' || l.status === 'CheckedIn')
   const groupSubtotal = group.lines.filter((l) => l.status !== 'Rejected').reduce((sum, l) => sum + l.unitPrice, 0)
 
   return (
@@ -120,19 +137,11 @@ function CartGroupRow({ group }: { group: CartGroup }) {
         <span>
           {group.zoneName} × {group.lines.length}
         </span>
-        <span>{groupSubtotal.toFixed(2)} €</span>
+        <span className="cart-panel__line-actions">
+          <span className="cart-panel__subtotal">{groupSubtotal.toFixed(2)} €</span>
+          <span className="cart-panel__line-slot" aria-hidden="true" />
+        </span>
       </div>
-      {confirmedTickets.length > 0 && (
-        <p className="ticket-id-hint">
-          ID (para escanear en <em>venue-ops</em>):{' '}
-          {confirmedTickets.map((t, i) => (
-            <span key={t.ticketId}>
-              {i > 0 && ', '}
-              <code>{t.ticketId}</code>
-            </span>
-          ))}
-        </p>
-      )}
     </li>
   )
 }
@@ -154,33 +163,30 @@ export default function CartPanel({
   const cartTotal = activeLines.reduce((sum, l) => sum + l.unitPrice, 0)
   const draftTotal = draft.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0)
   const draftCount = draft.reduce((sum, l) => sum + l.quantity, 0)
-  const awaitingPayment = cart.some((l) => l.status === 'AwaitingPayment')
+  const awaitingPayment = cart.some((l) => l.status === 'AwaitingPayment' || l.status === 'ProcessingPayment')
   const allResolved =
     cart.length > 0 && cart.every((l) => l.status === 'Confirmed' || l.status === 'Rejected' || l.status === 'CheckedIn')
+  const confirmedTickets = cart.filter((l) => l.status === 'Confirmed' || l.status === 'CheckedIn')
   const groups = groupCartLines(cart)
 
-  // Timeline común de toda la compra (no por zona — ver feedback de producto): representa la saga
-  // completa de reservar → esperar pago → procesar pago → confirmar → entrada emitida (ADR 0025).
-  // Si alguna línea se rechazó, el timeline marca el paso que falló y pinta el motivo UNA sola vez
-  // aquí abajo, en vez de repetirlo por grupo.
-  const phase =
-    isReserving
-      ? 'Purchasing'
-      : awaitingPayment
-        ? 'AwaitingPayment'
-        : isPaying
-          ? 'Paying'
-          : allResolved && activeLines.length > 0
-            ? 'Confirmed'
-            : 'Pending'
-
+  // Los pasos de la saga ya no se muestran durante la compra (feedback de usuario: ruido) — el
+  // botón de pagar indica "Procesando pago…" mientras trabaja. Aquí solo queda el motivo de
+  // rechazo, que se pinta UNA sola vez, en vez de repetirlo por grupo.
   const rejectedLine = cart.find((l) => l.status === 'Rejected')
-  const timelineStatus = rejectedLine ? 'Rejected' : phase
   const timelineReason = rejectedLine?.rejectionReason ?? null
 
   // Cuenta atrás de toda la compra en la fila del título, pegada a la derecha (ver feedback de
   // usuario). El hook vive aquí (no en un .map()) porque hay un único deadline por compra.
   const countdown = useCountdown(earliestExpiry(cart))
+
+  // Cuando el plazo se agota, el resumen de precio deja de tener sentido (la reserva ha expirado
+  // y la Saga la acabará rechazando) — se oculta el total junto con la cuenta atrás (feedback de
+  // usuario). También se oculta si no queda ninguna línea activa (todo rechazado).
+  const reservationExpired = countdown !== null && countdown <= 0
+
+  // Resumen de entradas de "Tu compra" plegado por defecto: solo se ve el total, la flecha junto
+  // al precio despliega/pliega la lista de grupos (ver feedback de usuario).
+  const [summaryOpen, setSummaryOpen] = useState(false)
 
   return (
     <aside className="ticket-checkout cart-panel">
@@ -216,7 +222,7 @@ export default function CartPanel({
                   <span>
                     {line.zoneName} × {line.quantity}
                   </span>
-                  <span>
+                  <span className="cart-panel__line-actions">
                     <span className="cart-panel__subtotal">{(line.unitPrice * line.quantity).toFixed(2)} €</span>
                     <button
                       type="button"
@@ -233,44 +239,90 @@ export default function CartPanel({
           </ul>
 
           <p className="cart-panel__total">
-            Total <strong>{draftTotal.toFixed(2)} €</strong>
-          </p>
-          <p className="cart-panel__quota">
-            {draftCount} / {MAX_TICKETS_PER_PURCHASE} entradas
+            <span className="cart-panel__quota">
+              {draftCount} / {MAX_TICKETS_PER_PURCHASE} entradas
+            </span>
+            <span className="cart-panel__total-actions">
+              <strong>{draftTotal.toFixed(2)} €</strong>
+              <span className="cart-panel__line-slot" aria-hidden="true" />
+            </span>
           </p>
 
-          <button type="button" disabled={isReserving} onClick={onReservar}>
-            {isReserving ? 'Reservando…' : 'Reservar'}
+          <button type="button" className="cart-panel__reserve" disabled={isReserving} onClick={onReservar}>
+            {isReserving ? (
+              <>
+                Reservando
+                <span className="cart-panel__reserve-dots" aria-hidden="true">
+                  <span>.</span>
+                  <span>.</span>
+                  <span>.</span>
+                </span>
+              </>
+            ) : (
+              'Reservar'
+            )}
           </button>
         </>
       )}
 
       {hasReservation && (
         <>
-          <ul className="cart-panel__lines">
-            {groups.map((group) => (
-              <CartGroupRow key={group.key} group={group} />
-            ))}
-          </ul>
+          {summaryOpen && (
+            <ul className="cart-panel__lines">
+              {groups.map((group) => (
+                <CartGroupRow key={group.key} group={group} />
+              ))}
+            </ul>
+          )}
 
-          <p className="cart-panel__total">
-            Total <strong>{cartTotal.toFixed(2)} €</strong>
-          </p>
-          <p className="cart-panel__quota">
-            {activeLines.length} / {MAX_TICKETS_PER_PURCHASE} entradas
-          </p>
+          {activeLines.length > 0 && !reservationExpired && (
+            <>
+              <p className="cart-panel__total">
+                <span className="cart-panel__quota">
+                  {activeLines.length} {awaitingPayment ? 'entradas reservadas' : 'entradas compradas'}
+                </span>
+                <span className="cart-panel__total-actions">
+                  <strong>{cartTotal.toFixed(2)} €</strong>
+                  <button
+                    type="button"
+                    className={`cart-panel__toggle${summaryOpen ? ' cart-panel__toggle--open' : ''}`}
+                    onClick={() => setSummaryOpen((open) => !open)}
+                    aria-expanded={summaryOpen}
+                    aria-label={summaryOpen ? 'Ocultar resumen de entradas' : 'Ver resumen de entradas'}
+                  >
+                    <ChevronDownIcon />
+                  </button>
+                </span>
+              </p>
+
+              {confirmedTickets.length > 0 && (
+                <div className="ticket-id-hint">
+                  <p>
+                    ID (para escanear en <em>venue-ops</em>):
+                  </p>
+                  <ul>
+                    {confirmedTickets.map((t) => (
+                      <li key={t.ticketId}>
+                        <code>{t.ticketId}</code>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
 
           {awaitingPayment && (
             <PaymentForm total={cartTotal} disabled={isPaying} buyer={buyer} onBuyerChange={onBuyerChange} onSubmit={onSubmitPayment} />
           )}
 
           {allResolved && !awaitingPayment && (
-            <p className="cart-panel__done">
+            <p className={`cart-panel__done${activeLines.length > 0 ? '' : ' cart-panel__done--error'}`}>
               {activeLines.length > 0 ? '✔ Compra completada.' : 'La compra no se pudo completar.'}
             </p>
           )}
 
-          <SagaTimeline status={timelineStatus} rejectionReason={timelineReason} />
+          <SagaTimeline rejectionReason={timelineReason} />
         </>
       )}
     </aside>

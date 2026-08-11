@@ -81,6 +81,11 @@ export default function PurchaseFlow({
   const selectedTicketType = selectedZone && matchTicketType(selectedZone.name, ticketTypes)
   const pricing = pricingByZoneId(zones, ticketTypes)
 
+  // Con reserva en curso (o resuelta) el plano queda solo de consulta: ni se puede pulsar una zona
+  // ni salen los precios al pasar por encima (feedback de usuario). Al reiniciar la compra vuelve
+  // a ser interactivo.
+  const mapInteractable = cart.length === 0
+
   return (
     <div className="purchase-flow">
       <div className="ticket-checkout purchase-flow__main">
@@ -91,8 +96,8 @@ export default function PurchaseFlow({
         <StadiumMap
           zones={zones}
           selectedZoneId={selectedZoneId ?? undefined}
-          onSelect={setSelectedZoneId}
-          pricingByZoneId={pricing}
+          onSelect={mapInteractable ? setSelectedZoneId : undefined}
+          pricingByZoneId={mapInteractable ? pricing : undefined}
         />
 
         {adjustedSelectedZone && selectedTicketType && (

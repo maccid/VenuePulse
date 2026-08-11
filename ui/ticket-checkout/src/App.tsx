@@ -111,10 +111,15 @@ export default function App({ eventId, holder }: Props) {
     }
   }, [eventId])
 
-  // Se apaga sola en cuanto ninguna línea sigue "AwaitingPayment" — ya sea porque todo se
-  // confirmó/rechazó (llegado vía SignalR) o porque nunca se llegó a pagar nada.
+  // Se apaga sola cuando el pago ya se ha resuelto (todo Confirmado/Rechazado vía SignalR). Hasta
+  // entonces la Saga pasa cada línea por un estado intermedio ("ProcessingPayment") en el que el
+  // formulario debe seguir visible mostrando "Procesando pago…" (ver comentario en types.ts).
   useEffect(() => {
-    if (isPaying && !cart.some((line) => line.status === 'AwaitingPayment')) {
+    if (
+      isPaying &&
+      cart.length > 0 &&
+      cart.every((line) => line.status === 'Confirmed' || line.status === 'Rejected' || line.status === 'CheckedIn')
+    ) {
       setIsPaying(false)
     }
   }, [cart, isPaying])
