@@ -160,12 +160,39 @@
   position: relative;
 }
 
-/* El plano vive en su propia sección, ya no encajonado en la misma columna que el carrito:
-   ocupa todo el ancho de la columna principal y el SVG crece con ella. */
-.purchase-flow__map-section {
+/* Tarjeta del plano: mismo lenguaje visual que .cart-panel (borde, radio, padding) para que las
+   3 tarjetas del checkout se vean consistentes (cabecera de evento, plano, compra). */
+.purchase-flow__map-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--tc-border);
+  border-radius: var(--tc-radius-md);
+  padding: 16px;
+  background: var(--tc-surface);
+}
+
+.purchase-flow__map-card-header {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tc-muted);
+}
+
+.purchase-flow__map-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.stadium-map {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .stadium-map__svg {

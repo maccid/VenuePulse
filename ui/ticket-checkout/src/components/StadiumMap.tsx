@@ -4,13 +4,15 @@ import ZoneShape, { type ZoneLayout, type ZonePricing } from './ZoneShape'
 // Las zonas son fijas por tipo de evento (ver ZoneService en AccessControl: partido vs.
 // concierto), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
 // añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito. Partido: 4 gradas
-// alrededor del campo (Norte/Sur más anchas, Este/Oeste VIP más estrechas), con hueco en las
-// esquinas para que se vea el gris del estadio detrás.
+// alrededor del campo — Norte/Sur (VIP) alineadas al ancho exacto del campo, Este/Oeste
+// (normales) alineadas a su alto exacto y pegadas a los lados — con hueco en las esquinas para
+// que se vea el gris del estadio detrás (ver ADR 0025, invierte qué par es la VIP respecto a
+// ADR 0024).
 const MATCH_LAYOUT: Record<string, ZoneLayout> = {
-  'Puerta Norte': { x: 76, y: 26, width: 188, height: 50 },
-  'Puerta Sur': { x: 76, y: 204, width: 188, height: 50 },
-  'Grada Oeste VIP': { x: 30, y: 88, width: 46, height: 104 },
-  'Grada Este VIP': { x: 264, y: 88, width: 46, height: 104 },
+  'Grada VIP Norte': { x: 88, y: 26, width: 164, height: 50 },
+  'Grada VIP Sur': { x: 88, y: 204, width: 164, height: 50 },
+  'Grada Oeste': { x: 30, y: 84, width: 46, height: 112 },
+  'Grada Este': { x: 264, y: 84, width: 46, height: 112 },
 }
 
 // Concierto: la zona central (el campo, en un partido) pasa a ser "Pista" (de pie, cerca del

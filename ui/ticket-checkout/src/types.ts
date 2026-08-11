@@ -62,8 +62,22 @@ export type PaymentMethod = 'Card' | 'Bizum'
 // una sentada en la demo.
 export const MAX_TICKETS_PER_PURCHASE = 10
 
-// Cada línea del carrito es una entrada real ya reservada en el backend (no una intención local
-// sin bloquear) — "añadir al carrito" dispara ya la compra real, ver ADR del carrito.
+// Selección local, todavía sin reservar de verdad (sin llamar al backend) — se acumula por
+// zona+tipo mientras el título de la tarjeta de compra es "Tus Reservas". Solo al pulsar
+// "Reservar" cada unidad se convierte en un `CartLine` real (ver ADR 0025, reabre ADR 0018 punto 3).
+export interface DraftLine {
+  zoneId: string
+  zoneName: string
+  ticketTypeId: string
+  ticketTypeName: string
+  unitPrice: number
+  priceTier: string
+  quantity: number
+}
+
+// Cada línea del carrito es una entrada real ya reservada en el backend a partir del momento en
+// que se crea (no una intención local) — pulsar "Reservar" dispara ya la compra real para cada
+// `DraftLine`, ver ADR 0025.
 export interface CartLine {
   ticketId: string
   zoneId: string

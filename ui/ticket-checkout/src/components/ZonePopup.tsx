@@ -4,13 +4,12 @@ import { MAX_TICKETS_PER_PURCHASE, type TicketType, type ZoneOccupancy } from '.
 interface Props {
   zone: ZoneOccupancy
   ticketType: TicketType
-  holderReady: boolean
   remainingQuota: number
   onAdd: (quantity: number) => void
   onClose: () => void
 }
 
-export default function ZonePopup({ zone, ticketType, holderReady, remainingQuota, onAdd, onClose }: Props) {
+export default function ZonePopup({ zone, ticketType, remainingQuota, onAdd, onClose }: Props) {
   const [quantity, setQuantity] = useState(1)
   const maxQuantity = Math.max(0, Math.min(remainingQuota, zone.availableToSell))
   const hasDiscount = ticketType.priceTier !== 'Normal'
@@ -48,9 +47,7 @@ export default function ZonePopup({ zone, ticketType, holderReady, remainingQuot
               </select>
             </label>
 
-            {!holderReady && <p className="zone-popup__hint">Escribe tu nombre arriba para poder comprar.</p>}
-
-            <button type="button" disabled={!holderReady} onClick={() => onAdd(quantity)}>
+            <button type="button" onClick={() => onAdd(quantity)}>
               Añadir {quantity > 1 ? `${quantity} entradas` : '1 entrada'}
             </button>
           </>
