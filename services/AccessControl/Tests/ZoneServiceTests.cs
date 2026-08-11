@@ -37,8 +37,8 @@ public class ZoneServiceTests
         // (ver ADR 0016) al excluir su aforo del denominador.
         notifier.Notified.Should().HaveCount(4);
         notifier.Notified.Should().OnlyContain(z => z.EventId == eventId && z.AvailableToSell == z.Capacity && z.ConfirmedSold == 0);
-        notifier.Notified.Select(z => z.Name).Should().Contain("Grada Este VIP");
-        notifier.Notified.Select(z => z.Name).Should().Contain("Grada Oeste VIP");
+        notifier.Notified.Select(z => z.Name).Should().Contain("Grada VIP Norte");
+        notifier.Notified.Select(z => z.Name).Should().Contain("Grada VIP Sur");
     }
 
     [Fact]
@@ -58,9 +58,9 @@ public class ZoneServiceTests
         // real en el backend — si este nombre cambia, esa fusión deja de funcionar en silencio.
         var names = notifier.Notified.Select(z => z.Name).ToList();
         names.Should().Contain("Pista");
-        names.Should().NotContain("Grada Este VIP");
-        names.Should().NotContain("Grada Oeste VIP");
-        names.Should().NotContain("Puerta Norte");
+        names.Should().NotContain("Grada VIP Norte");
+        names.Should().NotContain("Grada VIP Sur");
+        names.Should().NotContain("Grada Este");
     }
 
     [Fact]

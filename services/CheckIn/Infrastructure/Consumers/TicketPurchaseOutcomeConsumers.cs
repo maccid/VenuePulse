@@ -3,6 +3,7 @@ namespace VenuePulse.CheckIn.Infrastructure.Consumers;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using VenuePulse.CheckIn.Application;
+using VenuePulse.CheckIn.Infrastructure.Sagas.Timeout;
 using VenuePulse.Core.Messaging.Contracts;
 
 /// <summary>
@@ -18,6 +19,7 @@ using VenuePulse.Core.Messaging.Contracts;
 public sealed class TicketReadyForPaymentConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
+    ReservationTimeoutTracker timeoutTracker,
     ILogger<TicketReadyForPaymentConsumer> logger) : IConsumer<TicketAwaitingPayment>
 {
     public async Task Consume(ConsumeContext<TicketAwaitingPayment> context)
@@ -32,8 +34,9 @@ public sealed class TicketReadyForPaymentConsumer(
         ticket.MarkAwaitingPayment();
         await repository.SaveChangesAsync(context.CancellationToken);
 
+        var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, expiresAtUtc),
             context.CancellationToken);
     }
 }
@@ -46,6 +49,7 @@ public sealed class TicketReadyForPaymentConsumer(
 public sealed class TicketProcessingPaymentConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
+    ReservationTimeoutTracker timeoutTracker,
     ILogger<TicketProcessingPaymentConsumer> logger) : IConsumer<TicketProcessingPayment>
 {
     public async Task Consume(ConsumeContext<TicketProcessingPayment> context)
@@ -60,8 +64,12 @@ public sealed class TicketProcessingPaymentConsumer(
         ticket.MarkProcessingPayment();
         await repository.SaveChangesAsync(context.CancellationToken);
 
+        // El watchdog ya des-trackeó al recibir TicketPaymentSubmitted (el cliente ya eligió
+        // método de pago) — aquí siempre será null, es el mismo lookup que en el resto de
+        // consumidores para no bifurcar el criterio (ver ADR 0025).
+        var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, expiresAtUtc),
             context.CancellationToken);
     }
 }
@@ -69,6 +77,7 @@ public sealed class TicketProcessingPaymentConsumer(
 public sealed class TicketPurchaseConfirmedConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
+    ReservationTimeoutTracker timeoutTracker,
     ILogger<TicketPurchaseConfirmedConsumer> logger) : IConsumer<TicketPurchaseConfirmed>
 {
     public async Task Consume(ConsumeContext<TicketPurchaseConfirmed> context)
@@ -83,8 +92,9 @@ public sealed class TicketPurchaseConfirmedConsumer(
         ticket.Confirm();
         await repository.SaveChangesAsync(context.CancellationToken);
 
+        var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, expiresAtUtc),
             context.CancellationToken);
     }
 }
@@ -92,6 +102,7 @@ public sealed class TicketPurchaseConfirmedConsumer(
 public sealed class TicketPurchaseRejectedConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
+    ReservationTimeoutTracker timeoutTracker,
     ILogger<TicketPurchaseRejectedConsumer> logger) : IConsumer<TicketPurchaseRejected>
 {
     public async Task Consume(ConsumeContext<TicketPurchaseRejected> context)
@@ -106,8 +117,9 @@ public sealed class TicketPurchaseRejectedConsumer(
         ticket.Reject(context.Message.Reason);
         await repository.SaveChangesAsync(context.CancellationToken);
 
+        var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.RejectionReason),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.RejectionReason, expiresAtUtc),
             context.CancellationToken);
     }
 }

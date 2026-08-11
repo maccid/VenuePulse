@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import type { CartLine, EventSummary, PaymentMethod, PricingChanged, TicketStatusUpdate, TicketType, ZoneOccupancy } from './types'
+import type {
+  CartLine,
+  DraftLine,
+  EventSummary,
+  PaymentMethod,
+  PricingChanged,
+  TicketStatusUpdate,
+  TicketType,
+  ZoneOccupancy,
+} from './types'
 import PurchaseFlow from './components/PurchaseFlow'
 import CheckoutHeader from './components/CheckoutHeader'
 import './App.css'
@@ -15,7 +24,9 @@ export default function App({ eventId, holder }: Props) {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
   const [holderName, setHolderName] = useState(holder)
+  const [draft, setDraft] = useState<DraftLine[]>([])
   const [cart, setCart] = useState<CartLine[]>([])
+  const [isReserving, setIsReserving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
 
   useEffect(() => {
@@ -48,7 +59,7 @@ export default function App({ eventId, holder }: Props) {
       setCart((prev) =>
         prev.map((line) =>
           line.ticketId === update.ticketId
-            ? { ...line, status: update.status, rejectionReason: update.rejectionReason }
+            ? { ...line, status: update.status, rejectionReason: update.rejectionReason, expiresAtUtc: update.expiresAtUtc }
             : line,
         ),
       )
@@ -107,40 +118,79 @@ export default function App({ eventId, holder }: Props) {
     }
   }, [cart, isPaying])
 
-  async function addToCart(zoneId: string, ticketTypeId: string, quantity: number) {
+  // Añadir desde el plano solo acumula en el borrador local, sin llamar al backend todavía — el
+  // aforo real no se toca hasta pulsar "Reservar" (ver ADR 0025, reabre ADR 0018 punto 3).
+  function addToDraft(zoneId: string, ticketTypeId: string, quantity: number) {
     const zone = zones.find((z) => z.zoneId === zoneId)
     const ticketType = ticketTypes.find((t) => t.id === ticketTypeId)
     if (!zone || !ticketType) return
 
+    setDraft((prev) => {
+      const existing = prev.find((l) => l.zoneId === zoneId && l.ticketTypeId === ticketTypeId)
+      if (existing) {
+        return prev.map((l) =>
+          l.zoneId === zoneId && l.ticketTypeId === ticketTypeId ? { ...l, quantity: l.quantity + quantity } : l,
+        )
+      }
+      return [
+        ...prev,
+        {
+          zoneId,
+          zoneName: zone.name,
+          ticketTypeId,
+          ticketTypeName: ticketType.name,
+          unitPrice: ticketType.effectivePrice,
+          priceTier: ticketType.priceTier,
+          quantity,
+        },
+      ]
+    })
+  }
+
+  // Único momento en que se llama al backend: reserva de verdad cada unidad del borrador (mismo
+  // POST que antes disparaba cada "Añadir" individual) y solo entonces aparecen en `cart` — a
+  // partir de aquí `occupancyChanged` (SignalR) refleja la selección y el semáforo del plano
+  // cambia de color.
+  async function reservar() {
+    setIsReserving(true)
+
     const purchases = await Promise.all(
-      Array.from({ length: quantity }, async () => {
-        const response = await fetch('/api/checkin/api/tickets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          // Precio efectivo mostrado en el popup en el momento de la compra — CheckIn lo exige
-          // desde el Bloque 17 y lo guarda tal cual, sin revalidar contra Ticketing (ADR 0021).
-          body: JSON.stringify({ eventId, ticketTypeId, zoneId, holder: holderName, price: ticketType.effectivePrice }),
-        })
-        if (!response.ok) return null
-        const { ticketId } = await response.json()
-        return ticketId as string
-      }),
+      draft.flatMap((line) =>
+        Array.from({ length: line.quantity }, async (): Promise<CartLine | null> => {
+          const response = await fetch('/api/checkin/api/tickets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // Precio efectivo mostrado en el popup en el momento de la compra — CheckIn lo exige
+            // desde el Bloque 17 y lo guarda tal cual, sin revalidar contra Ticketing (ADR 0021).
+            body: JSON.stringify({
+              eventId,
+              ticketTypeId: line.ticketTypeId,
+              zoneId: line.zoneId,
+              holder: holderName,
+              price: line.unitPrice,
+            }),
+          })
+          if (!response.ok) return null
+          const { ticketId } = await response.json()
+          return {
+            ticketId,
+            zoneId: line.zoneId,
+            zoneName: line.zoneName,
+            ticketTypeName: line.ticketTypeName,
+            unitPrice: line.unitPrice,
+            priceTier: line.priceTier,
+            status: 'Pending',
+            rejectionReason: null,
+            expiresAtUtc: null,
+          }
+        }),
+      ),
     )
 
-    const newLines: CartLine[] = purchases
-      .filter((ticketId): ticketId is string => ticketId !== null)
-      .map((ticketId) => ({
-        ticketId,
-        zoneId,
-        zoneName: zone.name,
-        ticketTypeName: ticketType.name,
-        unitPrice: ticketType.effectivePrice,
-        priceTier: ticketType.priceTier,
-        status: 'Pending',
-        rejectionReason: null,
-      }))
-
+    const newLines = purchases.filter((line): line is CartLine => line !== null)
     setCart((prev) => [...prev, ...newLines])
+    setDraft([])
+    setIsReserving(false)
   }
 
   async function submitPayment(method: PaymentMethod) {
@@ -172,9 +222,12 @@ export default function App({ eventId, holder }: Props) {
           zones={zones}
           holder={holderName}
           onHolderChange={setHolderName}
+          draft={draft}
           cart={cart}
+          isReserving={isReserving}
           isPaying={isPaying}
-          onAddToCart={addToCart}
+          onAddToDraft={addToDraft}
+          onReservar={reservar}
           onSubmitPayment={submitPayment}
         />
       )}

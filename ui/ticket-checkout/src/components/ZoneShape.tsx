@@ -43,6 +43,15 @@ export default function ZoneShape({
     .filter(Boolean)
     .join(' ')
 
+  // Gradas estrechas (Este/Oeste, ver StadiumMap MATCH_LAYOUT) no tienen ancho para el nombre en
+  // una sola línea — se reparte en varias líneas apiladas (una palabra por línea), sin rotar el
+  // texto, en vez de encajarlo girado 90°.
+  const centerX = layout.x + layout.width / 2
+  const centerY = layout.y + layout.height / 2 - (pricing ? 7 : 0)
+  const nameLines = layout.width < 60 ? name.split(' ') : [name]
+  const lineHeight = 12
+  const firstLineY = centerY - ((nameLines.length - 1) * lineHeight) / 2
+
   return (
     <g
       className={classes}
@@ -62,13 +71,12 @@ export default function ZoneShape({
       }
     >
       <rect x={layout.x} y={layout.y} width={layout.width} height={layout.height} rx={4} />
-      <text
-        x={layout.x + layout.width / 2}
-        y={layout.y + layout.height / 2 - (pricing ? 7 : 0)}
-        textAnchor="middle"
-        dominantBaseline="middle"
-      >
-        {name}
+      <text x={centerX} y={firstLineY} textAnchor="middle" dominantBaseline="middle">
+        {nameLines.map((line, index) => (
+          <tspan key={line} x={centerX} dy={index === 0 ? 0 : lineHeight}>
+            {line}
+          </tspan>
+        ))}
       </text>
       {pricing && (
         <text

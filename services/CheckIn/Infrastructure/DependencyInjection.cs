@@ -24,6 +24,9 @@ public static class DependencyInjection
             ReservationTimeout: TimeSpan.FromSeconds(int.Parse(configuration["Saga:ReservationTimeoutSeconds"] ?? "30")),
             PollInterval: TimeSpan.FromSeconds(int.Parse(configuration["Saga:TimeoutPollIntervalSeconds"] ?? "5"))));
         services.AddSingleton<ReservationTimeoutTracker>();
+        // Mismo singleton expuesto también por su puerto de Application (contador de reserva,
+        // ver ADR 0025) — GetTicketStatusQueryHandler no depende de Infrastructure directamente.
+        services.AddSingleton<IReservationTimeoutReader>(sp => sp.GetRequiredService<ReservationTimeoutTracker>());
         services.AddHostedService<ReservationTimeoutMonitor>();
 
         services.AddSingleton(new PaymentProcessingOptions(

@@ -165,6 +165,22 @@ Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021
   tocar su semáforo. `CheckoutHeader` pasa a fila con el botón "Volver al catálogo" pegado a la
   derecha. ADR 0024. Build/tests de `ticket-checkout`/`venue-ops` en verde; tests de
   `AccessControl`/`Ticketing` actualizados a las 4/3 zonas y tipos nuevos.
+- [x] **Bloque 22 — `feature/checkout-reserva-diferida`** (Claude Code, petición directa del
+  usuario): invierte qué par de gradas es la VIP (`Grada VIP Norte`/`Grada VIP Sur`, 8/7 plazas,
+  90€, sustituyen a `Puerta Norte`/`Sur`; `Grada Este`/`Grada Oeste`, 40/40 plazas, 40€ vía
+  `General`, sustituyen a las VIP laterales) y alinea la geometría del plano exactamente al campo
+  (Norte/Sur a su ancho, Este/Oeste a su alto), con el nombre de zona en varias líneas sin rotar
+  cuando el hueco es estrecho. `ticket-checkout` pasa a 3 tarjetas (evento, plano con icono
+  "Mapa del Evento", compra) y a un carrito **borrador** local (sin llamar al backend) que se
+  agrupa por zona ("Grada VIP Norte × 5 — 450,00 €") bajo el título "Tus Reservas"; solo al
+  pulsar "Reservar" se reserva de verdad cada unidad (título pasa a "Tu compra", aparece el
+  contador y el semáforo del plano cambia de color). Nombre del comprador pedido una vez, junto al
+  botón "Reservar". Contador de reserva real: `ReservationTimeoutTracker` (CheckIn) gana
+  `TryGetDeadline` tras el puerto `IReservationTimeoutReader` (Application), `TicketStatusDto`
+  gana `ExpiresAtUtc` propagado por SignalR y por `GET /status`; frontend con `useCountdown`.
+  ADR 0025 (reabre ADR 0018 punto 3 y ADR 0024). Build backend + frontend (`ticket-checkout`) en
+  verde. **Pendiente de esta misma tarea** (fuera de alcance a petición explícita): GUID de grupo
+  compartido para validar de una vez una compra múltiple — ver sección "Pendiente de decidir".
 
 ## Reparto en oleadas (ronda 2, tras Bloque 1/5/6/7)
 
@@ -444,6 +460,13 @@ los tests de los 3 servicios (ADR 0008 se cumple); el modelo `Zone` (`Capacity`/
 
 ## Pendiente de decidir (ver `docs/ROADMAP.md`)
 
+- [ ] **GUID de grupo para compras múltiples** (fuera de alcance del Bloque 22 a petición
+  explícita del usuario): cuando se emiten varias entradas juntas (misma compra, misma zona o
+  distintas), poder validarlas todas de una vez en `venue-ops`/check-in con un único código de
+  grupo (p. ej. `group-<GUID>`), manteniendo además el GUID individual de cada entrada para
+  escanearla por separado si hace falta. Requiere modelo de dominio nuevo en `CheckIn` (campo de
+  grupo en `Ticket`, migración) y que el endpoint de validación/check-in acepte tanto el código
+  individual como el grupal — no cubierto por ADR 0025.
 - [ ] Rellenar `.ia/` con más detalle si aparecen huecos durante el desarrollo en vivo de la
   demo.
 - [ ] Definir mecanismo de exportación "código sin `.git/` ni `.ia/`" para la entrega real
