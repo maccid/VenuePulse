@@ -273,6 +273,13 @@ ticket-checkout-app {
   cursor: pointer;
 }
 
+/* El <g> de la zona es un botón (tabIndex 0), así que el navegador pinta su outline por defecto al
+   hacer clic — un rectángulo sobre el bloque que queda raro. El indicador de foco/selección ya lo
+   da el stroke de las reglas --interactive:hover/:focus-visible y --selected. */
+.stadium-map__zone:focus {
+  outline: none;
+}
+
 .stadium-map__zone-light {
   pointer-events: none;
 }
@@ -395,6 +402,13 @@ ticket-checkout-app {
   color: var(--tc-text);
 }
 
+.zone-popup__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
 .ticket-checkout .zone-popup__close {
   position: absolute;
   top: 10px;
@@ -406,8 +420,15 @@ ticket-checkout-app {
   line-height: 1;
 }
 
-.ticket-checkout .zone-popup__close:hover {
+.ticket-checkout .zone-popup__close:hover:not(:disabled) {
   background: var(--tc-accent-bg);
+}
+
+.zone-popup__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
 }
 
 .zone-popup__type {
@@ -452,6 +473,7 @@ ticket-checkout-app {
 }
 
 .zone-popup__quantity {
+  display: flex;
   flex-direction: row !important;
   align-items: center !important;
   gap: 8px !important;
@@ -481,12 +503,17 @@ ticket-checkout-app {
   font-size: 18px;
   line-height: 1;
   background: transparent;
-  color: var(--tc-accent);
+  color: var(--tc-muted);
 }
 
 .ticket-checkout .stepper__btn:hover:not(:disabled) {
   background: var(--tc-accent-bg);
-  color: var(--tc-accent-hover);
+  color: var(--tc-accent);
+}
+
+.ticket-checkout .stepper__btn:focus-visible {
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent);
 }
 
 .ticket-checkout .stepper__btn:disabled {
@@ -540,7 +567,7 @@ ticket-checkout-app {
 }
 
 .ticket-checkout .cart-panel__reload {
-  margin-left: 2px;
+  margin-left: auto;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -553,7 +580,7 @@ ticket-checkout-app {
   border: 1px solid var(--tc-border-strong);
 }
 
-.ticket-checkout .cart-panel__reload:hover {
+.ticket-checkout .cart-panel__reload:hover:not(:disabled) {
   background: var(--tc-accent-bg);
   color: var(--tc-accent);
   border-color: var(--tc-accent);
@@ -582,17 +609,12 @@ ticket-checkout-app {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .cart-panel__line {
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--tc-border);
-}
-
-.cart-panel__line:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--tc-border);
 }
 
 .cart-panel__line-header {
@@ -602,21 +624,32 @@ ticket-checkout-app {
   font-size: 13px;
   font-weight: 600;
   color: var(--tc-text);
-  margin-bottom: 8px;
 }
 
 /* Línea del borrador ("Tus Reservas"): igual que el header pero con botón para quitar la línea
    entera antes de reservar (ver feedback de usuario). El subtotal y el botón se agrupan a la
    derecha para que el justify-content del header los mantenga pegados. */
 .cart-panel__draft-line {
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--tc-border);
+  padding-top: 10px;
+  border-top: 1px solid var(--tc-border);
 }
 
-.cart-panel__draft-line .cart-panel__line-header > span:last-child {
+.cart-panel__draft-line .cart-panel__line-header {
+  align-items: center;
+}
+
+/* Grupo derecho de una línea (precio + botón/hueco de 28px): mismo layout en "Tus Reservas" y en
+   "Tu compra" para que la columna de precios quede siempre en el mismo sitio. El hueco reserva el
+   sitio aunque el botón no exista en esa línea (ver feedback de usuario). */
+.cart-panel__line-actions {
   display: inline-flex;
   align-items: center;
   gap: 14px;
+}
+
+.cart-panel__line-slot {
+  width: 28px;
+  flex-shrink: 0;
 }
 
 .cart-panel__subtotal {
@@ -631,14 +664,14 @@ ticket-checkout-app {
   align-items: center;
   justify-content: center;
   border-radius: var(--tc-radius-sm);
-  background: var(--tc-accent);
-  color: white;
+  background: transparent;
+  color: var(--tc-muted);
   transition: background 0.15s ease;
 }
 
-.ticket-checkout .cart-panel__remove:hover {
-  background: var(--tc-accent-hover);
-  color: white;
+.ticket-checkout .cart-panel__remove:hover:not(:disabled) {
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent-hover);
 }
 
 .cart-panel__remove-icon {
@@ -657,16 +690,87 @@ ticket-checkout-app {
   border-top: 1px solid var(--tc-border);
 }
 
-.cart-panel__quota {
-  margin: -6px 0 0;
-  font-size: 12px;
+.cart-panel__total-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ticket-checkout .cart-panel__toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: transparent;
   color: var(--tc-muted);
+  transition: background 0.15s ease;
+}
+
+.ticket-checkout .cart-panel__toggle:hover:not(:disabled) {
+  background: var(--tc-accent-bg);
+  color: var(--tc-accent);
+}
+
+.cart-panel__toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.15s ease;
+}
+
+.cart-panel__toggle--open svg {
+  transform: rotate(180deg);
+}
+
+.cart-panel__quota {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--tc-muted);
+}
+
+.ticket-checkout .cart-panel__reserve {
+  margin-top: 5px;
+}
+
+.cart-panel__reserve-dots {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.cart-panel__reserve-dots span {
+  animation: cart-panel-dot-blink 1.2s infinite;
+}
+
+.cart-panel__reserve-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.cart-panel__reserve-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes cart-panel-dot-blink {
+  0%,
+  60%,
+  100% {
+    opacity: 0.2;
+  }
+  30% {
+    opacity: 1;
+  }
 }
 
 .cart-panel__done {
   margin: 0;
   font-weight: 600;
   color: var(--tc-accent);
+}
+
+.cart-panel__done--error {
+  color: var(--tc-danger);
 }
 
 /* Formulario de pago */
@@ -681,6 +785,16 @@ ticket-checkout-app {
 .payment-form h3 {
   margin: 0;
   font-size: 15px;
+}
+
+.payment-form__row {
+  display: flex;
+  gap: 10px;
+}
+
+.payment-form__row .field {
+  flex: 1;
+  min-width: 0;
 }
 
 .payment-toggle {
@@ -751,7 +865,8 @@ ticket-checkout-app {
 }
 
 .ticket-checkout select,
-.ticket-checkout input[type='text'] {
+.ticket-checkout input[type='text'],
+.ticket-checkout input[type='email'] {
   font: inherit;
   font-weight: 400;
   padding: 9px 12px;
@@ -786,64 +901,13 @@ ticket-checkout-app {
   transition: background 0.15s ease;
 }
 
-.ticket-checkout button:hover {
+.ticket-checkout button:hover:not(:disabled) {
   background: var(--tc-accent-hover);
 }
 
 .ticket-checkout button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.saga-timeline {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.saga-step {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--tc-muted);
-}
-
-.saga-step-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--tc-border);
-  flex-shrink: 0;
-}
-
-.saga-step--active .saga-step-dot {
-  background: var(--tc-accent);
-  animation: pulse 1s infinite;
-}
-
-.saga-step--active {
-  color: var(--tc-text);
-  font-weight: 600;
-}
-
-.saga-step--done .saga-step-dot {
-  background: var(--tc-accent);
-}
-
-.saga-step--done {
-  color: var(--tc-text);
-}
-
-.saga-step--failed .saga-step-dot {
-  background: var(--tc-danger);
-}
-
-.saga-step--failed {
-  color: var(--tc-danger);
-  font-weight: 600;
 }
 
 .saga-rejection-reason {
@@ -856,9 +920,25 @@ ticket-checkout-app {
 }
 
 .ticket-id-hint {
-  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
   font-size: 13px;
   color: var(--tc-muted);
+}
+
+.ticket-id-hint p {
+  margin: 0;
+}
+
+.ticket-id-hint ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .ticket-id-hint code {
