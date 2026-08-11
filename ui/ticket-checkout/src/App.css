@@ -25,11 +25,13 @@
 ticket-checkout-app {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 /* Todo escopado bajo .ticket-checkout a propósito: este componente vive en light DOM dentro
-   de la página de shell (sin Shadow DOM, ver ADR 0004), así que nunca toca :root/body/h1... */
+   de la página de shell (sin Shadow DOM, ver ADR 0004), así que nunca toca :root/body/h1...
+   El wrapper envuelve TODO el componente (cabecera + plano + carrito) y hace de contenedor
+   flex vertical: cabecera en su card, y debajo la fila de compra con dos cards iguales. */
 .ticket-checkout {
   --tc-text: #1f2328;
   --tc-muted: #6b7280;
@@ -48,14 +50,21 @@ ticket-checkout-app {
 
   font: 16px/1.5 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   color: var(--tc-text);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+/* Las tres cards del checkout comparten el mismo lenguaje visual (fondo blanco, borde, radio y
+   sombra): cabecera de evento a ancho completo, y plano + carrito en fila. */
+.checkout-header,
+.purchase-flow__main,
+.cart-panel {
   background: var(--tc-surface);
   border: 1px solid var(--tc-border);
   border-radius: var(--tc-radius-md);
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  text-align: left;
   box-shadow: var(--tc-shadow-md);
 }
 
@@ -166,19 +175,6 @@ ticket-checkout-app {
   flex-direction: column;
   gap: 14px;
   position: relative;
-}
-
-/* Tarjeta del plano: mismo lenguaje visual que .cart-panel (borde, radio, padding) para que las
-   3 tarjetas del checkout se vean consistentes (cabecera de evento, plano, compra). */
-.purchase-flow__map-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--tc-border);
-  border-radius: var(--tc-radius-md);
-  padding: 16px;
-  background: var(--tc-surface);
 }
 
 .purchase-flow__map-card-header {
@@ -464,22 +460,31 @@ ticket-checkout-app {
   gap: 8px !important;
 }
 
-/* Stepper de cantidad: botones − / + con el valor centrado. El scoping bajo .ticket-checkout es
-   para ganar especificidad sobre .ticket-checkout button (ahora el popup vive dentro de la card). */
+/* Stepper de cantidad: botones redondos − / + y el número centrado con aire. El scoping bajo
+   .ticket-checkout es para ganar especificidad sobre .ticket-checkout button (el popup vive dentro
+   de la card). El máximo lo acota `remainingQuota` (10 menos lo ya cogido) en ZonePopup. */
 .stepper {
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   border: 1px solid var(--tc-border-strong);
-  border-radius: var(--tc-radius-sm);
+  border-radius: 999px;
   background: var(--tc-surface);
-  overflow: hidden;
+  padding: 4px;
 }
 
 .ticket-checkout .stepper__btn {
-  padding: 8px 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
   background: transparent;
   color: var(--tc-accent);
-  border-radius: 0;
 }
 
 .ticket-checkout .stepper__btn:hover:not(:disabled) {
@@ -492,13 +497,12 @@ ticket-checkout-app {
 }
 
 .stepper__value {
-  min-width: 40px;
-  padding: 8px 0;
+  min-width: 28px;
   text-align: center;
+  font-size: 18px;
   font-weight: 600;
+  line-height: 1.2;
   color: var(--tc-text);
-  border-left: 1px solid var(--tc-border);
-  border-right: 1px solid var(--tc-border);
 }
 
 .zone-popup__hint {
@@ -507,8 +511,8 @@ ticket-checkout-app {
   color: var(--tc-muted);
 }
 
-/* Carrito. La tarjeta visual (fondo, borde, radio, padding, sombra) la aporta .ticket-checkout,
-   que ahora comparte con el plano para que ambas columnas se vean iguales. */
+/* Carrito. La tarjeta visual (fondo, borde, radio, padding, sombra) la comparte con la cabecera y
+   el plano (regla conjunta arriba) para que las tres cards se vean iguales. */
 .cart-panel {
   display: flex;
   flex-direction: column;

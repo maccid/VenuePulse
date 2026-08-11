@@ -23,7 +23,6 @@ export default function App({ eventId, holder }: Props) {
   const [event, setEvent] = useState<EventSummary | undefined>(undefined)
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
   const [zones, setZones] = useState<ZoneOccupancy[]>([])
-  const [holderName, setHolderName] = useState(holder)
   const [draft, setDraft] = useState<DraftLine[]>([])
   const [cart, setCart] = useState<CartLine[]>([])
   const [isReserving, setIsReserving] = useState(false)
@@ -166,7 +165,7 @@ export default function App({ eventId, holder }: Props) {
               eventId,
               ticketTypeId: line.ticketTypeId,
               zoneId: line.zoneId,
-              holder: holderName,
+              holder,
               price: line.unitPrice,
             }),
           })
@@ -208,13 +207,12 @@ export default function App({ eventId, holder }: Props) {
     )
   }
 
-  // La cabecera va en su propia card a ancho completo; el plano y el carrito comparten fila en dos
-  // cards iguales (ver purchase-flow en App.css). El contenedor flex es el propio ticket-checkout-app.
+  // El wrapper .ticket-checkout envuelve TODO el componente y hace de contenedor flex: la cabecera
+  // en su card a ancho completo (con gap de 16px con lo siguiente) y debajo el plano y el carrito
+  // en dos cards iguales dentro de purchase-flow (ver App.css).
   return (
-    <>
-      <div className="ticket-checkout">
-        <CheckoutHeader event={event} />
-      </div>
+    <div className="ticket-checkout">
+      <CheckoutHeader event={event} />
 
       {event && event.status !== 'OnSale' ? (
         <p className="ticket-checkout__notice">
@@ -224,8 +222,6 @@ export default function App({ eventId, holder }: Props) {
         <PurchaseFlow
           ticketTypes={ticketTypes}
           zones={zones}
-          holder={holderName}
-          onHolderChange={setHolderName}
           draft={draft}
           cart={cart}
           isReserving={isReserving}
@@ -235,6 +231,6 @@ export default function App({ eventId, holder }: Props) {
           onSubmitPayment={submitPayment}
         />
       )}
-    </>
+    </div>
   )
 }
