@@ -30,6 +30,13 @@ dinero vive en `Ticket.Price` (CheckIn).
 > revertido — ahora son 4 (`Puerta Norte`/`Puerta Sur` + `Grada Este VIP`/`Grada Oeste VIP`), a
 > petición directa del usuario. Concierto no cambia.
 
+> **Actualización (ADR 0026):** el set de 3 zonas de concierto de este párrafo también quedó
+> revertido — ahora son 6 (`Grada 1`/`Grada 2`/`Grada 3` + `Pista` + `VIP 1`/`VIP 2`, precio
+> Grada < Pista < VIP), a petición directa del usuario. Partido no cambia respecto a la
+> actualización anterior. `StadiumMap` (ambas apps) pasa a un óvalo exterior compartido entre
+> partido y concierto, con las 3 gradas de concierto reutilizando literalmente las curvas de
+> Norte/Sur/Oeste de partido.
+
 Reserva de ADR para esta ronda (próximo libre tras `0018`): `0019` → Bloque 15 (Ticketing,
 Claude Code). `0020` → Bloque 16 (AccessControl, opencode, 2 sub-fases). `0021` → Bloque 17
 (CheckIn, Claude Code). `0022` → Bloque 18 (venue-ops, Claude Code). `0023` → Bloque 19

@@ -5,12 +5,11 @@ using VenuePulse.Core.Domain;
 public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
     // Set de zonas fijo por tipo de evento — igual para cualquier partido/concierto (sin
-    // geometría real, ver ADR 0017). "Grada VIP Norte"/"Grada VIP Sur"/"Pista" son las zonas
-    // "especiales" cuyo nombre coincide a propósito con el TicketType correspondiente en
-    // Ticketing, para que el frontend pueda fusionar zona+tipo de entrada por nombre sin inventar
-    // una relación cruzada. Partido tiene 4 zonas (las 2 gradas de fondo, Norte/Sur, son las VIP
-    // caras y con menos aforo; las 2 laterales, Este/Oeste, son las normales) — ver ADR 0025, que
-    // invierte qué par de gradas es VIP respecto a ADR 0024.
+    // geometría real, ver ADR 0017). Los nombres de zona "especiales" coinciden a propósito con el
+    // TicketType correspondiente en Ticketing, para que el frontend pueda fusionar zona+tipo de
+    // entrada por nombre sin inventar una relación cruzada. Partido tiene 4 zonas (las 2 gradas de
+    // fondo, Norte/Sur, son las VIP caras y con menos aforo; las 2 laterales, Este/Oeste, son las
+    // normales) — ver ADR 0025, que invierte qué par de gradas es VIP respecto a ADR 0024.
     private static readonly (string Name, int Capacity)[] MatchZones =
     [
         ("Grada VIP Norte", 8),
@@ -19,11 +18,17 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         ("Grada Oeste", 40),
     ];
 
+    // Concierto tiene 6 zonas (ver ADR 0026): 3 gradas al mismo precio alrededor del recinto,
+    // Pista de pie a precio medio, y 2 VIP junto al escenario al precio más alto de las tres —
+    // aforo total 100, igual que el set anterior de 3 zonas, por continuidad.
     private static readonly (string Name, int Capacity)[] ConcertZones =
     [
-        ("Pista", 60),
-        ("Grada Norte", 20),
-        ("Grada Sur", 20),
+        ("Grada 1", 15),
+        ("Grada 2", 15),
+        ("Grada 3", 15),
+        ("Pista", 35),
+        ("VIP 1", 10),
+        ("VIP 2", 10),
     ];
 
     private static (string Name, int Capacity)[] ZonesFor(EventType eventType) => eventType switch

@@ -136,7 +136,7 @@ public class TicketingServiceTests
     }
 
     [Fact]
-    public async Task Crear_un_evento_de_concierto_anade_los_tres_tipos_por_defecto()
+    public async Task Crear_un_evento_de_concierto_anade_los_seis_tipos_por_defecto()
     {
         var (provider, _, service, _) = await StartAsync();
         await using var _p = provider;
@@ -147,10 +147,13 @@ public class TicketingServiceTests
 
         var ticketTypes = await service.GetTicketTypesAsync(created.Id, CancellationToken.None);
 
-        ticketTypes.Should().HaveCount(3);
+        ticketTypes.Should().HaveCount(6);
+        ticketTypes.Should().Contain(t => t.Name == "Grada 1" && t.Price == 25.00m);
+        ticketTypes.Should().Contain(t => t.Name == "Grada 2" && t.Price == 25.00m);
+        ticketTypes.Should().Contain(t => t.Name == "Grada 3" && t.Price == 25.00m);
         ticketTypes.Should().Contain(t => t.Name == "Pista" && t.Price == 60.00m);
-        ticketTypes.Should().Contain(t => t.Name == "Grada Norte" && t.Price == 25.00m);
-        ticketTypes.Should().Contain(t => t.Name == "Grada Sur" && t.Price == 25.00m);
+        ticketTypes.Should().Contain(t => t.Name == "VIP 1" && t.Price == 90.00m);
+        ticketTypes.Should().Contain(t => t.Name == "VIP 2" && t.Price == 90.00m);
     }
 
     [Fact]

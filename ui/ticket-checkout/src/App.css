@@ -205,13 +205,8 @@ ticket-checkout-app {
   height: auto;
 }
 
-.stadium-map__pitch {
-  fill: rgba(29, 111, 92, 0.05);
-  stroke: var(--tc-border-strong);
-}
-
-/* Partido: fondo gris del estadio, campo verde con líneas realistas (ver StadiumMap.tsx). El
-   azul del concierto se mantiene por semáforo de ocupación (--low/--mid/--high), sin tocar. */
+/* Óvalo exterior del recinto, compartido por partido y concierto (ver ADR 0026) — campo verde con
+   líneas realistas solo en partido; concierto pinta su propio escenario (StadiumMap.tsx). */
 .stadium-map__exterior {
   fill: #e4e7ec;
   stroke: #d1d5db;
@@ -244,29 +239,12 @@ ticket-checkout-app {
   pointer-events: none;
 }
 
-.stadium-map__zone--low rect {
-  fill: var(--tc-accent);
-  fill-opacity: 0.35;
-  stroke: var(--tc-accent);
-}
-
-.stadium-map__zone--mid rect {
-  fill: #d97706;
-  fill-opacity: 0.35;
-  stroke: #d97706;
-}
-
-.stadium-map__zone--high rect {
-  fill: var(--tc-danger);
-  fill-opacity: 0.35;
-  stroke: var(--tc-danger);
-}
-
-/* Gradas de partido: contorno curvo (ver StandShape en StadiumMap.tsx), azul fijo para las 4,
+/* Todas las zonas (gradas curvas de partido/concierto, Pista/VIP rectas de concierto): azul fijo,
    sin semáforo tiñendo el bloque — la ocupación se indica con la luz parpadeante
    (stadium-map__zone-light-*) junto al nombre. Sin borde por defecto: solo aparece al pasar el
    ratón o con foco de teclado, para no recargar el plano. */
-.stadium-map__zone--stand path {
+.stadium-map__zone--stand path,
+.stadium-map__zone--stand rect {
   fill: #2563eb;
   fill-opacity: 0.85;
   stroke: none;
@@ -274,14 +252,11 @@ ticket-checkout-app {
 }
 
 .stadium-map__zone--stand.stadium-map__zone--interactive:hover path,
-.stadium-map__zone--stand.stadium-map__zone--interactive:focus-visible path {
+.stadium-map__zone--stand.stadium-map__zone--interactive:hover rect,
+.stadium-map__zone--stand.stadium-map__zone--interactive:focus-visible path,
+.stadium-map__zone--stand.stadium-map__zone--interactive:focus-visible rect {
   stroke: #1e40af;
   stroke-width: 1.5;
-}
-
-.stadium-map__zone--stand.stadium-map__zone--selected path {
-  stroke: var(--tc-text);
-  stroke-width: 2.5;
 }
 
 .stadium-map__zone--stand text {
@@ -292,7 +267,8 @@ ticket-checkout-app {
   fill: rgba(255, 255, 255, 0.9);
 }
 
-.stadium-map__zone--selected rect {
+.stadium-map__zone--selected rect,
+.stadium-map__zone--selected path {
   stroke-width: 2.5;
   stroke: var(--tc-text);
 }

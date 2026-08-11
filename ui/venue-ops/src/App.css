@@ -224,11 +224,6 @@
   stroke: var(--vp-border-strong);
 }
 
-.stadium-map__pitch {
-  fill: var(--vp-accent-bg);
-  stroke: var(--vp-border-strong);
-}
-
 /* Campo de fútbol (partido): verde con líneas blancas, mismo dibujo que ticket-checkout, para
    diferenciarlo del concierto, que mantiene el óvalo naranja/neutro. */
 .stadium-map__field-fill {
