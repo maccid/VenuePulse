@@ -7,8 +7,6 @@ import PaymentForm from './PaymentForm'
 interface Props {
   draft: DraftLine[]
   cart: CartLine[]
-  holder: string
-  onHolderChange: (holder: string) => void
   isReserving: boolean
   isPaying: boolean
   onReservar: () => void
@@ -79,9 +77,17 @@ function earliestExpiry(lines: CartLine[]): string | null {
   return deadlines.reduce((earliest, d) => (new Date(d) < new Date(earliest) ? d : earliest))
 }
 
+function rejectionReasonText(rejectionReason: string | null): string {
+  if (rejectionReason === 'ZoneFull') return 'la zona se llenó justo antes de confirmar'
+  if (rejectionReason === 'ReservationTimedOut') return 'no se pudo reservar el aforo a tiempo'
+  if (rejectionReason === 'PaymentTimedOut') return 'no se eligió método de pago a tiempo, el aforo se liberó'
+  return 'el pago simulado ha fallado (compensación real: aforo liberado)'
+}
+
 // Componente propio por fila para poder llamar a `useCountdown` una vez por grupo — el número de
 // grupos cambia con el carrito, así que el hook no puede vivir en el cuerpo de un `.map()` del
-// componente padre (violaría las reglas de hooks).
+// componente padre (violaría las reglas de hooks). El timeline de la saga es común a toda la
+// compra y se muestra una sola vez, debajo del método de pago.
 function CartGroupRow({ group }: { group: CartGroup }) {
   const { status, rejectionReason } = groupStatus(group)
   const rejectedCount = group.lines.length - group.lines.filter((l) => l.status !== 'Rejected').length
@@ -97,14 +103,17 @@ function CartGroupRow({ group }: { group: CartGroup }) {
         </span>
         <span>{groupSubtotal.toFixed(2)} €</span>
       </div>
-      <SagaTimeline status={status} rejectionReason={rejectionReason} />
       {secondsLeft !== null && secondsLeft > 0 && (
         <p className="cart-panel__countdown">Reserva expira en {formatCountdown(secondsLeft)}</p>
       )}
-      {rejectedCount > 0 && status !== 'Rejected' && (
-        <p className="saga-rejection-reason">
-          {rejectedCount} de {group.lines.length} entradas de esta zona se rechazaron.
-        </p>
+      {status === 'Rejected' ? (
+        <p className="saga-rejection-reason">Motivo: {rejectionReasonText(rejectionReason)}</p>
+      ) : (
+        rejectedCount > 0 && (
+          <p className="saga-rejection-reason">
+            {rejectedCount} de {group.lines.length} entradas de esta zona se rechazaron.
+          </p>
+        )
       )}
       {confirmedTickets.length > 0 && (
         <p className="ticket-id-hint">
@@ -124,8 +133,6 @@ function CartGroupRow({ group }: { group: CartGroup }) {
 export default function CartPanel({
   draft,
   cart,
-  holder,
-  onHolderChange,
   isReserving,
   isPaying,
   onReservar,
@@ -139,8 +146,21 @@ export default function CartPanel({
   const awaitingPayment = cart.some((l) => l.status === 'AwaitingPayment')
   const allResolved =
     cart.length > 0 && cart.every((l) => l.status === 'Confirmed' || l.status === 'Rejected' || l.status === 'CheckedIn')
-  const holderReady = holder.trim().length > 0
+  const allRejected = cart.length > 0 && activeLines.length === 0
   const groups = groupCartLines(cart)
+
+  // Timeline común de toda la compra (no por zona — ver feedback de producto): representa la saga
+  // completa de reservar → esperar pago → procesar pago → confirmar → entrada emitida (ADR 0025).
+  const phase =
+    isReserving
+      ? 'Purchasing'
+      : awaitingPayment
+        ? 'AwaitingPayment'
+        : isPaying
+          ? 'Paying'
+          : allResolved && activeLines.length > 0
+            ? 'Confirmed'
+            : 'Pending'
 
   return (
     <aside className="ticket-checkout cart-panel">
@@ -173,18 +193,7 @@ export default function CartPanel({
             {draftCount} / {MAX_TICKETS_PER_PURCHASE} entradas
           </p>
 
-          <label className="field">
-            Tu nombre
-            <input
-              type="text"
-              value={holder}
-              onChange={(e) => onHolderChange(e.target.value)}
-              placeholder="¿A nombre de quién reservas?"
-              required
-            />
-          </label>
-
-          <button type="button" disabled={!holderReady || isReserving} onClick={onReservar}>
+          <button type="button" disabled={isReserving} onClick={onReservar}>
             {isReserving ? 'Reservando…' : 'Reservar'}
           </button>
         </>
@@ -206,7 +215,7 @@ export default function CartPanel({
           </p>
 
           {awaitingPayment && (
-            <PaymentForm holder={holder} total={cartTotal} disabled={isPaying} onSubmit={onSubmitPayment} />
+            <PaymentForm total={cartTotal} disabled={isPaying} onSubmit={onSubmitPayment} />
           )}
 
           {allResolved && !awaitingPayment && (
@@ -214,6 +223,8 @@ export default function CartPanel({
               {activeLines.length > 0 ? '✔ Compra completada.' : 'La compra no se pudo completar.'}
             </p>
           )}
+
+          {!allRejected && <SagaTimeline status={phase} rejectionReason={null} />}
         </>
       )}
     </aside>

@@ -14,8 +14,8 @@ const OESTE_PATH =
   'M 249.914 26.556 L 325.097 -15.981 C 308.911 -37.15 49.131 -42.901 18.481 -15.72 L 91.272 26.915 L 249.914 26.556'
 
 export const MATCH_STANDS: Record<string, StandShape> = {
-  'Grada VIP Norte': { path: NORTE_PATH, labelX: 170, labelY: 57, labelLines: ['Grada VIP', 'Norte'], lightX: 170, lightY: 36 },
-  'Grada VIP Sur': { path: SUR_PATH, labelX: 170, labelY: 222, labelLines: ['Grada VIP', 'Sur'], lightX: 170, lightY: 250 },
+  'Grada VIP Norte': { path: NORTE_PATH, labelX: 170, labelY: 57, labelLines: ['Grada VIP Norte'], lightX: 170, lightY: 36 },
+  'Grada VIP Sur': { path: SUR_PATH, labelX: 170, labelY: 222, labelLines: ['Grada VIP Sur'], lightX: 170, lightY: 250 },
   'Grada Este': {
     path: OESTE_PATH,
     transform: ESTE_OESTE_TRANSFORM,

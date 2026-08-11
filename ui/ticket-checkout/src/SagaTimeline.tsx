@@ -1,7 +1,7 @@
 import type { TicketStatus } from './types'
 
 interface Props {
-  status: TicketStatus | 'Idle' | 'Purchasing'
+  status: TicketStatus | 'Idle' | 'Purchasing' | 'Paying'
   rejectionReason: string | null
 }
 
@@ -31,6 +31,8 @@ function activeIndexFor(status: Props['status']): number {
       return 0
     case 'AwaitingPayment':
       return 1
+    case 'Paying':
+      return 2
     default:
       return STEPS.length - 1
   }

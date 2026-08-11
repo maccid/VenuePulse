@@ -9,8 +9,6 @@ import CartPanel from './CartPanel'
 interface Props {
   ticketTypes: TicketType[]
   zones: ZoneOccupancy[]
-  holder: string
-  onHolderChange: (holder: string) => void
   draft: DraftLine[]
   cart: CartLine[]
   isReserving: boolean
@@ -43,8 +41,6 @@ function MapIcon() {
 export default function PurchaseFlow({
   ticketTypes,
   zones,
-  holder,
-  onHolderChange,
   draft,
   cart,
   isReserving,
@@ -80,18 +76,16 @@ export default function PurchaseFlow({
   return (
     <div className="purchase-flow">
       <div className="ticket-checkout purchase-flow__main">
-        <section className="purchase-flow__map-card">
-          <div className="purchase-flow__map-card-header">
-            <MapIcon />
-            <span>Mapa del Evento</span>
-          </div>
-          <StadiumMap
-            zones={zones}
-            selectedZoneId={selectedZoneId ?? undefined}
-            onSelect={setSelectedZoneId}
-            pricingByZoneId={pricing}
-          />
-        </section>
+        <div className="purchase-flow__map-card-header">
+          <MapIcon />
+          <span>Mapa del Evento</span>
+        </div>
+        <StadiumMap
+          zones={zones}
+          selectedZoneId={selectedZoneId ?? undefined}
+          onSelect={setSelectedZoneId}
+          pricingByZoneId={pricing}
+        />
 
         {adjustedSelectedZone && selectedTicketType && (
           <ZonePopup
@@ -110,8 +104,6 @@ export default function PurchaseFlow({
       <CartPanel
         draft={draft}
         cart={cart}
-        holder={holder}
-        onHolderChange={onHolderChange}
         isReserving={isReserving}
         isPaying={isPaying}
         onReservar={onReservar}

@@ -59,7 +59,9 @@ export default function ZoneShape({ name, shape, tier, isSelected, interactive, 
       }
     : undefined
 
-  const priceY = shape.labelY + shape.labelLines.length * 12
+  // El precio va debajo del nombre con aire extra para no pegarse al texto (Este/Oeste escriben
+  // el nombre en dos líneas y con el precio colgando justo debajo quedaba encajado).
+  const priceY = shape.labelY + shape.labelLines.length * 12 + 8
   const outline = shape.rect ? (
     <rect x={shape.rect.x} y={shape.rect.y} width={shape.rect.width} height={shape.rect.height} />
   ) : (
