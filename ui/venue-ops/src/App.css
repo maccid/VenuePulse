@@ -229,6 +229,23 @@
   stroke: var(--vp-border-strong);
 }
 
+/* Campo de fútbol (partido): verde con líneas blancas, mismo dibujo que ticket-checkout, para
+   diferenciarlo del concierto, que mantiene el óvalo naranja/neutro. */
+.stadium-map__field-fill {
+  fill: #2f9e56;
+  stroke: rgba(255, 255, 255, 0.6);
+}
+
+.stadium-map__field-line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 1.5;
+}
+
+.stadium-map__field-dot {
+  fill: rgba(255, 255, 255, 0.85);
+}
+
 .stadium-map__stage {
   fill: var(--vp-text);
   fill-opacity: 0.85;
@@ -239,12 +256,6 @@
   font-weight: 700;
   fill: var(--vp-surface);
   letter-spacing: 0.04em;
-}
-
-.stadium-map__midline,
-.stadium-map__midcircle {
-  fill: none;
-  stroke: var(--vp-border-strong);
 }
 
 .stadium-map__zone rect,
