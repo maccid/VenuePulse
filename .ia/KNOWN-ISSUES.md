@@ -37,6 +37,31 @@ de mensajes en el arranque en frío (sigue sin resolverse, pero es el único cas
 esta demo); el caso general de **redelivery** (mensaje que sí llega pero se reprocesa) ya está
 cubierto — ver Inbox real en `AccessControl` (Bloque 3, ADR 0015).
 
+## Aforo "fantasma" tras timeout de reserva — ventana de carrera de ADR 0010 (RESUELTO)
+
+**Síntoma**: una zona mostraba aforo reservado (`Zone.Reserved` > 0 en `AccessControl`) sin
+ningún ticket `Confirmed` que lo explicara — reportado en real sobre "Grada VIP Norte" (8 plazas)
+tras dejar expirar el timeout de una compra y repetir la compra poco después.
+
+**Causa raíz**: el watchdog de ADR 0010 rechazaba y finalizaba la Saga (`TicketPurchaseSaga`) en
+cuanto expiraba el deadline en `Reserving`, asumiendo que el aforo "nunca llegó a reservarse". Si
+la respuesta real de `AccessControl` (`ZoneSlotReserved`) llegaba justo después, la Saga ya no
+existía (`SetCompletedWhenFinalized()` la borra de Mongo al finalizar) y ese mensaje se
+descartaba sin que nadie publicara `ReleaseZoneSlot` — el aforo quedaba reservado para siempre.
+Era el mismo riesgo que el propio ADR 0010 ya documentaba como "no se resuelve aquí".
+
+**Fix aplicado** (`fix/saga-late-reservation-race`, ver ADR 0027): la Saga ya no rechaza y
+finaliza en el momento del timeout — transiciona a un estado intermedio
+(`AwaitingLateReservationOutcome`) que espera la respuesta real de `AccessControl` para saber si
+hace falta compensar (`ReleaseZoneSlot`) o no. Riesgo residual aceptado y documentado en ADR 0027:
+si esa respuesta se pierde del todo (no solo tarda), la Saga queda esperando indefinidamente —
+mismo tipo de trade-off que el resto de riesgos ya aceptados en este documento, no una garantía
+formal de todos los casos.
+
+**Relacionado**: esta misma ventana de carrera es la causa más probable (no confirmada de nuevo
+tras el fix) de la intermitencia de `Bizum_compensa_y_rechaza_la_entrada` descrita más abajo — a
+reconfirmar con el mismo procedimiento si se repite.
+
 ## Test de integración de la Saga — camino de compensación intermitente en Testcontainers
 
 Documentado en `docs/architecture/adr/0009-masstransit-mongo-debugging.md`. Verificado
