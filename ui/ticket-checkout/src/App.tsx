@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type {
   BuyerData,
@@ -7,6 +7,7 @@ import type {
   EventSummary,
   PaymentMethod,
   PricingChanged,
+  TicketStatus,
   TicketStatusUpdate,
   TicketType,
   ZoneOccupancy,
@@ -20,6 +21,12 @@ interface Props {
   holder: string
 }
 
+// Estado terminal del flujo de compra (ver types.ts): fuera de él la UI debe seguir esperando el
+// resultado del pago, aunque el hub de SignalR haya perdido el mensaje final.
+function isResolved(status: TicketStatus): boolean {
+  return status === 'Confirmed' || status === 'Rejected' || status === 'CheckedIn'
+}
+
 export default function App({ eventId, holder }: Props) {
   const [event, setEvent] = useState<EventSummary | undefined>(undefined)
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
@@ -29,6 +36,60 @@ export default function App({ eventId, holder }: Props) {
   const [buyer, setBuyer] = useState<BuyerData>({ nombre: '', apellidos: '', email: '' })
   const [isReserving, setIsReserving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
+
+  // Ref espejo de `cart` para leer su valor más reciente desde callbacks de SignalR que se
+  // registran una sola vez (onreconnected) y que, de capturar `cart`, quedarían con un valor viejo.
+  const cartRef = useRef(cart)
+  useEffect(() => {
+    cartRef.current = cart
+  }, [cart])
+
+  // Aplica el estado de una entrada a su línea del carrito. Extraído para que el handler del hub
+  // y la reconciliación con GET /status compartan el mismo criterio de actualización.
+  function applyStatusUpdate(update: TicketStatusUpdate) {
+    setCart((prev) =>
+      prev.map((line) =>
+        line.ticketId === update.ticketId
+          ? {
+              ...line,
+              status: update.status,
+              rejectionReason: update.rejectionReason,
+              expiresAtUtc: update.expiresAtUtc,
+            }
+          : line,
+      ),
+    )
+  }
+
+  // El resultado del pago viaja por SignalR (ProcessingPayment → Confirmed/Rejected), pero si la
+  // conexión al hub cae durante el delay de la Saga, el mensaje final se pierde (SignalR no lo
+  // repite) y el panel se quedaría en "Procesando pago…" para siempre — sin botón de recarga ni
+  // resultado. GET /api/checkin/api/tickets/{id}/status (endpoint ya existente) es la fuente de
+  // verdad: se consulta hasta resolver todas las líneas o agotar los intentos.
+  async function reconcileStatuses(ticketIds: string[], attempts = 20): Promise<boolean> {
+    const pending = new Set(ticketIds)
+    for (let attempt = 0; attempt < attempts && pending.size > 0; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const updates = await Promise.all(
+        [...pending].map(async (ticketId) => {
+          try {
+            const response = await fetch(`/api/checkin/api/tickets/${ticketId}/status`)
+            if (!response.ok) return null
+            return (await response.json()) as TicketStatusUpdate
+          } catch {
+            return null
+          }
+        }),
+      )
+      for (const update of updates) {
+        if (update) {
+          applyStatusUpdate(update)
+          if (isResolved(update.status)) pending.delete(update.ticketId)
+        }
+      }
+    }
+    return pending.size === 0
+  }
 
   useEffect(() => {
     // La cabecera necesita nombre/categoría/fecha del evento, que el Web Component no recibe por
@@ -57,13 +118,14 @@ export default function App({ eventId, holder }: Props) {
       .build()
 
     connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
-      setCart((prev) =>
-        prev.map((line) =>
-          line.ticketId === update.ticketId
-            ? { ...line, status: update.status, rejectionReason: update.rejectionReason, expiresAtUtc: update.expiresAtUtc }
-            : line,
-        ),
-      )
+      applyStatusUpdate(update)
+    })
+
+    // El hub no repite mensajes tras una reconexión: los eventos emitidos durante el corte se
+    // pierden. Re-sincronizar con GET /status las líneas que aún no están en un estado final.
+    connection.onreconnected(() => {
+      const unresolved = cartRef.current.filter((l) => !isResolved(l.status)).map((l) => l.ticketId)
+      if (unresolved.length > 0) void reconcileStatuses(unresolved)
     })
 
     connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
@@ -111,15 +173,12 @@ export default function App({ eventId, holder }: Props) {
     }
   }, [eventId])
 
-  // Se apaga sola cuando el pago ya se ha resuelto (todo Confirmado/Rechazado vía SignalR). Hasta
-  // entonces la Saga pasa cada línea por un estado intermedio ("ProcessingPayment") en el que el
-  // formulario debe seguir visible mostrando "Procesando pago…" (ver comentario en types.ts).
+  // Se apaga sola cuando el pago ya se ha resuelto (todo Confirmado/Rechazado vía SignalR o la
+  // reconciliación con GET /status). Hasta entonces la Saga pasa cada línea por un estado
+  // intermedio ("ProcessingPayment") en el que el formulario debe seguir visible mostrando
+  // "Procesando pago…" (ver comentario en types.ts).
   useEffect(() => {
-    if (
-      isPaying &&
-      cart.length > 0 &&
-      cart.every((line) => line.status === 'Confirmed' || line.status === 'Rejected' || line.status === 'CheckedIn')
-    ) {
+    if (isPaying && cart.length > 0 && cart.every((line) => isResolved(line.status))) {
       setIsPaying(false)
     }
   }, [cart, isPaying])
@@ -230,6 +289,12 @@ export default function App({ eventId, holder }: Props) {
         }),
       ),
     )
+
+    // No fiarse solo del hub: si se pierde el estado final por una reconexión, reconciliar contra
+    // GET /status. Si tras los intentos sigue sin resolverse (p. ej. el /pay fue rechazado), se
+    // suelta el botón para poder reintentar en vez de quedarse en "Procesando pago…" para siempre.
+    const resolved = await reconcileStatuses(awaitingLines.map((l) => l.ticketId))
+    if (!resolved) setIsPaying(false)
   }
 
   // El wrapper .ticket-checkout envuelve TODO el componente y hace de contenedor flex: la cabecera
