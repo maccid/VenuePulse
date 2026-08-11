@@ -680,27 +680,62 @@ ticket-checkout-app {
   font-size: 15px;
 }
 
-.payment-methods {
+.payment-toggle {
+  position: relative;
   display: flex;
-  gap: 8px;
+  background: #f1f2f4;
+  border: 1px solid var(--tc-border);
+  border-radius: 999px;
+  padding: 3px;
 }
 
-.payment-method {
-  flex: 1;
+.payment-toggle__slider {
+  position: absolute;
+  inset-block: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
   background: var(--tc-surface);
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.18);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.payment-toggle__slider--right {
+  transform: translateX(100%);
+}
+
+.ticket-checkout .payment-toggle__option {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tc-muted);
+  font-weight: 400;
+  transition: color 0.15s ease;
+}
+
+.ticket-checkout .payment-toggle__option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--tc-muted);
+}
+
+.ticket-checkout .payment-toggle__option--selected,
+.ticket-checkout .payment-toggle__option--selected:hover {
+  background: transparent;
   color: var(--tc-text);
-  border: 1px solid var(--tc-border-strong);
   font-weight: 600;
 }
 
-.payment-method:hover {
-  background: var(--tc-accent-bg);
-}
-
-.payment-method--selected {
-  border-color: var(--tc-accent);
-  background: var(--tc-accent-bg);
-  color: var(--tc-accent);
+.payment-method__icon {
+  height: 18px;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .ticket-checkout label {
