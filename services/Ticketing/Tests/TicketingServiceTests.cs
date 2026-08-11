@@ -131,8 +131,8 @@ public class TicketingServiceTests
 
         ticketTypes.Should().HaveCount(3);
         ticketTypes.Should().Contain(t => t.Name == "General" && t.Price == 40.00m);
-        ticketTypes.Should().Contain(t => t.Name == "Grada Este VIP" && t.Price == 90.00m);
-        ticketTypes.Should().Contain(t => t.Name == "Grada Oeste VIP" && t.Price == 90.00m);
+        ticketTypes.Should().Contain(t => t.Name == "Grada VIP Norte" && t.Price == 90.00m);
+        ticketTypes.Should().Contain(t => t.Name == "Grada VIP Sur" && t.Price == 90.00m);
     }
 
     [Fact]

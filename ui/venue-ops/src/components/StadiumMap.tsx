@@ -4,12 +4,14 @@ import ZoneShape, { type ZoneLayout } from './ZoneShape'
 // Las zonas son fijas por tipo de evento (partido vs. concierto, ver ZoneService en
 // AccessControl), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
 // añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito. Copia adaptada de la
-// de `ticket-checkout` (sin código compartido entre micro frontends, ver ADR 0004).
+// de `ticket-checkout` (sin código compartido entre micro frontends, ver ADR 0004). Coordenadas
+// alineadas con el campo (ver FIELD en la copia de ticket-checkout) — Norte/Sur VIP a todo el
+// ancho, Este/Oeste normales a todo el alto, ver ADR 0025.
 const MATCH_LAYOUT: Record<string, ZoneLayout> = {
-  'Puerta Norte': { x: 76, y: 26, width: 188, height: 50 },
-  'Puerta Sur': { x: 76, y: 204, width: 188, height: 50 },
-  'Grada Oeste VIP': { x: 30, y: 88, width: 46, height: 104 },
-  'Grada Este VIP': { x: 264, y: 88, width: 46, height: 104 },
+  'Grada VIP Norte': { x: 88, y: 26, width: 164, height: 50 },
+  'Grada VIP Sur': { x: 88, y: 204, width: 164, height: 50 },
+  'Grada Oeste': { x: 30, y: 84, width: 46, height: 112 },
+  'Grada Este': { x: 264, y: 84, width: 46, height: 112 },
 }
 
 const CONCERT_LAYOUT: Record<string, ZoneLayout> = {
