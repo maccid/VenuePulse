@@ -1,23 +1,57 @@
 import type { ZoneOccupancy } from '../types'
-import ZoneShape, { type ZoneLayout, type ZonePricing } from './ZoneShape'
+import ZoneShape, { type StandShape, type ZoneLayout, type ZonePricing } from './ZoneShape'
 
-// Las zonas son fijas por tipo de evento (ver ZoneService en AccessControl: partido vs.
-// concierto), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
-// añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito. Partido: 4 gradas
-// alrededor del campo — Norte/Sur (VIP) alineadas al ancho exacto del campo, Este/Oeste
-// (normales) alineadas a su alto exacto y pegadas a los lados — con hueco en las esquinas para
-// que se vea el gris del estadio detrás (ver ADR 0025, invierte qué par es la VIP respecto a
-// ADR 0024).
-const MATCH_LAYOUT: Record<string, ZoneLayout> = {
-  'Grada VIP Norte': { x: 88, y: 26, width: 164, height: 50 },
-  'Grada VIP Sur': { x: 88, y: 204, width: 164, height: 50 },
-  'Grada Oeste': { x: 30, y: 84, width: 46, height: 112 },
-  'Grada Este': { x: 264, y: 84, width: 46, height: 112 },
+// Partido: gradas con contorno curvo hacia el óvalo exterior en vez de rectángulos — Este/Oeste
+// reutilizan la curva de Norte/Sur girada con `transform`, porque el exterior (8,8,324,264,
+// rx 85) no es cuadrado y una rotación simple no encajaría con el campo. Coordenadas de las
+// curvas y de la etiqueta/semáforo ajustadas a mano sobre el plano, no calculadas — ver ADR 0024
+// para el porqué de las 4 zonas (VIP Norte/Sur + Este/Oeste) y del azul fijo con semáforo aparte.
+const ESTE_OESTE_TRANSFORM = 'matrix(-0.00261, -0.70282102, 0.98233294, 0, 27.46486001, -0.33711338)'
+const ESTE_OESTE_ORIGIN = '170.725px 140.696px'
+
+const MATCH_STANDS: Record<string, StandShape> = {
+  'Grada VIP Norte': {
+    path: 'M 87.59 82.282 L 46.307 29.872 C 87.035 7.34 254.481 6.173 293.641 30.59 L 251.641 82.641 L 87.59 82.282',
+    labelX: 170,
+    labelY: 57,
+    labelLines: ['Grada VIP', 'Norte'],
+    lightX: 170,
+    lightY: 36,
+  },
+  'Grada VIP Sur': {
+    path: 'M 88.602 199.11 L 47.592 249.066 C 81.504 271.326 256.502 272.935 294.653 250.802 L 252.653 198.751 L 88.602 199.11',
+    labelX: 170,
+    labelY: 222,
+    labelLines: ['Grada VIP', 'Sur'],
+    lightX: 170,
+    lightY: 250,
+  },
+  'Grada Este': {
+    path: 'M 90.816 198.403 L 17.184 241.222 C 32.548 260.331 313.993 261.982 324.189 241.239 L 249.458 198.044 L 90.816 198.403',
+    transform: ESTE_OESTE_TRANSFORM,
+    transformOrigin: ESTE_OESTE_ORIGIN,
+    labelX: 286,
+    labelY: 134,
+    labelLines: ['Grada', 'Este'],
+    lightX: 286,
+    lightY: 112,
+  },
+  'Grada Oeste': {
+    path: 'M 249.914 26.556 L 325.097 -15.981 C 308.911 -37.15 49.131 -42.901 18.481 -15.72 L 91.272 26.915 L 249.914 26.556',
+    transform: ESTE_OESTE_TRANSFORM,
+    transformOrigin: ESTE_OESTE_ORIGIN,
+    labelX: 54,
+    labelY: 134,
+    labelLines: ['Grada', 'Oeste'],
+    lightX: 54,
+    lightY: 112,
+  },
 }
 
 // Concierto: la zona central (el campo, en un partido) pasa a ser "Pista" (de pie, cerca del
 // escenario); las gradas laterales flanquean. "Escenario" es solo decorativo, no es una zona
-// real — no aparece en `zones` ni se puede seleccionar.
+// real — no aparece en `zones` ni se puede seleccionar. Sin rediseño propio todavía (ver ADR
+// 0024), sigue en rectángulos.
 const CONCERT_LAYOUT: Record<string, ZoneLayout> = {
   Pista: { x: 110, y: 46, width: 120, height: 170 },
   'Grada Norte': { x: 40, y: 46, width: 58, height: 170 },
@@ -51,9 +85,8 @@ function occupancyTier(ratio: number): 'low' | 'mid' | 'high' {
 export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZoneId }: Props) {
   const interactive = Boolean(onSelect)
   const isConcert = zones.some((z) => z.name === 'Pista')
-  const layout = isConcert ? CONCERT_LAYOUT : MATCH_LAYOUT
-  const laidOut = zones.filter((z) => layout[z.name])
-  const unmapped = zones.filter((z) => !layout[z.name])
+  const laidOut = zones.filter((z) => (isConcert ? CONCERT_LAYOUT[z.name] : MATCH_STANDS[z.name]))
+  const unmapped = zones.filter((z) => !(isConcert ? CONCERT_LAYOUT[z.name] : MATCH_STANDS[z.name]))
 
   return (
     <div className="stadium-map">
@@ -68,9 +101,9 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
           </>
         ) : (
           <>
-            {/* Estadio: fondo gris de todo el recinto, con hueco en las esquinas donde no llegan
-                las gradas (ver MATCH_LAYOUT). */}
-            <rect x="8" y="8" width="324" height="264" rx="56" className="stadium-map__exterior" />
+            {/* Estadio: fondo gris de todo el recinto, óvalo (rx alto) con hueco en las esquinas
+                donde no llegan las gradas. */}
+            <rect x="8" y="8" width="324" height="264" rx="85" className="stadium-map__exterior" />
 
             {/* Campo: rectángulo verde con líneas de un campo de fútbol real, decorativo. */}
             <g className="stadium-map__field">
@@ -114,35 +147,39 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
         )}
 
         {laidOut.map((zone) => {
-          const zoneLayout = layout[zone.name]
           const tier = occupancyTier(occupancyRatio(zone))
+          const isSelected = zone.zoneId === selectedZoneId
+          const pricing = pricingByZoneId?.[zone.zoneId]
+          const handleSelect = interactive ? () => onSelect?.(zone.zoneId) : undefined
+
+          if (isConcert) {
+            return (
+              <ZoneShape
+                key={zone.zoneId}
+                name={zone.name}
+                layout={CONCERT_LAYOUT[zone.name]}
+                tier={tier}
+                variant="tiered"
+                isSelected={isSelected}
+                interactive={interactive}
+                pricing={pricing}
+                onSelect={handleSelect}
+              />
+            )
+          }
 
           return (
-            <g key={zone.zoneId}>
-              <ZoneShape
-                name={zone.name}
-                layout={zoneLayout}
-                tier={tier}
-                variant={isConcert ? 'tiered' : 'stand'}
-                isSelected={zone.zoneId === selectedZoneId}
-                interactive={interactive}
-                pricing={pricingByZoneId?.[zone.zoneId]}
-                onSelect={interactive ? () => onSelect?.(zone.zoneId) : undefined}
-              />
-              {/* Grada de partido: color azul fijo (ver ZoneShape variant="stand"), la ocupación
-                  se indica con esta luz sutil parpadeante en vez de teñir todo el bloque (el
-                  semáforo verde/naranja/rojo de concierto se queda igual). pointer-events: none
-                  para que el clic siga cayendo sobre el <rect> de la grada. */}
-              {!isConcert && (
-                <g
-                  transform={`translate(${zoneLayout.x + zoneLayout.width - 10}, ${zoneLayout.y + 10})`}
-                  className="stadium-map__zone-light"
-                >
-                  <circle r={7} className={`stadium-map__zone-light-halo stadium-map__zone-light--${tier}`} />
-                  <circle r={3} className={`stadium-map__zone-light-core stadium-map__zone-light--${tier}`} />
-                </g>
-              )}
-            </g>
+            <ZoneShape
+              key={zone.zoneId}
+              name={zone.name}
+              shape={MATCH_STANDS[zone.name]}
+              tier={tier}
+              variant="stand"
+              isSelected={isSelected}
+              interactive={interactive}
+              pricing={pricing}
+              onSelect={handleSelect}
+            />
           )
         })}
       </svg>
