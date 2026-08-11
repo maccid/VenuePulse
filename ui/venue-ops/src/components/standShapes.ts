@@ -1,15 +1,18 @@
 import type { StandShape } from './ZoneShape'
 
 // Curvas base de las gradas — copia adaptada de `ticket-checkout` (mismas coordenadas, sin
-// código compartido entre micro frontends, ver ADR 0004). Este/Oeste (partido) y Grada 3
-// (concierto) reutilizan la de Oeste girada con `transform`, porque el óvalo exterior
-// (8,8,324,264, rx 85) no es cuadrado. Ajustadas a mano, no calculadas — ver ADR 0024 y ADR 0026.
+// código compartido entre micro frontends, ver ADR 0004). Este y Oeste son dos curvas DISTINTAS
+// (no la misma reflejada) que comparten la misma matriz de rotación, tal cual venían del SVG
+// original. Grada 3 (concierto) reutiliza la de Oeste. Ajustadas a mano, no calculadas — ver ADR
+// 0024 y ADR 0026.
 const ESTE_OESTE_TRANSFORM = 'matrix(-0.00261, -0.70282102, 0.98233294, 0, 27.46486001, -0.33711338)'
 const ESTE_OESTE_ORIGIN = '170.725px 140.696px'
 const NORTE_PATH =
   'M 87.59 82.282 L 46.307 29.872 C 87.035 7.34 254.481 6.173 293.641 30.59 L 251.641 82.641 L 87.59 82.282'
 const SUR_PATH =
   'M 88.602 199.11 L 47.592 249.066 C 81.504 271.326 256.502 272.935 294.653 250.802 L 252.653 198.751 L 88.602 199.11'
+const ESTE_PATH =
+  'M 90.816 198.403 L 17.184 241.222 C 32.548 260.331 313.993 261.982 324.189 241.239 L 249.458 198.044 L 90.816 198.403'
 const OESTE_PATH =
   'M 249.914 26.556 L 325.097 -15.981 C 308.911 -37.15 49.131 -42.901 18.481 -15.72 L 91.272 26.915 L 249.914 26.556'
 
@@ -17,7 +20,7 @@ export const MATCH_STANDS: Record<string, StandShape> = {
   'Grada VIP Norte': { path: NORTE_PATH, labelX: 170, labelY: 44, labelLines: ['Grada VIP', 'Norte'] },
   'Grada VIP Sur': { path: SUR_PATH, labelX: 170, labelY: 229, labelLines: ['Grada VIP', 'Sur'] },
   'Grada Este': {
-    path: OESTE_PATH,
+    path: ESTE_PATH,
     transform: ESTE_OESTE_TRANSFORM,
     transformOrigin: ESTE_OESTE_ORIGIN,
     labelX: 286,
