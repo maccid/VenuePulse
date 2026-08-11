@@ -1,17 +1,44 @@
 import type { VenueOpsMode, ZoneOccupancy } from '../types'
-import ZoneShape, { type ZoneLayout } from './ZoneShape'
+import ZoneShape, { type StandShape, type ZoneLayout } from './ZoneShape'
 
-// Las zonas son fijas por tipo de evento (partido vs. concierto, ver ZoneService en
-// AccessControl), así que un mapeo estático por nombre cubre el 100% del caso de uso actual sin
-// añadir geometría al backend — ver ADR 0017 y el ADR de EventType/carrito. Copia adaptada de la
-// de `ticket-checkout` (sin código compartido entre micro frontends, ver ADR 0004). Coordenadas
-// alineadas con el campo (ver FIELD en la copia de ticket-checkout) — Norte/Sur VIP a todo el
-// ancho, Este/Oeste normales a todo el alto, ver ADR 0025.
-const MATCH_LAYOUT: Record<string, ZoneLayout> = {
-  'Grada VIP Norte': { x: 88, y: 26, width: 164, height: 50 },
-  'Grada VIP Sur': { x: 88, y: 204, width: 164, height: 50 },
-  'Grada Oeste': { x: 30, y: 84, width: 46, height: 112 },
-  'Grada Este': { x: 264, y: 84, width: 46, height: 112 },
+// Gradas con contorno curvo hacia el óvalo exterior — copia adaptada de `ticket-checkout`
+// (mismas curvas, sin código compartido entre micro frontends, ver ADR 0004). Este/Oeste
+// reutilizan la curva de Norte/Sur girada con `transform` porque el exterior (8,8,324,264,
+// rx 85) no es cuadrado. A diferencia de `ticket-checkout` no hay semáforo aparte ni azul fijo:
+// el bloque entero se tiñe por tier (ver ZoneShape), que es lo que necesita operaciones para
+// escanear ocupación de un vistazo (ver ADR 0024, sin tocar ese criterio).
+const ESTE_OESTE_TRANSFORM = 'matrix(-0.00261, -0.70282102, 0.98233294, 0, 27.46486001, -0.33711338)'
+const ESTE_OESTE_ORIGIN = '170.725px 140.696px'
+
+const MATCH_STANDS: Record<string, StandShape> = {
+  'Grada VIP Norte': {
+    path: 'M 87.59 82.282 L 46.307 29.872 C 87.035 7.34 254.481 6.173 293.641 30.59 L 251.641 82.641 L 87.59 82.282',
+    labelX: 170,
+    labelY: 44,
+    labelLines: ['Grada VIP', 'Norte'],
+  },
+  'Grada VIP Sur': {
+    path: 'M 88.602 199.11 L 47.592 249.066 C 81.504 271.326 256.502 272.935 294.653 250.802 L 252.653 198.751 L 88.602 199.11',
+    labelX: 170,
+    labelY: 229,
+    labelLines: ['Grada VIP', 'Sur'],
+  },
+  'Grada Este': {
+    path: 'M 90.816 198.403 L 17.184 241.222 C 32.548 260.331 313.993 261.982 324.189 241.239 L 249.458 198.044 L 90.816 198.403',
+    transform: ESTE_OESTE_TRANSFORM,
+    transformOrigin: ESTE_OESTE_ORIGIN,
+    labelX: 286,
+    labelY: 134,
+    labelLines: ['Grada', 'Este'],
+  },
+  'Grada Oeste': {
+    path: 'M 249.914 26.556 L 325.097 -15.981 C 308.911 -37.15 49.131 -42.901 18.481 -15.72 L 91.272 26.915 L 249.914 26.556',
+    transform: ESTE_OESTE_TRANSFORM,
+    transformOrigin: ESTE_OESTE_ORIGIN,
+    labelX: 54,
+    labelY: 134,
+    labelLines: ['Grada', 'Oeste'],
+  },
 }
 
 const CONCERT_LAYOUT: Record<string, ZoneLayout> = {
@@ -19,6 +46,13 @@ const CONCERT_LAYOUT: Record<string, ZoneLayout> = {
   'Grada Norte': { x: 40, y: 46, width: 58, height: 170 },
   'Grada Sur': { x: 242, y: 46, width: 58, height: 170 },
 }
+
+// Mismo campo que ticket-checkout (88,84,164,112) para que las curvas de las gradas encajen con
+// el óvalo exterior — sin las líneas realistas del campo de fútbol, que ahí son decorativas y no
+// aportan a la lectura operativa.
+const FIELD = { x: 88, y: 84, width: 164, height: 112 }
+const FIELD_CENTER_X = FIELD.x + FIELD.width / 2
+const FIELD_CENTER_Y = FIELD.y + FIELD.height / 2
 
 interface Props {
   zones: ZoneOccupancy[]
@@ -47,17 +81,15 @@ const LEGEND_LABEL: Record<VenueOpsMode, { low: string; mid: string; high: strin
 
 export default function StadiumMap({ zones, mode = 'sales' }: Props) {
   const isConcert = zones.some((z) => z.name === 'Pista')
-  const layout = isConcert ? CONCERT_LAYOUT : MATCH_LAYOUT
-  const laidOut = zones.filter((z) => layout[z.name])
-  const unmapped = zones.filter((z) => !layout[z.name])
+  const laidOut = zones.filter((z) => (isConcert ? CONCERT_LAYOUT[z.name] : MATCH_STANDS[z.name]))
+  const unmapped = zones.filter((z) => !(isConcert ? CONCERT_LAYOUT[z.name] : MATCH_STANDS[z.name]))
 
   return (
     <div className="stadium-map">
       <svg viewBox="0 0 340 280" role="img" aria-label="Mapa del evento" className="stadium-map__svg">
-        <rect x="20" y="20" width="300" height="240" rx="6" className="stadium-map__pitch" />
-
         {isConcert ? (
           <>
+            <rect x="20" y="20" width="300" height="240" rx="6" className="stadium-map__pitch" />
             <rect x="90" y="12" width="160" height="22" rx="4" className="stadium-map__stage" />
             <text x="170" y="23" textAnchor="middle" dominantBaseline="middle" className="stadium-map__stage-label">
               Escenario
@@ -65,19 +97,51 @@ export default function StadiumMap({ zones, mode = 'sales' }: Props) {
           </>
         ) : (
           <>
-            <line x1="20" y1="140" x2="320" y2="140" className="stadium-map__midline" />
-            <circle cx="170" cy="140" r="28" className="stadium-map__midcircle" />
+            <rect x="8" y="8" width="324" height="264" rx="85" className="stadium-map__exterior" />
+            <rect
+              x={FIELD.x}
+              y={FIELD.y}
+              width={FIELD.width}
+              height={FIELD.height}
+              rx={4}
+              className="stadium-map__pitch"
+            />
+            <line
+              x1={FIELD.x}
+              y1={FIELD_CENTER_Y}
+              x2={FIELD.x + FIELD.width}
+              y2={FIELD_CENTER_Y}
+              className="stadium-map__midline"
+            />
+            <circle cx={FIELD_CENTER_X} cy={FIELD_CENTER_Y} r={26} className="stadium-map__midcircle" />
           </>
         )}
 
-        {laidOut.map((zone) => (
-          <ZoneShape
-            key={zone.zoneId}
-            name={zone.name}
-            layout={layout[zone.name]}
-            tier={occupancyTier(occupancyRatio(zone, mode))}
-          />
-        ))}
+        {laidOut.map((zone) => {
+          const tier = occupancyTier(occupancyRatio(zone, mode))
+
+          if (isConcert) {
+            return (
+              <ZoneShape
+                key={zone.zoneId}
+                name={zone.name}
+                layout={CONCERT_LAYOUT[zone.name]}
+                tier={tier}
+                variant="tiered"
+              />
+            )
+          }
+
+          return (
+            <ZoneShape
+              key={zone.zoneId}
+              name={zone.name}
+              shape={MATCH_STANDS[zone.name]}
+              tier={tier}
+              variant="stand"
+            />
+          )
+        })}
       </svg>
 
       {unmapped.length > 0 && (

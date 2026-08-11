@@ -258,12 +258,26 @@
   stroke: var(--tc-danger);
 }
 
-/* Gradas de partido: azul fijo para las 4, sin semáforo — la ocupación se indica con la luz
-   parpadeante (stadium-map__zone-light-*) en vez de teñir todo el bloque. */
-.stadium-map__zone--stand rect {
+/* Gradas de partido: contorno curvo (ver StandShape en StadiumMap.tsx), azul fijo para las 4,
+   sin semáforo tiñendo el bloque — la ocupación se indica con la luz parpadeante
+   (stadium-map__zone-light-*) junto al nombre. Sin borde por defecto: solo aparece al pasar el
+   ratón o con foco de teclado, para no recargar el plano. */
+.stadium-map__zone--stand path {
   fill: #2563eb;
   fill-opacity: 0.85;
+  stroke: none;
+  transition: stroke 0.15s ease;
+}
+
+.stadium-map__zone--stand.stadium-map__zone--interactive:hover path,
+.stadium-map__zone--stand.stadium-map__zone--interactive:focus-visible path {
   stroke: #1e40af;
+  stroke-width: 1.5;
+}
+
+.stadium-map__zone--stand.stadium-map__zone--selected path {
+  stroke: var(--tc-text);
+  stroke-width: 2.5;
 }
 
 .stadium-map__zone--stand text {
