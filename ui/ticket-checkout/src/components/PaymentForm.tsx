@@ -2,17 +2,15 @@ import { useState } from 'react'
 import type { PaymentMethod } from '../types'
 
 interface Props {
-  holder: string
   total: number
   disabled: boolean
   onSubmit: (method: PaymentMethod) => void
 }
 
 // Apellidos/correo son solo visuales (no los persiste el backend, que solo modela un "holder" de
-// texto libre) — el nombre real que viaja con cada entrada es el que ya se pidió antes de poder
-// añadir nada al carrito. Pedirlos aquí de nuevo es una confirmación de datos, no una segunda
-// fuente de verdad.
-export default function PaymentForm({ holder, total, disabled, onSubmit }: Props) {
+// texto libre) — el nombre real que viaja con cada entrada llega como atributo del Web Component
+// desde el shell. Pedirlos aquí es una confirmación de datos, no una segunda fuente de verdad.
+export default function PaymentForm({ total, disabled, onSubmit }: Props) {
   const [surname, setSurname] = useState('')
   const [email, setEmail] = useState('')
   const [method, setMethod] = useState<PaymentMethod | null>(null)
@@ -27,10 +25,6 @@ export default function PaymentForm({ holder, total, disabled, onSubmit }: Props
     >
       <h3>Tus datos</h3>
 
-      <label className="field">
-        Nombre
-        <input type="text" value={holder} disabled />
-      </label>
       <label className="field">
         Apellidos
         <input type="text" value={surname} onChange={(e) => setSurname(e.target.value)} disabled={disabled} />
