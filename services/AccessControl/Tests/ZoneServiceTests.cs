@@ -53,11 +53,12 @@ public class ZoneServiceTests
 
         await service.ProvisionZonesForEventAsync(eventId, EventType.Concert, CancellationToken.None);
 
-        // "Pista" tiene que existir con ese nombre exacto: el frontend fusiona zona+tipo de
-        // entrada por coincidencia de nombre (el TicketType "Pista" del concierto), sin relación
-        // real en el backend — si este nombre cambia, esa fusión deja de funcionar en silencio.
+        // Los 6 nombres tienen que existir tal cual (ver ADR 0026): el frontend fusiona zona+tipo
+        // de entrada por coincidencia de nombre con el TicketType del concierto, sin relación real
+        // en el backend — si alguno cambia, esa fusión deja de funcionar en silencio.
         var names = notifier.Notified.Select(z => z.Name).ToList();
-        names.Should().Contain("Pista");
+        names.Should().HaveCount(6);
+        names.Should().Contain(["Grada 1", "Grada 2", "Grada 3", "Pista", "VIP 1", "VIP 2"]);
         names.Should().NotContain("Grada VIP Norte");
         names.Should().NotContain("Grada VIP Sur");
         names.Should().NotContain("Grada Este");
