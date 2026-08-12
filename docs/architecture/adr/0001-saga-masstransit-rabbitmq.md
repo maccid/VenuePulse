@@ -5,7 +5,7 @@
 Comprar una entrada implica coordinar dos servicios distintos (reservar aforo en
 `AccessControl`, "cobrar" en `CheckIn`) con consistencia eventual, y necesita poder
 **compensar** una reserva de aforo ya hecha si el paso siguiente falla — el caso de uso
-central que este proyecto busca demostrar (Saga/Outbox/Pub-Sub).
+central del proyecto (Saga/Outbox/Pub-Sub).
 
 ## Decisión
 
@@ -29,7 +29,7 @@ central que este proyecto busca demostrar (Saga/Outbox/Pub-Sub).
    `ReleaseZoneSlot` (libera el aforo ya reservado) → `Ticket` a `Rejected`.
 4. Si el pago mock va bien: `ConfirmZoneSlot` → `Ticket` a `Confirmed`.
 
-El paso 3 es el momento central de la demo: no es un rollback simulado, es la propia state
+El paso 3 es el caso de mayor valor: no es un rollback simulado, es la propia state
 machine deshaciendo un paso que ya se había completado con éxito.
 
 ## Por qué no MediatR/RabbitMQ.Client a mano

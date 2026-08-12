@@ -57,7 +57,7 @@ AdjustedBasePrice = TicketType.Price × EventRelevance.Multiplier()   // Ticketi
 
 La relevancia se aplica **antes y fuera** de `DynamicPricing`, que sigue siendo una función pura
 `(precio, ocupación%) → (precio, tier)` sin saber que la relevancia existe — **cero cambios en
-`DynamicPricing.cs`**. Así el tier que ve el presentador en directo ("Demanda alta", "Últimas
+`DynamicPricing.cs`**. Así el tier visible en operaciones ("Demanda alta", "Últimas
 entradas") sigue significando solo ocupación; nunca se mezcla con "es caro porque el evento es
 especial". `TicketTypeDto.Price` sigue siendo el precio de catálogo puro (sin relevancia);
 `EffectivePrice` incorpora ambos multiplicadores. Matemáticamente el orden es conmutativo — la

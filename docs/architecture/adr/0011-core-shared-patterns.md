@@ -6,8 +6,7 @@
 `AccessControl`, `CheckIn`). Tres invariantes de constructor idénticas estaban copiadas a mano en
 `Ticket`, `Event` y `Zone` (`if (string.IsNullOrWhiteSpace(x)) throw ...`), no había forma
 reutilizable de paginar una consulta, y el único timestamp de auditoría (`Ticket.CreatedAtUtc`)
-se asignaba a mano en el constructor — inspiración de alto nivel de patrones de `olix.workspace`
-(nunca código ni nombres literales, ver `.ia/PRODUCT-VISION.md`).
+se asignaba a mano en el constructor.
 
 ## Decisión
 

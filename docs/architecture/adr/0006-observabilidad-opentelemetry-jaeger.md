@@ -2,9 +2,9 @@
 
 ## Contexto
 
-La oferta no pide observabilidad explícitamente, pero detectar cuellos de botella en un
+La observabilidad no era un requisito explícito, pero detectar cuellos de botella en un
 sistema distribuido con una Saga cruzando 3 servicios es imposible solo con logs sueltos por
-servicio. Se decidió elevarlo de "bonus si sobra tiempo" a pieza real del MVP.
+servicio. Se decidió tratarla como pieza real del MVP, no como un extra.
 
 ## Decisión
 
@@ -19,8 +19,8 @@ servicio. Se decidió elevarlo de "bonus si sobra tiempo" a pieza real del MVP.
 
 Abrir Jaeger (`http://localhost:16686`) tras una compra y ver **un único trace conectado** que
 cruza HTTP → `PurchaseTicketCommand` → Saga → mensaje RabbitMQ → `AccessControl` → respuesta,
-con la duración de cada paso. Es el argumento visual más directo de "sé dónde mirar cuando algo
-va lento" en un sistema de microservicios.
+con la duración de cada paso. Es la evidencia visual más directa de trazabilidad end-to-end
+en un sistema de microservicios.
 
 ## Fuera de alcance (roadmap)
 

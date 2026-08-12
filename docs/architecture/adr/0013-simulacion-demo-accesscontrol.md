@@ -4,12 +4,12 @@
 
 El demo en vivo necesita "dar vida" a los contadores: el día del evento, las entradas confirmadas
 (`ConfirmedSold`) y las personas que pasan el torniquete (`CheckedIn`) deben subir en tiempo real
-delante del presentador, sin esperar a que un humano escanee cientos de tickets. Además, el
+delante del operador, sin esperar a que un humano escanee cientos de tickets. Además, el
 Bloque 11 (predicción de ocupación) necesita una serie temporal de ocupación generada por el propio
 sistema para poder entrenar/validar un modelo estadístico honesto.
 
 Antes de esto, la única forma de subir `ConfirmedSold` era una compra real vía Saga, y el único
-`CheckedIn` era un escaneo real. Imposible de demostrar a escala en 30 segundos.
+`CheckedIn` era un escaneo real. No es viable reproducirlo a escala de forma manual.
 
 ## Decisión
 
@@ -27,7 +27,7 @@ contadores de zona, del SignalR y de la DB), con estas piezas:
 
 - Las dos señales se separan en fases (`Sales` primero, `Arrivals` después) para que el demo no
   confunda ventas con torniquete — el problema que motivaba el bloque.
-- El presentador elige **fase, duración real (intensidad), objetivo de venta % y no-shows %** desde
+- El operador elige **fase, duración real (intensidad), objetivo de venta % y no-shows %** desde
   `venue-ops`. No es caos autónomo: solo avanza lo que se le pide arrancar.
 - Los no-shows son naturales: `RecordSimulatedCheckIns` nunca supera `ConfirmedSold`, así que
   `CheckedIn < ConfirmedSold` queda representado solo.
@@ -39,10 +39,10 @@ contadores de zona, del SignalR y de la DB), con estas piezas:
 - **Por qué AccessControl y no un servicio nuevo**: no hay una necesidad real de escalar el motor de
   forma independiente, y añadir un servicio solo para esto es sobre-ingeniería (ver README, "qué NO
   se construyó"). El motor es un worker in-process que ya comparte la DB donde viven los contadores.
-- **Por qué curvas `p²` / `1-(1-p)³` y no datos reales**: son las dos cosas que hay que poder
-  explicar en el demo — "la venta acelera en los últimos días" (cuadrática, arranque lento) y "la
-  llegada se concentra en las horas previas" (cúbica, más abrupta). Un dataset sintético con forma
-  rara sería indefendible.
+- **Por qué curvas `p²` / `1-(1-p)³` y no datos reales**: modelan los dos comportamientos que
+  importan — "la venta acelera en los últimos días" (cuadrática, arranque lento) y "la
+  llegada se concentra en las horas previas" (cúbica, más abrupta). Un dataset sintético con
+  forma rara no tendría sentido.
 - **Por qué estado en memoria y no persistido**: es un generador de señales para el demo, no un
   proceso de negocio. Si el servicio cae, se reinicia el run; lo que sí se persiste es el resultado
   (`occupancy_snapshots`), que es lo que consume el Bloque 11.
@@ -51,4 +51,4 @@ contadores de zona, del SignalR y de la DB), con estas piezas:
   desde un scope nuevo — patrón estándar para hosted services que tocan EF.
 - **Por qué tiempo simulado en el snapshot y no el reloj real**: el Bloque 11 modela la curva de
   llegada sobre una línea temporal plausible (días/horas antes del evento), no sobre cuándo el
-  presentador pulsó el botón.
+  operador pulsó el botón.

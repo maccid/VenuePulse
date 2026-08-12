@@ -45,7 +45,7 @@ consistente.
 
 ## Verificación cruzada posterior contra `docker-compose` real
 
-Antes de la presentación se ejecutaron ambos caminos directamente contra el `docker-compose`
+Antes de la demo se ejecutaron ambos caminos directamente contra el `docker-compose`
 completo (sin Testcontainers ni `WebApplicationFactory` de por medio): el camino feliz confirma
 en menos de 1 segundo y el camino de compensación libera el aforo reservado correctamente
 (`confirmedSold` de la zona se queda en 0). Esto confirma la hipótesis: el problema de
@@ -57,8 +57,7 @@ publicada, y hacerlo ahora solo reintroduce un riesgo ya evitado sin ningún ben
 
 ## Por qué se documenta esto
 
-Es exactamente el tipo de evidencia que la oferta pide sobre "IA como acelerador validado por
-criterio senior": la IA generó hipótesis y diagnósticos rápidamente, pero decidir cuándo una
-librería muy reciente es la causa más probable, cuándo aislar con un test mínimo, y cuándo
-aceptar una limitación del entorno de test (ver `docs/AI-USAGE.md`) en vez de seguir
-depurando indefinidamente, fueron decisiones de criterio humano.
+Es un ejemplo real de depuración de un problema de integración (ver `docs/AI-USAGE.md`): la IA
+generó hipótesis y diagnósticos rápidamente, pero decidir cuándo una librería muy reciente es
+la causa más probable, cuándo aislar con un test mínimo, y cuándo aceptar una limitación del
+entorno de test en vez de seguir depurando indefinidamente, fueron decisiones de criterio humano.

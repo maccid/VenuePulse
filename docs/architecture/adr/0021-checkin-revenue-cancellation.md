@@ -26,8 +26,8 @@ para las filas existentes).
   completarse** (estuvo `Confirmed`, alguien la pagó de verdad) antes de que su evento se
   cancelara — semánticamente muy distinto de `Rejected` (la compra nunca llegó a buen término).
   Mezclarlos habría hecho que el agregado de ingresos (Decisión 4) no pudiera distinguir "nunca se
-  vendió" de "se vendió y se devolvió", justo la pregunta que un presentador haría en vivo tras
-  cancelar un evento.
+  vendió" de "se vendió y se devolvió", justo lo que el panel de operaciones necesita mostrar
+  tras cancelar un evento.
 - **`ProcessingPayment`** (transitorio, entre `AwaitingPayment` y `Confirmed`/`Rejected`): antes de
   este bloque, el `Ticket` en Postgres saltaba directamente de `AwaitingPayment` a `Confirmed`/
   `Rejected` sin ningún reflejo del paso "procesando" que ahora vive en la Saga (Decisión 3). Con

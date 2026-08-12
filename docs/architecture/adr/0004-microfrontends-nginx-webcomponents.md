@@ -2,8 +2,8 @@
 
 ## Contexto
 
-La oferta pide supervisión técnica de React con micro frontends. A esta escala (un shell +
-un remoto) hay que elegir entre Module Federation (Webpack/Vite) o una composición más simple.
+El frontend React se compone como micro frontends. A esta escala (un shell + un remoto) hay
+que elegir entre Module Federation (Webpack/Vite) o una composición más simple.
 
 ## Decisión
 
