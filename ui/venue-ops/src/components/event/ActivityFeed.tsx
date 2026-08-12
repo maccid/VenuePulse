@@ -1,4 +1,4 @@
-import type { ActivityEntry } from '../types'
+import type { ActivityEntry } from '../../shared/types'
 
 interface Props {
   entries: ActivityEntry[]

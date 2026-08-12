@@ -3,8 +3,6 @@ import type { ReactNode } from 'react'
 interface Props {
   title: string
   onClose: () => void
-  // 'large' se usa para el alta de evento: el diálogo ocupa de arriba abajo lo mismo que el
-  // cuadro de detalle, 'small' para las confirmaciones del ciclo de vida.
   size?: 'small' | 'large'
   children: ReactNode
 }

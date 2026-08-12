@@ -1,4 +1,4 @@
-import type { VenueOpsMode, ZoneOccupancy } from '../types'
+import type { VenueOpsMode, ZoneOccupancy } from '../../shared/types'
 import ZoneShape from './ZoneShape'
 import { MATCH_STANDS, CONCERT_STANDS } from './standShapes'
 import { MatchField, ConcertStage } from './StadiumBackground'
@@ -8,9 +8,6 @@ interface Props {
   mode?: VenueOpsMode
 }
 
-// Ocupación de VENTA (reservado + confirmado) en modo 'sales' — antes del evento es la señal que
-// de verdad se mueve, checkedIn se queda a 0 hasta el día del evento. En modo 'checkin' (torniquete,
-// Bloque 18) se colorea por el aforo que ya ha entrado físicamente — ver ADR 0022.
 function occupancyRatio(zone: ZoneOccupancy, mode: VenueOpsMode): number {
   if (zone.capacity === 0) return 0
   if (mode === 'checkin') return Math.min(1, Math.max(0, zone.checkedIn / zone.capacity))

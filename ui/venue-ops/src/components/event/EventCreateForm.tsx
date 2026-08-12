@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import type { CreateEventRequest, EventRelevance, EventSummary, EventType } from '../types'
+import type { EventRelevance, EventSummary, EventType } from '../../shared/types'
+import { toDatetimeLocalInputValue } from '../../lib/datetime'
+import { useCreateEvent } from '../../hooks/useCreateEvent'
 
 interface Props {
   onCreated: (event: EventSummary) => void
@@ -16,53 +18,33 @@ const RELEVANCE_LABELS: Record<EventRelevance, string> = {
   Special: 'Especial (×1,5 sobre el precio base)',
 }
 
-// Formato local de <input type="datetime-local"> (YYYY-MM-DDTHH:mm) con el momento actual: el
-// alta de evento abre con "hoy" prellenado y el operador solo ajusta fecha/hora.
-function toDatetimeLocal(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
+const REQUIRED_FIELDS_MESSAGE = 'Rellena el nombre y la fecha del evento.'
 
 export default function EventCreateForm({ onCreated, onCancel }: Props) {
   const [name, setName] = useState('')
   const [type, setType] = useState<EventType>('Match')
   const [relevance, setRelevance] = useState<EventRelevance>('Standard')
-  const [startsAt, setStartsAt] = useState(() => toDatetimeLocal(new Date()))
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [startsAt, setStartsAt] = useState(() => toDatetimeLocalInputValue(new Date()))
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const { create, error, busy } = useCreateEvent(onCreated)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || !startsAt) {
-      setError('Rellena el nombre y la fecha del evento.')
+      setValidationError(REQUIRED_FIELDS_MESSAGE)
       return
     }
 
-    setError(null)
-    setBusy(true)
-    try {
-      const request: CreateEventRequest = {
-        name: name.trim(),
-        startsAtUtc: new Date(startsAt).toISOString(),
-        type,
-        relevance,
-      }
-      const response = await fetch('/api/ticketing/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-      })
-      if (!response.ok) {
-        setError('No se pudo crear el evento.')
-        return
-      }
-      onCreated((await response.json()) as EventSummary)
-    } catch {
-      setError('No se pudo crear el evento.')
-    } finally {
-      setBusy(false)
-    }
+    setValidationError(null)
+    await create({
+      name: name.trim(),
+      startsAtUtc: new Date(startsAt).toISOString(),
+      type,
+      relevance,
+    })
   }
+
+  const shownError = validationError ?? error
 
   return (
     <form className="event-create-form" onSubmit={handleSubmit}>
@@ -101,7 +83,7 @@ export default function EventCreateForm({ onCreated, onCancel }: Props) {
         </button>
       </div>
 
-      {error && <p className="scan-result scan-result--error">{error}</p>}
+      {shownError && <p className="scan-result scan-result--error">{shownError}</p>}
     </form>
   )
 }

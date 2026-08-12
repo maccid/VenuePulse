@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { OccupancyPrediction } from '../types'
+import type { OccupancyPrediction } from '../../shared/types'
 import PredictionChart from './PredictionChart'
 
 interface Props {

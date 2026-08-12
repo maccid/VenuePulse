@@ -5,12 +5,6 @@ export interface RectGeometry {
   height: number
 }
 
-// Forma de una zona: contorno curvo (`path`, hacia el óvalo exterior — copia adaptada de
-// `ticket-checkout`, mismas coordenadas de curva, sin código compartido entre micro frontends,
-// ver ADR 0004) o rectángulo recto (`rect`, sin esquinas redondeadas — Pista/VIP de concierto,
-// ver ADR 0026). A diferencia de `ticket-checkout` no hay semáforo aparte ni azul fijo: el bloque
-// entero se tiñe por tier (ver className más abajo), que es lo que necesita operaciones para
-// escanear ocupación de un vistazo.
 export interface StandShape {
   path?: string
   rect?: RectGeometry

@@ -1,4 +1,4 @@
-import type { ZoneOccupancy } from '../types'
+import type { ZoneOccupancy } from '../../shared/types'
 
 interface Props {
   zone: ZoneOccupancy

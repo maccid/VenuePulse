@@ -1,4 +1,4 @@
-import type { EventSummary, EventType } from '../types'
+import type { EventSummary, EventType } from '../../shared/types'
 
 interface Props {
   events: EventSummary[]
@@ -17,9 +17,6 @@ const TYPE_LABEL: Record<EventType, string> = {
   Concert: 'Concierto',
 }
 
-// Listado por fechas al estilo del catálogo de `shell` (ADR 0022: Operaciones ve siempre todo,
-// sin filtro de "pasados") — sustituye a las pestañas estilo Chrome del Bloque 18. Orden
-// descendente (más futuro primero), como la lista de próximos eventos de `shell`.
 export default function EventList({ events, activeId, onSelect, onCreate }: Props) {
   const sorted = [...events].sort((a, b) => b.startsAtUtc.localeCompare(a.startsAtUtc))
 

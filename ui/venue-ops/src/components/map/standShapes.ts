@@ -1,10 +1,5 @@
 import type { StandShape } from './ZoneShape'
 
-// Curvas base de las gradas — copia adaptada de `ticket-checkout` (mismas coordenadas, sin
-// código compartido entre micro frontends, ver ADR 0004). Este y Oeste son dos curvas DISTINTAS
-// (no la misma reflejada) que comparten la misma matriz de rotación, tal cual venían del SVG
-// original. Grada 3 (concierto) reutiliza la de Oeste. Ajustadas a mano, no calculadas — ver ADR
-// 0024 y ADR 0026.
 const ESTE_OESTE_TRANSFORM = 'matrix(-0.00261, -0.70282102, 0.98233294, 0, 27.46486001, -0.33711338)'
 const ESTE_OESTE_ORIGIN = '170.725px 140.696px'
 const NORTE_PATH =
@@ -37,8 +32,6 @@ export const MATCH_STANDS: Record<string, StandShape> = {
   },
 }
 
-// Concierto: 3 gradas (mismas curvas que partido) + Pista/VIP como rectángulos rectos — ver ADR
-// 0026. Sin semáforo ni azul fijo aquí: el bloque entero se tiñe por tier (ver ZoneShape).
 export const CONCERT_STANDS: Record<string, StandShape> = {
   'Grada 1': { path: NORTE_PATH, labelX: 170, labelY: 50, labelLines: ['Grada 1'] },
   'Grada 2': { path: SUR_PATH, labelX: 170, labelY: 235, labelLines: ['Grada 2'] },
