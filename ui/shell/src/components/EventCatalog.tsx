@@ -11,25 +11,23 @@ function dateKey(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10)
 }
 
-// El catálogo vende entradas para el futuro: solo se listan los eventos abiertos (OnSale).
-// Con venta cerrada o cancelados quedan fuera, aunque tengan fecha futura.
 export default function EventCatalog({ events, onSelectEvent }: Props) {
   const [dateFilter, setDateFilter] = useState('all')
 
-  const visibleEvents = useMemo(() => events.filter((ev) => ev.status === 'OnSale'), [events])
+  const onSaleEvents = useMemo(() => events.filter((ev) => ev.status === 'OnSale'), [events])
 
   const dateOptions = useMemo(() => {
-    const unique = Array.from(new Set(visibleEvents.map((ev) => dateKey(ev.startsAtUtc)))).sort()
+    const unique = Array.from(new Set(onSaleEvents.map((ev) => dateKey(ev.startsAtUtc)))).sort()
     return unique.map((key) => ({
       key,
       label: new Date(key).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }),
     }))
-  }, [visibleEvents])
+  }, [onSaleEvents])
 
   const filtered =
     dateFilter === 'all'
-      ? visibleEvents
-      : visibleEvents.filter((ev) => dateKey(ev.startsAtUtc) === dateFilter)
+      ? onSaleEvents
+      : onSaleEvents.filter((ev) => dateKey(ev.startsAtUtc) === dateFilter)
 
   return (
     <section className="mt-8 flex flex-col gap-6">
@@ -54,7 +52,7 @@ export default function EventCatalog({ events, onSelectEvent }: Props) {
 
         {filtered.length === 0 ? (
           <p className="p-5 text-center text-sm text-text-muted">
-            {visibleEvents.length === 0
+            {onSaleEvents.length === 0
               ? 'No hay eventos próximos.'
               : 'No hay eventos para esa fecha.'}
           </p>
