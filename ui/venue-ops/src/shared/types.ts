@@ -27,9 +27,6 @@ export interface EventRevenueDto {
   pendingCount: number
 }
 
-// Price es el precio de catálogo; EffectivePrice/PriceTier son el resultado de la heurística de
-// demanda (Bloque 9, ADR 0016), recalculados en cada lectura. Copia conceptual del tipo homónimo
-// de ticket-checkout (sin código compartido entre micro frontends, ADR 0004).
 export interface TicketType {
   id: string
   eventId: string

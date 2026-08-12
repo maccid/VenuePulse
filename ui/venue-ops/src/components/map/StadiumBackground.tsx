@@ -1,13 +1,7 @@
-// Fondo decorativo del plano — puramente visual, no son zonas. Separado de StadiumMap.tsx para
-// que ese fichero se quede solo con el mapeo zona→forma y el render del SVG.
-
 const FIELD = { x: 88, y: 84, width: 164, height: 112 }
 const FIELD_CENTER_X = FIELD.x + FIELD.width / 2
 const FIELD_CENTER_Y = FIELD.y + FIELD.height / 2
 
-// Mismo campo que ticket-checkout (para que las curvas de las gradas encajen con el óvalo
-// exterior) — con las líneas realistas del campo de fútbol (banda, círculo central, áreas y
-// penaltis) para diferenciar visualmente un partido de un concierto.
 export function MatchField() {
   return (
     <g className="stadium-map__field">
@@ -31,8 +25,6 @@ export function MatchField() {
   )
 }
 
-// Escenario de concierto: 2 rectángulos que se solapan formando una "L", con el rótulo en
-// vertical dentro del rectángulo grande (ver ADR 0026).
 export function ConcertStage() {
   return (
     <>

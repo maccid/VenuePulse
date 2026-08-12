@@ -1,12 +1,9 @@
-import type { EventStatus } from '../types'
+import type { EventStatus } from '../../shared/types'
 
 interface Props {
   status: EventStatus
 }
 
-// Las fases de la vida de un evento, no modos intercambiables (ver decisión de la sesión): primero
-// se vende y, al terminar esa etapa, el evento se cierra (ocupación) o se cancela. Es un indicador
-// solo lectura derivado de `status` — la vista del workspace sigue al estado, no al clic.
 const STEPS = [
   { key: 'OnSale', label: 'Venta' },
   { key: 'SalesClosed', label: 'Ocupación' },

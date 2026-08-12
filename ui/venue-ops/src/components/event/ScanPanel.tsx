@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ScanResult } from '../types'
+import type { ScanResult } from '../../shared/types'
 
 interface Props {
   onScan: (ticketId: string) => Promise<ScanResult>

@@ -1,14 +1,9 @@
-import type { EventRevenueDto } from '../types'
+import type { EventRevenueDto } from '../../shared/types'
 
 interface Props {
   revenue: EventRevenueDto | null
   error: string | null
-  // Ver ADR 0022, decisión de ingresos estimados: precio de catálogo × zone.confirmedSold — la
-  // única señal que sube tanto con compras reales como con el motor de simulación (Bloque 8), que
-  // nunca toca CheckIn y por tanto nunca movería `revenue` por sí solo.
   estimatedRevenue: number
-  // Entradas vendidas del evento (confirmedSold). Se muestra junto al dinero porque el aforo como
-  // tal (capacidad/ocupación %) no aporta en esta vista — ver decisión de la sesión.
   sold: number
 }
 
