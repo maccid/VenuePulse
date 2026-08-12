@@ -1,15 +1,14 @@
 # Incidencias conocidas — VenuePulse
 
-## Referencias a `olix` eliminadas del contexto de trabajo (LIMPIADO EN feature/simulation-engine)
+## Referencias a `olix` eliminadas del contexto de trabajo (RESUELTO)
 
-Se ha quitado la palabra "olix" de `.ia/PRODUCT-VISION.md` y `.ia/TODO.md` (la única mención
-remanente en `feature/simulation-engine`). El objetivo es que el proyecto no mencione por nombre
-el proyecto privado de referencia — se habla de "otros proyectos privados del autor" sin nombrarlo.
-
-**Pendiente en `develop`** (fuera del alcance de esta rama): `docs/architecture/adr/0011-core-shared-patterns.md:9`
-(línea creada por Claude Code en `feature/core-shared-patterns`, mergeada a `develop`) todavía
-cita `olix.workspace` por nombre. Queda anotado aquí para que quien lo mergee/trabaje esa rama lo
-limpie — no se toca desde `feature/simulation-engine` para no chocar con esa rama paralela.
+Se ha quitado la palabra "olix" de `.ia/PRODUCT-VISION.md`, `.ia/TODO.md` y, por último, de
+`docs/architecture/adr/0011-core-shared-patterns.md:9` (línea creada en `feature/core-shared-patterns`,
+pendiente desde entonces — limpiada en `chore/docs-tone-review` al revisar el tono de `docs/` de
+cara a la entrega). El proyecto ya no menciona por nombre el proyecto privado de referencia —
+se habla de "otros proyectos privados del autor" sin nombrarlo, tal como fija
+`.ia/PRODUCT-VISION.md`. Sin mención restante verificado con búsqueda de texto sobre `docs/` y
+`README.md`.
 
 ## Aforo no vinculado a un evento concreto (RESUELTO)
 
