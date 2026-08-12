@@ -8,6 +8,76 @@ Espejo del task-tracker de la sesión. Actualizar al cerrar o abrir tareas.
 > `C:\Users\miguel.cidgarcia\.claude\plans\clever-percolating-cat.md` (solo accesible desde
 > Claude Code), pero **este fichero es el que deben leer ambas IAs** antes de tocar código.
 
+## Reparto en oleadas (ronda 4, precio en vivo del carrito + GUID de grupo + Groups en SignalR)
+
+Orden acordado con el usuario: primero una pasada de limpieza previa a la entrevista (split de
+componentes `tsx` grandes + retirada de comentarios `//` en `ui/`, y revisión de tono en `docs/` —
+sin Bloque propio, reparto manual entre Claude Code y opencode, no repartido aquí) y **después**
+estos 3 bloques. El Bloque 23 se ejecuta en la práctica dentro de esa misma pasada de limpieza de
+`ticket-checkout` (toca los mismos ficheros que el split), pero mantiene su propio commit — varias
+tareas lógicas, varios commits (ver `.ia/GIT-FLOW.md`).
+
+**Criterio de comentarios en `tsx` para esa pasada (decisión explícita del usuario, solo frontend —
+`RULES.md`/backend C# no cambian, siguen en "solo WHY no obvio")**: cero comentarios `//` en el
+código. Primero se intenta que el propio código lo diga solo (renombrar variables/funciones o
+extraer un helper con nombre claro — p. ej. `earliestExpiry` en `CartPanel.tsx` pasa a
+`earliestActiveExpiry` en vez de llevar un comentario al lado). Solo si tras ese renombrado sigue
+quedando una decisión real de arquitectura (no de nomenclatura) sin cubrir en ningún ADR, esa
+decisión se documenta en un ADR — no se inventa un documento nuevo de "notas de frontend" aparte.
+La mayoría de los comentarios actuales ya referencian una decisión cubierta por un ADR existente
+(p. ej. "sin librería de iconos — ver ADR 0017") o son notas de proceso ("ver feedback de
+usuario") sin valor para un lector externo — esos se borran sin más, sin destino en documentación.
+
+Reserva de ADR (próximo libre tras `0027`): `0028` → Bloque 24 (GUID de grupo). `0029` → Bloque 25
+(Groups por evento en SignalR + roadmap de backplane Redis).
+
+- [ ] **Bloque 23 — `fix/checkout-draft-live-price`** (`ticket-checkout`, sin asignar): el precio de
+  una línea del carrito-borrador se congela en el instante de pulsar "Añadir"
+  (`App.tsx:207`, `unitPrice: ticketType.effectivePrice` guardado en `DraftLine`) y ya no seguía el
+  precio dinámico en vivo de `/hubs/pricing` mientras la línea seguía sin reservar — a diferencia
+  del plano/popup de zona, que sí lee `ticketTypes` en cada render y por eso su precio "normal" sí
+  cambia con la demanda (ADR 0016). Al pulsar "Reservar" (`App.tsx:253`) se enviaba al backend ese
+  `unitPrice` ya obsoleto, no el efectivo del momento real de reserva. **No requiere pre-reserva de
+  aforo** (se descartó explícitamente — contradiría el borrador puramente local sin llamar al
+  backend que fijó ADR 0025, y sería la sobre-ingeniería que el proyecto evita). Fix: mientras la
+  línea siga en `draft` (no reservada), su precio mostrado se deriva en cada render del
+  `effectivePrice` vivo de `ticketTypes` por `ticketTypeId` (no de una copia guardada al añadir);
+  solo en el instante en que `onReservar` arma la llamada real al backend se captura el precio
+  vigente en ese momento, que a partir de ahí sí queda inmutable como `Ticket.Price` (ADR 0021, sin
+  cambios ahí). Ficheros: `App.tsx`, `CartPanel.tsx`, `PurchaseFlow.tsx`. Sin ADR nuevo (bug fix,
+  no decisión de arquitectura — mismo criterio que el Bloque 1). Reproducido leyendo código, no
+  verificado aún en real: falta confirmar con `docker compose up --build` que el precio del
+  borrador sube/baja en vivo con la ocupación antes de pulsar "Reservar".
+
+- [ ] **Bloque 24 — `feature/checkin-group-guid`** (`CheckIn`, sin asignar): GUID de grupo para
+  compras múltiples — cuando se emiten varias entradas juntas en la misma compra (misma zona o
+  distintas), poder validarlas todas de una vez en `venue-ops`/check-in con un único código de
+  grupo (p. ej. `group-<GUID>`), manteniendo el GUID individual de cada entrada para escanearla por
+  separado si hace falta. Alcance ya fijado en la sección "Pendiente de decidir" (más abajo, se
+  retira de ahí al abrir este bloque): modelo de dominio nuevo en `CheckIn` (campo de grupo en
+  `Ticket`, migración EF aditiva) y el endpoint de validación/check-in aceptando tanto el código
+  individual como el grupal. No cubierto por ADR 0025 — requiere ADR propio (0028) porque el modelo
+  de agrupación (¿un `GroupId` por línea de compra, o reutilizar algún identificador ya existente
+  de la Saga?) es una decisión de dominio no trivial, no una ceremonia. Sin dependencia con el
+  Bloque 23 ni el 25 — puede ir en paralelo.
+
+- [ ] **Bloque 25 — `feature/signalr-event-groups`** (los 3 hubs — `CheckIn` `/hubs/tickets`,
+  `AccessControl` `/hubs/occupancy`, `Ticketing` `/hubs/pricing` —, sin asignar): hoy los 3 hubs
+  hacen broadcast a **todos** los clientes conectados sin `Groups`, así que un cliente viendo el
+  evento A recibe también los mensajes del evento B (sobre-broadcast) — esto es además una causa
+  plausible de ruido/confusión con el precio en vivo que motivó la aclaración del Bloque 23, aunque
+  el bug de ese bloque es un problema distinto (congelado en frontend, no de scoping del hub).
+  Alcance de este bloque, **decisión ya tomada con el usuario**: solo se implementa el scoping real
+  por `Groups` (un grupo de SignalR por `EventId`, cada notifier añade/filtra por grupo al conectar
+  el cliente con el `eventId` correspondiente) — es una corrección real y necesaria incluso con una
+  sola instancia de cada API. El **backplane Redis se documenta, no se construye**: sin necesidad
+  demostrada de más de una instancia por servicio en esta demo, añadirlo ahora sería exactamente la
+  sobre-ingeniería que ADR 0006 ya evitó para Prometheus/Seq — mismo criterio, no una excepción.
+  ADR 0029 debe registrar ambas mitades: la decisión tomada (Groups por evento) y la descartada por
+  ahora (Redis), con la condición explícita bajo la que sí se justificaría (N instancias de una
+  misma API detrás de un load balancer, escenario de roadmap documentado en el README junto a
+  Prometheus/Seq/Grafana).
+
 ## Reparto en oleadas (ronda 3, gestión de eventos + rediseño Operaciones/Checkout)
 
 Plan detallado en `C:\Users\miguel.cidgarcia\.claude\plans\hazy-stirring-melody.md` (solo
@@ -467,13 +537,8 @@ los tests de los 3 servicios (ADR 0008 se cumple); el modelo `Zone` (`Capacity`/
 
 ## Pendiente de decidir (ver `docs/ROADMAP.md`)
 
-- [ ] **GUID de grupo para compras múltiples** (fuera de alcance del Bloque 22 a petición
-  explícita del usuario): cuando se emiten varias entradas juntas (misma compra, misma zona o
-  distintas), poder validarlas todas de una vez en `venue-ops`/check-in con un único código de
-  grupo (p. ej. `group-<GUID>`), manteniendo además el GUID individual de cada entrada para
-  escanearla por separado si hace falta. Requiere modelo de dominio nuevo en `CheckIn` (campo de
-  grupo en `Ticket`, migración) y que el endpoint de validación/check-in acepte tanto el código
-  individual como el grupal — no cubierto por ADR 0025.
+- [ ] **GUID de grupo para compras múltiples** — promovido a **Bloque 24** (ver "Reparto en oleadas
+  ronda 4" más arriba), fuera de alcance del Bloque 22 a petición explícita del usuario.
 - [ ] Rellenar `.ia/` con más detalle si aparecen huecos durante el desarrollo en vivo de la
   demo.
 - [ ] Definir mecanismo de exportación "código sin `.git/` ni `.ia/`" para la entrega real

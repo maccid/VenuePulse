@@ -16,8 +16,28 @@ const OESTE_PATH =
   'M 249.914 26.556 L 325.097 -15.981 C 308.911 -37.15 49.131 -42.901 18.481 -15.72 L 91.272 26.915 L 249.914 26.556'
 
 export const MATCH_STANDS: Record<string, StandShape> = {
-  'Grada VIP Norte': { path: NORTE_PATH, labelX: 170, labelY: 57, labelLines: ['Grada VIP Norte'], lightX: 170, lightY: 36 },
-  'Grada VIP Sur': { path: SUR_PATH, labelX: 170, labelY: 222, labelLines: ['Grada VIP Sur'], lightX: 170, lightY: 250 },
+  // tooltipY sobrescrito para subir el precio y que no toque la luz (ver ZoneShape.tsx). Grada
+  // VIP Sur es la excepción: su semáforo queda DEBAJO del nombre, así que el precio bajado a mano
+  // (anclarlo a la luz lo solapaba con el texto) y el nombre se baja para que queden
+  // "precio encima / texto debajo" (feedback de usuario).
+  'Grada VIP Norte': {
+    path: NORTE_PATH,
+    labelX: 170,
+    labelY: 57,
+    labelLines: ['Grada VIP Norte'],
+    lightX: 170,
+    lightY: 36,
+    tooltipY: 8,
+  },
+  'Grada VIP Sur': {
+    path: SUR_PATH,
+    labelX: 170,
+    labelY: 232,
+    labelLines: ['Grada VIP Sur'],
+    lightX: 170,
+    lightY: 250,
+    tooltipY: 204,
+  },
   'Grada Este': {
     path: ESTE_PATH,
     transform: ESTE_OESTE_TRANSFORM,
@@ -27,6 +47,7 @@ export const MATCH_STANDS: Record<string, StandShape> = {
     labelLines: ['Grada', 'Este'],
     lightX: 286,
     lightY: 112,
+    tooltipY: 78,
   },
   'Grada Oeste': {
     path: OESTE_PATH,
@@ -37,6 +58,7 @@ export const MATCH_STANDS: Record<string, StandShape> = {
     labelLines: ['Grada', 'Oeste'],
     lightX: 54,
     lightY: 112,
+    tooltipY: 78,
   },
 }
 
