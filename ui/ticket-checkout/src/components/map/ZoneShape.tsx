@@ -17,9 +17,6 @@ export interface StandShape {
   labelLines: string[]
   lightX: number
   lightY: number
-  // Y del tooltip de precio, por defecto lightY - 24 (encima del semáforo). Sobrescribible por
-  // grada: en partido se sube para dejar aire con la luz y, en Grada VIP Sur, se pone sobre el
-  // nombre bajándolo a la vez (ver standShapes.ts) — el anclaje al semáforo lo solapaba.
   tooltipY?: number
 }
 
