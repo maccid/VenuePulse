@@ -1,8 +1,8 @@
 # Uso de IA en el desarrollo de VenuePulse
 
 Este documento no es una declaración genérica de "usé IA". Es un registro concreto, fase por
-fase, de qué generó la IA, qué corregí o validé yo con criterio senior, y por qué — porque la
-oferta pide exactamente eso: usar la IA como acelerador, no como sustituto del juicio técnico.
+fase, de qué generó la IA, qué corregí o validé yo, y por qué — el objetivo es usar la IA como
+acelerador, no como sustituto del juicio técnico.
 
 ## Cómo se trabajó
 
@@ -60,7 +60,7 @@ fallaba contra MongoDB real con una excepción de serialización de `Guid`. El p
    de seguir indefinidamente, dejando la verificación cruzada pendiente contra `docker-compose`
    real (ver `docs/demo-script.md`).
 
-Este último punto es deliberadamente el ejemplo que más se cuenta en la presentación: la IA es
+Este último punto es el ejemplo más representativo del valor del criterio humano: la IA es
 rápida generando hipótesis y ejecutando diagnósticos, pero decidir **cuándo parar, qué aceptar
 como limitación de entorno y qué exigir como bug real** es criterio humano, no algo que se
 delega.

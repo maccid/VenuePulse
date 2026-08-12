@@ -22,10 +22,10 @@ garantiza at-least-once.
 
 ## Por qué la librería y no una tabla + polling casero
 
-Es más defendible en una presentación decir "conozco el framework lo bastante bien para no
-reinventar su Outbox con sus propios bugs de concurrencia" que enseñar un Outbox casero. El
-candidato debe poder explicar igualmente el mecanismo (interceptor de `SaveChanges`, entrega
-asíncrona vía hosted service) sin haberlo escrito él mismo.
+El Outbox de MassTransit es un mecanismo probado en producción; un Outbox casero tendría que
+reinventar la gestión de concurrencia sobre la misma tabla sin beneficio real. El mecanismo
+(interceptor de `SaveChanges`, entrega asíncrona vía hosted service) se documenta aquí y se
+explica igual sin haberlo escrito desde cero.
 
 ## Alcance
 

@@ -4,7 +4,7 @@
 
 Jimmy Bogard (MediatR) y Dennis Doomen (FluentAssertions) movieron ambas librerías a un modelo
 de licencia comercial de pago para uso en producción a partir de sus versiones más recientes
-(2025). Es un dato de actualidad que conviene conocer y saber razonar, no ignorar.
+(2025). Es un dato de actualidad que una decisión de arquitectura debe considerar.
 
 ## Decisión
 
@@ -16,12 +16,11 @@ Se usan igualmente en esta demo:
 ## Justificación
 
 Este es un proyecto de demo/portfolio sin fines comerciales ni generación de ingresos — entra
-dentro del uso permitido de ambas licencias. Además, siguen siendo el estándar que muchas
-empresas usan en producción bajo licencia pagada: mostrar
-que se conocen y se saben aplicar correctamente es mejor argumento de presentación que evitarlas
-por evitar. El propio hecho de documentar este ADR — conocer el cambio de licencia de 2025 y
-haber evaluado conscientemente si aplica a este contexto — es en sí mismo la señal de criterio
-senior que se busca transmitir, no la elección de librería en sí.
+dentro del uso permitido de ambas licencias. Además, son el estándar de facto que muchas
+empresas usan en producción bajo licencia pagada: conocerlas y aplicarlas correctamente aporta
+más que evitarlas por evitar. Este ADR documenta el cambio de licencia de 2025 y la evaluación
+consciente de si aplica a este contexto; la elección de librería queda así justificada y
+fechada, en vez de ser una decisión tácita.
 
 ## Nota
 

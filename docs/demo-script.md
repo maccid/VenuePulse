@@ -74,15 +74,13 @@ más honesto de "validación de código generado por IA": el motivo de rechazo, 
 integración con Testcontainers y la comprobación de que no rompe el camino feliz existente son
 el momento de revisar el diff con criterio, no de aceptarlo a ciegas.
 
-## Nota de honestidad
+## Nota sobre el test de integración de la Saga
 
-Si preguntan por el test de integración de la Saga: es completamente honesto decir que durante
-el desarrollo hubo un problema de fiabilidad específico del arnés de test (Testcontainers +
-`WebApplicationFactory` compitiendo por recursos en una máquina cargada) en el camino de
-compensación, documentado en el ADR 0009, y que el camino de compensación **sí** se ha
-verificado manualmente contra `docker-compose` real (ver checklist más abajo): confirmado que
-no era un bug real, sino ruido específico del arnés de test. Es un ejemplo real de saber
-diagnosticar sin fingir que todo salió perfecto a la primera.
+El test de integración del camino de compensación tuvo un problema de fiabilidad específico del
+arnés de test (Testcontainers + `WebApplicationFactory` compitiendo por recursos en una máquina
+cargada), documentado en el ADR 0009: confirmado que no era un bug real, sino ruido del entorno
+de test. El camino de compensación está verificado manualmente contra `docker-compose` real (ver
+checklist más abajo).
 
 ## Checklist de verificación manual (verificado contra docker-compose real)
 

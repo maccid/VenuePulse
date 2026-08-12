@@ -62,7 +62,7 @@ Code: [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Qué es real y qué es documentado
 
-No prometer de más es parte del ejercicio. Tabla honesta:
+No prometer de más es una decisión deliberada. Tabla honesta:
 
 | Capacidad | Estado |
 |---|---|
@@ -92,7 +92,7 @@ Fuera de alcance, documentado como roadmap con motivo: pasarela de pago real (el
 paso mockeado dentro de la Saga, por diseño), IdentityServer/Azure AD B2C, videovigilancia y
 analítica de datos avanzada (pilares del smart venue no cubiertos por decisión consciente de
 alcance), métricas agregadas con Prometheus/Grafana, Module Federation, autoscaling validado
-con carga real. El objetivo fue profundidad y capacidad de defensa sobre amplitud de checklist.
+con carga real. El objetivo fue profundidad sobre amplitud.
 
 **Autenticación entre servicios (decisión de alcance):** los servicios no se llaman por HTTP
 entre sí — se comunican por el bus de mensajes (RabbitMQ/MassTransit), cuya autenticación es la

@@ -23,10 +23,6 @@ Además, la Saga **no necesita atomicidad transaccional** con el agregado `Ticke
 es eventualmente consistente por diseño (por eso es una Saga y no una transacción distribuida).
 Separar su almacén no compromete ninguna garantía real.
 
-Es el mismo principio que se aplica en el `core` privado del candidato para instancias de
-tarea — aquí reconstruido con la librería oficial de MassTransit y datos 100% nuevos, sin
-ningún código ni conocimiento propietario trasladado.
-
 ## Trade-off aceptado
 
 Un tercer motor de persistencia (Postgres + MongoDB + RabbitMQ) añade una pieza más a operar.
