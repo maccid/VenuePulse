@@ -22,6 +22,10 @@ export interface StandShape {
   labelLines: string[]
   lightX: number
   lightY: number
+  // Y del tooltip de precio, por defecto lightY - 24 (encima del semáforo). Sobrescribible por
+  // grada: en partido se sube para dejar aire con la luz y, en Grada VIP Sur, se pone sobre el
+  // nombre bajándolo a la vez (ver standShapes.ts) — el anclaje al semáforo lo solapaba.
+  tooltipY?: number
 }
 
 export interface ZonePricing {
@@ -64,7 +68,7 @@ export default function ZoneShape({ name, shape, tier, isSelected, interactive, 
   // la zona. Pulsar la zona sigue abriendo el popup de compra como siempre.
   const priceLabel = pricing ? `${pricing.effectivePrice.toFixed(2)} €` : null
   const tooltipWidth = priceLabel ? priceLabel.length * 5.8 + 14 : 0
-  const tooltipY = shape.lightY - 24
+  const tooltipY = shape.tooltipY ?? shape.lightY - 24
   const outline = shape.rect ? (
     <rect x={shape.rect.x} y={shape.rect.y} width={shape.rect.width} height={shape.rect.height} />
   ) : (
