@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { BuyerData, CartLine, DraftLine, PaymentMethod, TicketType, ZoneOccupancy } from '../types'
-import { MAX_TICKETS_PER_PURCHASE } from '../types'
-import { matchTicketType, pricingByZoneId } from '../zoneTicketType'
-import StadiumMap from './StadiumMap'
+import type { BuyerData, CartLine, DraftLine, PaymentMethod, TicketType, ZoneOccupancy } from '../shared/types'
+import { MAX_TICKETS_PER_PURCHASE } from '../shared/types'
+import { matchTicketType, pricingByZoneId } from '../shared/zoneTicketType'
+import StadiumMap from './map/StadiumMap'
 import ZonePopup from './ZonePopup'
-import CartPanel from './CartPanel'
+import CartPanel from './cart/CartPanel'
+import { MapIcon } from '../shared/icons'
 
 interface Props {
   ticketTypes: TicketType[]
@@ -20,26 +21,6 @@ interface Props {
   onResetPurchase: () => void
   onReservar: () => void
   onSubmitPayment: (method: PaymentMethod) => void
-}
-
-// Icono de plano (sin librería de iconos, mismo criterio que el resto del proyecto — ver ADR 0017).
-function MapIcon() {
-  return (
-    <svg
-      className="purchase-flow__map-icon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-      <line x1="9" y1="3" x2="9" y2="18" />
-      <line x1="15" y1="6" x2="15" y2="21" />
-    </svg>
-  )
 }
 
 export default function PurchaseFlow({
@@ -59,10 +40,7 @@ export default function PurchaseFlow({
 }: Props) {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
 
-  // Aforo restante para elegir cantidad = lo que dice el backend menos lo que ya está en el
-  // borrador local para esa zona (no reservado todavía) — mitigación best-effort de sobre-venta
-  // local, la validación real la hace el backend al pulsar "Reservar" (ver ADR 0025).
-  const draftedByZone = draft.reduce<Record<string, number>>((acc, line) => {
+  const draftedQuantityByZone = draft.reduce<Record<string, number>>((acc, line) => {
     acc[line.zoneId] = (acc[line.zoneId] ?? 0) + line.quantity
     return acc
   }, {})
@@ -72,19 +50,16 @@ export default function PurchaseFlow({
   const remainingQuota = Math.max(0, MAX_TICKETS_PER_PURCHASE - draftCount - activeCartCount)
 
   const selectedZone = zones.find((z) => z.zoneId === selectedZoneId)
-  const adjustedSelectedZone =
+  const selectedZoneWithDraftedSlotsHeld =
     selectedZone &&
     ({
       ...selectedZone,
-      availableToSell: Math.max(0, selectedZone.availableToSell - (draftedByZone[selectedZone.zoneId] ?? 0)),
+      availableToSell: Math.max(0, selectedZone.availableToSell - (draftedQuantityByZone[selectedZone.zoneId] ?? 0)),
     } satisfies ZoneOccupancy)
   const selectedTicketType = selectedZone && matchTicketType(selectedZone.name, ticketTypes)
   const pricing = pricingByZoneId(zones, ticketTypes)
 
-  // Con reserva en curso (o resuelta) el plano queda solo de consulta: ni se puede pulsar una zona
-  // ni salen los precios al pasar por encima (feedback de usuario). Al reiniciar la compra vuelve
-  // a ser interactivo.
-  const mapInteractable = cart.length === 0
+  const mapInteractableForNewSelection = cart.length === 0
 
   return (
     <div className="purchase-flow">
@@ -96,17 +71,17 @@ export default function PurchaseFlow({
         <StadiumMap
           zones={zones}
           selectedZoneId={selectedZoneId ?? undefined}
-          onSelect={mapInteractable ? setSelectedZoneId : undefined}
-          pricingByZoneId={mapInteractable ? pricing : undefined}
+          onSelect={mapInteractableForNewSelection ? setSelectedZoneId : undefined}
+          pricingByZoneId={mapInteractableForNewSelection ? pricing : undefined}
         />
 
-        {adjustedSelectedZone && selectedTicketType && (
+        {selectedZoneWithDraftedSlotsHeld && selectedTicketType && (
           <ZonePopup
-            zone={adjustedSelectedZone}
+            zone={selectedZoneWithDraftedSlotsHeld}
             ticketType={selectedTicketType}
             remainingQuota={remainingQuota}
             onAdd={(quantity) => {
-              onAddToDraft(adjustedSelectedZone.zoneId, selectedTicketType.id, quantity)
+              onAddToDraft(selectedZoneWithDraftedSlotsHeld.zoneId, selectedTicketType.id, quantity)
               setSelectedZoneId(null)
             }}
             onClose={() => setSelectedZoneId(null)}

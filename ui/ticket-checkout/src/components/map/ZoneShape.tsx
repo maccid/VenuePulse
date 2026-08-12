@@ -7,11 +7,6 @@ export interface RectGeometry {
   height: number
 }
 
-// Forma de una zona: o bien un contorno curvo (`path`, hacia el óvalo exterior — Este/Oeste de
-// partido y Grada 3 de concierto reutilizan la curva de Norte/Sur girada con `transform`, porque
-// el óvalo no es cuadrado y una rotación simple no encajaría), o bien un rectángulo recto (`rect`,
-// sin esquinas redondeadas — Pista/VIP de concierto). Ambas llevan el mismo azul fijo sin borde y
-// el mismo semáforo de ocupación junto al nombre (ver StadiumMap.tsx).
 export interface StandShape {
   path?: string
   rect?: RectGeometry
@@ -59,9 +54,6 @@ export default function ZoneShape({ name, shape, tier, isSelected, interactive, 
       }
     : undefined
 
-  // El precio ya no se pinta sobre el plano: se solapaba con el semáforo (sobre todo en las gradas
-  // de abajo, ver feedback de usuario), así que ahora vive en un tooltip que aparece al pasar por
-  // la zona. Pulsar la zona sigue abriendo el popup de compra como siempre.
   const priceLabel = pricing ? `${pricing.effectivePrice.toFixed(2)} €` : null
   const tooltipWidth = priceLabel ? priceLabel.length * 5.8 + 14 : 0
   const tooltipY = shape.lightY - 24

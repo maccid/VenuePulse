@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MAX_TICKETS_PER_PURCHASE, type TicketType, type ZoneOccupancy } from '../types'
+import { MAX_TICKETS_PER_PURCHASE, type TicketType, type ZoneOccupancy } from '../shared/types'
 
 interface Props {
   zone: ZoneOccupancy

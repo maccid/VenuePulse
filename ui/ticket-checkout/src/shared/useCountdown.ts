@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 
-// Segundos restantes hasta `expiresAtUtc`, refrescado cada segundo — null si no hay deadline
-// vigente (reserva ya resuelta o nunca trackeada, ver TicketStatusDto en CheckIn y ADR 0025).
 export function useCountdown(expiresAtUtc: string | null): number | null {
   const [now, setNow] = useState(() => Date.now())
 
