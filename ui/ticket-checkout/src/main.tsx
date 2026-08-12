@@ -15,12 +15,32 @@ import App from './App.tsx'
 // "se veía bien" antes por casualidad, heredando los estilos globales de <button>/<input> de shell.
 const STYLESHEET_HREF = new URL('./ticket-checkout.css', import.meta.url).href
 
-function ensureStylesheetLoaded() {
-  if (document.querySelector(`link[href="${STYLESHEET_HREF}"]`)) return
-  const link = document.createElement('link')
-  link.rel = 'stylesheet'
-  link.href = STYLESHEET_HREF
-  document.head.appendChild(link)
+// Devuelve una promesa que se resuelve cuando el CSS ya está aplicado (o falló al cargar, para
+// no bloquear el render eternamente). Evita el flash de estilos sin aplicar (FOUC) que pintaba
+// los SVGs del plano/icono a su tamaño por defecto (300×150) hasta que la hoja llegaba: el icono
+// del mapa "salía gigante" un instante. Antes solo se enlazaba el <link> y se renderizaba al
+// momento, sin esperar a que el navegador hubiera descargado y aplicado la hoja.
+function ensureStylesheetLoaded(): Promise<void> {
+  const existing = document.querySelector<HTMLLinkElement>(`link[href="${STYLESHEET_HREF}"]`)
+  if (existing) {
+    return new Promise((resolve) => {
+      if (existing.sheet) {
+        resolve()
+        return
+      }
+      existing.addEventListener('load', () => resolve(), { once: true })
+      existing.addEventListener('error', () => resolve(), { once: true })
+    })
+  }
+
+  return new Promise((resolve) => {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = STYLESHEET_HREF
+    link.addEventListener('load', () => resolve(), { once: true })
+    link.addEventListener('error', () => resolve(), { once: true })
+    document.head.appendChild(link)
+  })
 }
 
 class TicketCheckoutElement extends HTMLElement {
@@ -28,8 +48,11 @@ class TicketCheckoutElement extends HTMLElement {
 
   private root: Root | null = null
 
-  connectedCallback() {
-    ensureStylesheetLoaded()
+  async connectedCallback() {
+    await ensureStylesheetLoaded()
+    // Guard: si entre el await y el render el elemento se desconectó y reconectó (o StrictMode
+    // remontó), no crear un segundo root sobre el mismo nodo.
+    if (this.root) return
     this.root = createRoot(this)
     this.render()
   }
