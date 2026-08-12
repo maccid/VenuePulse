@@ -204,8 +204,6 @@ export default function App({ eventId, holder }: Props) {
           zoneName: zone.name,
           ticketTypeId,
           ticketTypeName: ticketType.name,
-          unitPrice: ticketType.effectivePrice,
-          priceTier: ticketType.priceTier,
           quantity,
         },
       ]
@@ -238,19 +236,24 @@ export default function App({ eventId, holder }: Props) {
     setIsReserving(true)
 
     const purchases = await Promise.all(
-      draft.flatMap((line) =>
-        Array.from({ length: line.quantity }, async (): Promise<CartLine | null> => {
+      draft.flatMap((line) => {
+        // Precio efectivo vigente en el instante real de "Reservar", no el que tenía la zona
+        // cuando se pulsó "Añadir" — el borrador no fija nada hasta aquí (ver types.ts).
+        const ticketType = ticketTypes.find((t) => t.id === line.ticketTypeId)
+        if (!ticketType) return []
+
+        return Array.from({ length: line.quantity }, async (): Promise<CartLine | null> => {
           const response = await fetch('/api/checkin/api/tickets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // Precio efectivo mostrado en el popup en el momento de la compra — CheckIn lo exige
-            // desde el Bloque 17 y lo guarda tal cual, sin revalidar contra Ticketing (ADR 0021).
+            // CheckIn exige el precio desde el Bloque 17 y lo guarda tal cual, sin revalidar
+            // contra Ticketing (ADR 0021) — a partir de aquí sí queda inmutable.
             body: JSON.stringify({
               eventId,
               ticketTypeId: line.ticketTypeId,
               zoneId: line.zoneId,
               holder: buyer.nombre.trim() || holder,
-              price: line.unitPrice,
+              price: ticketType.effectivePrice,
             }),
           })
           if (!response.ok) return null
@@ -260,14 +263,14 @@ export default function App({ eventId, holder }: Props) {
             zoneId: line.zoneId,
             zoneName: line.zoneName,
             ticketTypeName: line.ticketTypeName,
-            unitPrice: line.unitPrice,
-            priceTier: line.priceTier,
+            unitPrice: ticketType.effectivePrice,
+            priceTier: ticketType.priceTier,
             status: 'Pending',
             rejectionReason: null,
             expiresAtUtc: null,
           }
-        }),
-      ),
+        })
+      }),
     )
 
     const newLines = purchases.filter((line): line is CartLine => line !== null)

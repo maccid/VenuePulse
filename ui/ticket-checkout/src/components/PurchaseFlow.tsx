@@ -115,6 +115,7 @@ export default function PurchaseFlow({
       </div>
 
       <CartPanel
+        ticketTypes={ticketTypes}
         draft={draft}
         cart={cart}
         buyer={buyer}

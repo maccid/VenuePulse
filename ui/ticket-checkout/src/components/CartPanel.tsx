@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import type { BuyerData, CartLine, DraftLine, PaymentMethod } from '../types'
+import type { BuyerData, CartLine, DraftLine, PaymentMethod, TicketType } from '../types'
 import { MAX_TICKETS_PER_PURCHASE } from '../types'
 import { SagaTimeline } from '../SagaTimeline'
 import { formatCountdown, useCountdown } from '../useCountdown'
 import PaymentForm from './PaymentForm'
 
 interface Props {
+  ticketTypes: TicketType[]
   draft: DraftLine[]
   cart: CartLine[]
   buyer: BuyerData
@@ -147,6 +148,7 @@ function CartGroupRow({ group }: { group: CartGroup }) {
 }
 
 export default function CartPanel({
+  ticketTypes,
   draft,
   cart,
   buyer,
@@ -161,7 +163,10 @@ export default function CartPanel({
   const hasReservation = cart.length > 0
   const activeLines = cart.filter((l) => l.status !== 'Rejected')
   const cartTotal = activeLines.reduce((sum, l) => sum + l.unitPrice, 0)
-  const draftTotal = draft.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0)
+  // El borrador no tiene precio propio (types.ts): se deriva del effectivePrice vivo de
+  // ticketTypes, así que sube/baja con la demanda hasta el instante real de "Reservar".
+  const draftUnitPrice = (line: DraftLine) => ticketTypes.find((t) => t.id === line.ticketTypeId)?.effectivePrice ?? 0
+  const draftTotal = draft.reduce((sum, l) => sum + draftUnitPrice(l) * l.quantity, 0)
   const draftCount = draft.reduce((sum, l) => sum + l.quantity, 0)
   const awaitingPayment = cart.some((l) => l.status === 'AwaitingPayment' || l.status === 'ProcessingPayment')
   const allResolved =
@@ -223,7 +228,7 @@ export default function CartPanel({
                     {line.zoneName} × {line.quantity}
                   </span>
                   <span className="cart-panel__line-actions">
-                    <span className="cart-panel__subtotal">{(line.unitPrice * line.quantity).toFixed(2)} €</span>
+                    <span className="cart-panel__subtotal">{(draftUnitPrice(line) * line.quantity).toFixed(2)} €</span>
                     <button
                       type="button"
                       className="cart-panel__remove"

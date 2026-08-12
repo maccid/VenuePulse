@@ -80,13 +80,13 @@ export const MAX_TICKETS_PER_PURCHASE = 10
 // Selección local, todavía sin reservar de verdad (sin llamar al backend) — se acumula por
 // zona+tipo mientras el título de la tarjeta de compra es "Tus Reservas". Solo al pulsar
 // "Reservar" cada unidad se convierte en un `CartLine` real (ver ADR 0025, reabre ADR 0018 punto 3).
+// Sin precio propio a propósito: nada se ha comprado todavía, así que su precio sigue siendo el
+// `effectivePrice` en vivo de `TicketType` (ver App.tsx) hasta el instante real de "Reservar".
 export interface DraftLine {
   zoneId: string
   zoneName: string
   ticketTypeId: string
   ticketTypeName: string
-  unitPrice: number
-  priceTier: string
   quantity: number
 }
 
