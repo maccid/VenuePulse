@@ -21,7 +21,7 @@ public static class DependencyInjection
         services.AddScoped<ITicketRepository, TicketRepository>();
 
         services.AddSingleton(new SagaTimeoutOptions(
-            ReservationTimeout: TimeSpan.FromSeconds(int.Parse(configuration["Saga:ReservationTimeoutSeconds"] ?? "30")),
+            ReservationTimeout: TimeSpan.FromSeconds(int.Parse(configuration["Saga:ReservationTimeoutSeconds"] ?? "60")),
             PollInterval: TimeSpan.FromSeconds(int.Parse(configuration["Saga:TimeoutPollIntervalSeconds"] ?? "5"))));
         services.AddSingleton<ReservationTimeoutTracker>();
         // Mismo singleton expuesto también por su puerto de Application (contador de reserva,
