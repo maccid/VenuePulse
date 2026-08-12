@@ -1,4 +1,4 @@
-import type { ZoneOccupancy } from '../types'
+import type { ZoneOccupancy } from '../../shared/types'
 import ZoneShape, { type ZonePricing } from './ZoneShape'
 import { MATCH_STANDS, CONCERT_STANDS } from './standShapes'
 import { MatchField, ConcertStage } from './StadiumBackground'
@@ -31,8 +31,6 @@ export default function StadiumMap({ zones, selectedZoneId, onSelect, pricingByZ
   return (
     <div className="stadium-map">
       <svg viewBox="0 0 340 280" role="img" aria-label="Plano del recinto" className="stadium-map__svg">
-        {/* Estadio: fondo gris de todo el recinto, óvalo (rx alto) compartido por partido y
-            concierto (ver ADR 0026), con hueco en las esquinas donde no llegan las gradas. */}
         <rect x="8" y="8" width="324" height="264" rx="85" className="stadium-map__exterior" />
 
         {isConcert ? <ConcertStage /> : <MatchField />}

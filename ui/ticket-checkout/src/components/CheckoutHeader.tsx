@@ -1,4 +1,4 @@
-import type { EventSummary, EventType } from '../types'
+import type { EventSummary, EventType } from '../shared/types'
 
 interface Props {
   event: EventSummary | undefined
@@ -9,10 +9,6 @@ const TYPE_LABEL: Record<EventType, string> = {
   Concert: 'Concierto',
 }
 
-// El botón "Volver al catálogo" avisa al shell con un CustomEvent en vez de navegar por su
-// cuenta: el Web Component vive en light DOM dentro de la página de shell (ver ADR 0004), así
-// que no puede cambiar el estado de React del host. CheckoutPanel (shell) lo escucha y hace el
-// onBack; en modo standalone (sin shell), main.tsx lo escucha para quitar el eventId de la URL.
 export default function CheckoutHeader({ event }: Props) {
   const handleBack = () => {
     window.dispatchEvent(new CustomEvent('back-to-catalog', { bubbles: true, composed: true }))
