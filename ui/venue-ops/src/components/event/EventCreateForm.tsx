@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { EventRelevance, EventSummary, EventType } from '../../shared/types'
-import { toDatetimeLocalInputValue } from '../../lib/datetime'
+import { toDatetimeLocalInputValue } from '../../shared/datetime'
 import { useCreateEvent } from '../../hooks/useCreateEvent'
 
 interface Props {

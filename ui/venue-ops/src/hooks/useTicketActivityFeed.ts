@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActivityEntry, TicketStatusUpdate, ZoneOccupancy } from '../shared/types'
-import { createHubConnection } from '../lib/hubConnection'
+import { createHubConnection } from '../shared/hubConnection'
 
 const MAX_ACTIVITY_ENTRIES = 20
 

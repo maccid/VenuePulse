@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ZoneOccupancy } from '../shared/types'
-import { createHubConnection } from '../lib/hubConnection'
+import { createHubConnection } from '../shared/hubConnection'
 
 export function useZonesByEvent(activeId: string | null) {
   const [zonesByEvent, setZonesByEvent] = useState<Record<string, ZoneOccupancy[]>>({})
