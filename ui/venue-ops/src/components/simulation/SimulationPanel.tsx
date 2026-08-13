@@ -61,35 +61,52 @@ export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulatio
   }
 
   return (
-    <section className="card simulation-panel">
-      <h2>Simulación de demo</h2>
+    <section className="card mb-6">
+      <h2 className="mb-4">Simulación de demo</h2>
 
       <SimulationControls config={config} onChange={updateConfig} running={running} />
 
-      <div className="simulation-actions">
-        <button onClick={() => control('start')} disabled={running || busy || eventId === ''}>
+      <div className="mb-4 flex gap-3">
+        <button
+          onClick={() => control('start')}
+          disabled={running || busy || eventId === ''}
+          className="disabled:cursor-not-allowed disabled:opacity-[0.55]"
+        >
           {running ? 'En curso…' : 'Iniciar'}
         </button>
-        <button onClick={() => control('stop')} disabled={!running || busy}>
+        <button
+          onClick={() => control('stop')}
+          disabled={!running || busy}
+          className="disabled:cursor-not-allowed disabled:opacity-[0.55]"
+        >
           Detener
         </button>
-        <button onClick={() => control('reset')} disabled={busy || (running && status?.progress !== 0)}>
+        <button
+          onClick={() => control('reset')}
+          disabled={busy || (running && status?.progress !== 0)}
+          className="disabled:cursor-not-allowed disabled:opacity-[0.55]"
+        >
           Reiniciar aforo
         </button>
       </div>
 
       {running && (
-        <div className="simulation-progress">
-          <div className="gauge-bar">
-            <div className="gauge-fill" style={{ width: `${progressPct}%` }} />
+        <div className="mt-2">
+          <div className="h-2.5 overflow-hidden rounded-full bg-accent-bg">
+            <div
+              className="h-full bg-linear-to-r from-accent to-accent-hover transition-[width] duration-[400ms]"
+              style={{ width: `${progressPct}%` }}
+            />
           </div>
-          <p className="zone-meta">
+          <p className="mt-1 text-sm text-text-muted">
             {MODE_LABELS[status?.mode ?? config.mode]} — {progressPct}%
           </p>
         </div>
       )}
 
-      {error && <p className="scan-result scan-result--error">{error}</p>}
+      {error && (
+        <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{error}</p>
+      )}
     </section>
   )
 }

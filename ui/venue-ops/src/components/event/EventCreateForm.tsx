@@ -47,13 +47,13 @@ export default function EventCreateForm({ onCreated, onCancel }: Props) {
   const shownError = validationError ?? error
 
   return (
-    <form className="event-create-form" onSubmit={handleSubmit}>
-      <label className="event-create-form__field">
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         Nombre
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="p. ej. Final de Copa" />
       </label>
 
-      <label className="event-create-form__field">
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         Tipo de evento
         <select value={type} onChange={(e) => setType(e.target.value as EventType)}>
           {(Object.keys(TYPE_LABELS) as EventType[]).map((t) => (
@@ -62,12 +62,12 @@ export default function EventCreateForm({ onCreated, onCancel }: Props) {
         </select>
       </label>
 
-      <label className="event-create-form__field">
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         Fecha y hora
         <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
       </label>
 
-      <label className="event-create-form__field">
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         Relevancia
         <select value={relevance} onChange={(e) => setRelevance(e.target.value as EventRelevance)}>
           {(Object.keys(RELEVANCE_LABELS) as EventRelevance[]).map((r) => (
@@ -76,14 +76,14 @@ export default function EventCreateForm({ onCreated, onCancel }: Props) {
         </select>
       </label>
 
-      <div className="event-create-form__actions">
+      <div className="flex gap-3">
         <button type="submit" disabled={busy}>{busy ? 'Creando…' : 'Crear evento'}</button>
-        <button type="button" className="event-create-form__cancel" onClick={onCancel} disabled={busy}>
+        <button type="button" className="border border-border bg-transparent text-text-muted" onClick={onCancel} disabled={busy}>
           Cancelar
         </button>
       </div>
 
-      {shownError && <p className="scan-result scan-result--error">{shownError}</p>}
+      {shownError && <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{shownError}</p>}
     </form>
   )
 }

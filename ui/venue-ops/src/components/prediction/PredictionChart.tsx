@@ -30,15 +30,15 @@ export default function PredictionChart({ prediction }: Props) {
 
   return (
     <svg
-      className="prediction-chart"
+      className="block h-auto w-full"
       viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
       role="img"
       aria-label="Curva de llegada prevista frente a la observada"
     >
-      <text x={2} y={CHART_MARGIN.top + 4} className="prediction-chart__axis-label">
+      <text x={2} y={CHART_MARGIN.top + 4} className="fill-text-muted text-[11px]">
         {maxY}
       </text>
-      <text x={2} y={CHART_MARGIN.top + PLOT_HEIGHT + 4} className="prediction-chart__axis-label">
+      <text x={2} y={CHART_MARGIN.top + PLOT_HEIGHT + 4} className="fill-text-muted text-[11px]">
         0
       </text>
 
@@ -47,13 +47,13 @@ export default function PredictionChart({ prediction }: Props) {
         y1={toY(confirmedSold, maxY)}
         x2={CHART_WIDTH - CHART_MARGIN.right}
         y2={toY(confirmedSold, maxY)}
-        className="prediction-chart__sold"
+        className="stroke-text-muted [stroke-dasharray:4_4]"
       />
       <text
         x={CHART_WIDTH - CHART_MARGIN.right - 4}
         y={toY(confirmedSold, maxY) - 5}
         textAnchor="end"
-        className="prediction-chart__sold-label"
+        className="fill-text-muted text-[11px]"
       >
         {confirmedSold} vendidas
       </text>
@@ -63,13 +63,13 @@ export default function PredictionChart({ prediction }: Props) {
         y1={toY(predictedTotalArrivals, maxY)}
         x2={CHART_WIDTH - CHART_MARGIN.right}
         y2={toY(predictedTotalArrivals, maxY)}
-        className="prediction-chart__target"
+        className="stroke-success [stroke-width:1.5] [stroke-dasharray:6_4]"
       />
       <text
         x={CHART_WIDTH - CHART_MARGIN.right - 4}
         y={toY(predictedTotalArrivals, maxY) + 14}
         textAnchor="end"
-        className="prediction-chart__target-label"
+        className="fill-success text-[11px] font-semibold"
       >
         ≈{predictedTotalArrivals} previstos
       </text>
@@ -79,13 +79,13 @@ export default function PredictionChart({ prediction }: Props) {
         y1={CHART_MARGIN.top}
         x2={toX(nowProgress)}
         y2={CHART_MARGIN.top + PLOT_HEIGHT}
-        className="prediction-chart__now"
+        className="stroke-danger [stroke-width:1.5]"
       />
-      <text x={toX(nowProgress) - 4} y={CHART_MARGIN.top + 12} textAnchor="end" className="prediction-chart__now-label">
+      <text x={toX(nowProgress) - 4} y={CHART_MARGIN.top + 12} textAnchor="end" className="fill-danger text-[11px]">
         ahora
       </text>
 
-      <polyline points={polylinePoints(projected, maxY)} className="prediction-chart__projected" />
+      <polyline points={polylinePoints(projected, maxY)} className="fill-none stroke-accent [stroke-width:2.5]" />
 
       {historical.map((point) => (
         <circle
@@ -93,7 +93,7 @@ export default function PredictionChart({ prediction }: Props) {
           cx={toX(point.progress)}
           cy={toY(point.arrivals, maxY)}
           r={3.5}
-          className="prediction-chart__observed"
+          className="fill-text"
         />
       ))}
 
@@ -104,9 +104,9 @@ export default function PredictionChart({ prediction }: Props) {
             y1={CHART_MARGIN.top}
             x2={toX(tick.progress)}
             y2={CHART_MARGIN.top + PLOT_HEIGHT}
-            className="prediction-chart__grid"
+            className="stroke-border"
           />
-          <text x={toX(tick.progress)} y={CHART_HEIGHT - 8} textAnchor="middle" className="prediction-chart__axis-label">
+          <text x={toX(tick.progress)} y={CHART_HEIGHT - 8} textAnchor="middle" className="fill-text-muted text-[11px]">
             {tick.label}
           </text>
         </g>

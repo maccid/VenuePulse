@@ -25,10 +25,10 @@ export default function App() {
   const activeEvent = activeId === null ? undefined : events.find((ev) => ev.id === activeId)
 
   return (
-    <div className="venue-ops">
+    <div className="mx-auto max-w-[1440px] px-6 py-16">
       <SiteHeader />
 
-      <div className="venue-ops__layout">
+      <div className="grid grid-cols-[minmax(280px,25%)_1fr] items-start gap-6">
         <EventList
           events={events}
           activeId={activeId}
@@ -37,7 +37,7 @@ export default function App() {
         />
 
         {showCreate ? (
-          <div className="ops-new-event">
+          <div className="card">
             <EventCreateForm
               onCreated={(created) => {
                 addEvent(created)
@@ -58,7 +58,7 @@ export default function App() {
             onEventUpdated={updateEvent}
           />
         ) : (
-          <div className="venue-ops__empty card">
+          <div className="card text-sm text-text-muted">
             <p>Selecciona un evento del listado para ver sus operaciones.</p>
           </div>
         )}

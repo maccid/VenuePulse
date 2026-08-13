@@ -75,15 +75,15 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
   const confirm = pendingAction === null ? null : CONFIRM_CONTENT[pendingAction]
 
   return (
-    <div className="ops-detail">
-      <div className="ops-detail__toolbar">
+    <div className="card">
+      <div className="mb-6 flex items-center justify-between gap-6">
         <PhaseIndicator status={event.status} />
 
         {isOnSale && (
-          <div className="sales-layout__actions">
+          <div className="flex flex-shrink-0 gap-3">
             <button
               type="button"
-              className="sales-layout__close"
+              className="bg-blue text-text-on-accent hover:bg-blue-hover"
               onClick={() => openConfirm('close-sales')}
               disabled={actionBusy}
             >
@@ -91,7 +91,7 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
             </button>
             <button
               type="button"
-              className="sales-layout__cancel"
+              className="bg-danger text-text-on-accent hover:opacity-90"
               onClick={() => openConfirm('cancel')}
               disabled={actionBusy}
             >
@@ -118,18 +118,29 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
 
       {confirm && pendingAction !== null && (
         <Modal title={confirm.title} onClose={() => setPendingAction(null)}>
-          <p className="modal__text">{confirm.message}</p>
-          {actionError && <p className="scan-result scan-result--error">{actionError}</p>}
-          <div className="modal__actions">
+          <p className="m-0 mb-6">{confirm.message}</p>
+          {actionError && (
+            <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{actionError}</p>
+          )}
+          <div className="mt-4 flex justify-end gap-3">
             <button
               type="button"
-              className={pendingAction === 'cancel' ? 'sales-layout__cancel' : 'sales-layout__close'}
+              className={
+                pendingAction === 'cancel'
+                  ? 'bg-danger text-text-on-accent hover:opacity-90'
+                  : 'bg-blue text-text-on-accent hover:bg-blue-hover'
+              }
               onClick={() => void runLifecycleAction(pendingAction)}
               disabled={actionBusy}
             >
               {actionBusy ? 'Procesando…' : pendingAction === 'cancel' ? 'Cancelar evento' : 'Cerrar venta'}
             </button>
-            <button type="button" className="modal__secondary" onClick={() => setPendingAction(null)} disabled={actionBusy}>
+            <button
+              type="button"
+              className="border border-border bg-transparent text-text-muted hover:bg-accent-bg hover:text-text"
+              onClick={() => setPendingAction(null)}
+              disabled={actionBusy}
+            >
               Volver
             </button>
           </div>

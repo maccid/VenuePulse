@@ -18,8 +18,8 @@ export default function SimulationControls({ config, onChange, running }: Props)
   const { mode, durationSeconds, targetSoldPct, noShowPct } = config
 
   return (
-    <div className="simulation-controls">
-      <label className="simulation-control">
+    <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         Fase
         <select value={mode} onChange={(e) => onChange({ mode: e.target.value as SimulationMode })}>
           {(Object.keys(MODE_LABELS) as SimulationMode[]).map((m) => (
@@ -28,7 +28,7 @@ export default function SimulationControls({ config, onChange, running }: Props)
         </select>
       </label>
 
-      <label className="simulation-control">
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         Duración ({durationSeconds}s)
         <input
           type="range"
@@ -41,7 +41,7 @@ export default function SimulationControls({ config, onChange, running }: Props)
         />
       </label>
 
-      <label className="simulation-control">
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         Objetivo de venta ({Math.round(targetSoldPct * 100)}%)
         <input
           type="range"
@@ -54,7 +54,7 @@ export default function SimulationControls({ config, onChange, running }: Props)
         />
       </label>
 
-      <label className="simulation-control">
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         No-shows ({Math.round(noShowPct * 100)}%)
         <input
           type="range"
