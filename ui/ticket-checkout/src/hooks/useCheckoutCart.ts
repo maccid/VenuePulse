@@ -1,18 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type {
   BuyerData,
   CartLine,
   DraftLine,
+  OrderLine,
+  OrderStatus,
+  OrderStatusUpdate,
+  OrderTicketStatus,
   PaymentMethod,
-  TicketStatus,
   TicketStatusUpdate,
   TicketType,
   ZoneOccupancy,
 } from '../shared/types'
 
-function isResolvedStatus(status: TicketStatus): boolean {
-  return status === 'Confirmed' || status === 'Rejected' || status === 'CheckedIn'
+const GENERIC_ORDER_REJECTION_REASON = 'OrderRequestFailed'
+const GENERIC_PAYMENT_REJECTION_REASON = 'PaymentRequestFailed'
+
+function isResolvedOrderStatus(status: OrderStatus | null): boolean {
+  return status === 'Completed' || status === 'Rejected'
 }
 
 interface CheckoutCart {
@@ -21,6 +27,8 @@ interface CheckoutCart {
   buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  orderStatus: OrderStatus | null
+  orderRejectionReason: string | null
   setBuyer: (buyer: BuyerData) => void
   addToDraft: (zoneId: string, ticketTypeId: string, quantity: number) => void
   removeDraftLine: (zoneId: string, ticketTypeId: string) => void
@@ -36,61 +44,93 @@ export function useCheckoutCart(
   zones: ZoneOccupancy[],
 ): CheckoutCart {
   const [draft, setDraft] = useState<DraftLine[]>([])
-  const [cart, setCart] = useState<CartLine[]>([])
   const [buyer, setBuyer] = useState<BuyerData>({ nombre: '', apellidos: '', email: '' })
   const [isReserving, setIsReserving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
 
-  const cartRef = useRef(cart)
-  useEffect(() => {
-    cartRef.current = cart
-  }, [cart])
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null)
+  const [orderRejectionReason, setOrderRejectionReason] = useState<string | null>(null)
+  const [orderTickets, setOrderTickets] = useState<OrderTicketStatus[]>([])
 
-  function applyStatusUpdate(update: TicketStatusUpdate) {
-    setCart((prev) =>
-      prev.map((line) =>
-        line.ticketId === update.ticketId
-          ? { ...line, status: update.status, rejectionReason: update.rejectionReason, expiresAtUtc: update.expiresAtUtc }
-          : line,
+  const orderRef = useRef<{ orderId: string | null; status: OrderStatus | null }>({ orderId: null, status: null })
+  useEffect(() => {
+    orderRef.current = { orderId, status: orderStatus }
+  }, [orderId, orderStatus])
+
+  const cart = useMemo<CartLine[]>(
+    () =>
+      orderTickets.map((ticket) => {
+        const zone = zones.find((z) => z.zoneId === ticket.zoneId)
+        const ticketType = ticketTypes.find((t) => t.id === ticket.ticketTypeId)
+        return {
+          ticketId: ticket.ticketId,
+          zoneId: ticket.zoneId,
+          zoneName: zone?.name ?? ticket.zoneId,
+          ticketTypeName: ticketType?.name ?? ticket.ticketTypeId,
+          unitPrice: ticket.unitPrice,
+          priceTier: ticketType?.priceTier ?? 'Normal',
+          status: ticket.status,
+          rejectionReason: ticket.rejectionReason,
+          expiresAtUtc: ticket.expiresAtUtc,
+        }
+      }),
+    [orderTickets, zones, ticketTypes],
+  )
+
+  function applyOrderStatusUpdate(update: OrderStatusUpdate) {
+    setOrderId(update.orderId)
+    setOrderStatus(update.status)
+    setOrderRejectionReason(update.rejectionReason)
+    setOrderTickets(update.tickets)
+  }
+
+  function applyTicketStatusUpdate(update: TicketStatusUpdate) {
+    setOrderTickets((prev) =>
+      prev.map((ticket) =>
+        ticket.ticketId === update.ticketId
+          ? { ...ticket, status: update.status, rejectionReason: update.rejectionReason, expiresAtUtc: update.expiresAtUtc }
+          : ticket,
       ),
     )
   }
 
-  async function reconcileStatuses(ticketIds: string[], attempts = 20): Promise<boolean> {
-    const pending = new Set(ticketIds)
-    for (let attempt = 0; attempt < attempts && pending.size > 0; attempt++) {
+  function rejectOrder(reason: string) {
+    setOrderStatus('Rejected')
+    setOrderRejectionReason(reason)
+  }
+
+  async function reconcileOrderStatus(id: string, attempts = 20): Promise<boolean> {
+    for (let attempt = 0; attempt < attempts; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const updates = await Promise.all(
-        [...pending].map(async (ticketId) => {
-          try {
-            const response = await fetch(`/api/checkin/api/tickets/${ticketId}/status`)
-            if (!response.ok) return null
-            return (await response.json()) as TicketStatusUpdate
-          } catch {
-            return null
-          }
-        }),
-      )
-      for (const update of updates) {
-        if (update) {
-          applyStatusUpdate(update)
-          if (isResolvedStatus(update.status)) pending.delete(update.ticketId)
+      try {
+        const response = await fetch(`/api/checkin/api/orders/${id}/status`)
+        if (response.ok) {
+          const update = (await response.json()) as OrderStatusUpdate
+          applyOrderStatusUpdate(update)
+          if (isResolvedOrderStatus(update.status)) return true
         }
+      } catch {
+        // red caída o similar: se reintenta en la siguiente vuelta
       }
     }
-    return pending.size === 0
+    return isResolvedOrderStatus(orderRef.current.status)
   }
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/tickets').withAutomaticReconnect().build()
 
     connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
-      applyStatusUpdate(update)
+      applyTicketStatusUpdate(update)
+    })
+
+    connection.on('orderStatusChanged', (update: OrderStatusUpdate) => {
+      applyOrderStatusUpdate(update)
     })
 
     connection.onreconnected(() => {
-      const unresolved = cartRef.current.filter((l) => !isResolvedStatus(l.status)).map((l) => l.ticketId)
-      if (unresolved.length > 0) void reconcileStatuses(unresolved)
+      const { orderId: currentOrderId, status } = orderRef.current
+      if (currentOrderId && !isResolvedOrderStatus(status)) void reconcileOrderStatus(currentOrderId)
     })
 
     connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
@@ -101,10 +141,10 @@ export function useCheckoutCart(
   }, [])
 
   useEffect(() => {
-    if (isPaying && cart.length > 0 && cart.every((line) => isResolvedStatus(line.status))) {
+    if (isPaying && isResolvedOrderStatus(orderStatus)) {
       setIsPaying(false)
     }
-  }, [cart, isPaying])
+  }, [orderStatus, isPaying])
 
   function addToDraft(zoneId: string, ticketTypeId: string, quantity: number) {
     const zone = zones.find((z) => z.zoneId === zoneId)
@@ -130,7 +170,10 @@ export function useCheckoutCart(
   }
 
   function resetPurchase() {
-    setCart([])
+    setOrderId(null)
+    setOrderStatus(null)
+    setOrderRejectionReason(null)
+    setOrderTickets([])
     setDraft([])
     setBuyer({ nombre: '', apellidos: '', email: '' })
     setIsPaying(false)
@@ -140,63 +183,94 @@ export function useCheckoutCart(
   async function reservar() {
     setIsReserving(true)
 
-    const purchases = await Promise.all(
-      draft.flatMap((line) => {
+    try {
+      const lines: OrderLine[] = draft.map((line) => {
         const ticketType = ticketTypes.find((t) => t.id === line.ticketTypeId)
-        if (!ticketType) return []
+        return {
+          ticketTypeId: line.ticketTypeId,
+          zoneId: line.zoneId,
+          quantity: line.quantity,
+          unitPrice: ticketType?.effectivePrice ?? 0,
+        }
+      })
 
-        return Array.from({ length: line.quantity }, async (): Promise<CartLine | null> => {
-          const response = await fetch('/api/checkin/api/tickets', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              eventId,
-              ticketTypeId: line.ticketTypeId,
-              zoneId: line.zoneId,
-              holder: buyer.nombre.trim() || holder,
-              price: ticketType.effectivePrice,
-            }),
-          })
-          if (!response.ok) return null
-          const { ticketId } = await response.json()
-          return {
-            ticketId,
-            zoneId: line.zoneId,
-            zoneName: line.zoneName,
-            ticketTypeName: line.ticketTypeName,
-            unitPrice: ticketType.effectivePrice,
-            priceTier: ticketType.priceTier,
-            status: 'Pending',
-            rejectionReason: null,
-            expiresAtUtc: null,
-          }
-        })
-      }),
-    )
+      const response = await fetch('/api/checkin/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId,
+          holder: buyer.nombre.trim() || holder,
+          lines,
+        }),
+      })
 
-    const newLines = purchases.filter((line): line is CartLine => line !== null)
-    setCart((prev) => [...prev, ...newLines])
-    setDraft([])
-    setIsReserving(false)
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        rejectOrder(body?.error ?? GENERIC_ORDER_REJECTION_REASON)
+        setDraft([])
+        return
+      }
+
+      const { orderId: newOrderId } = (await response.json()) as { orderId: string }
+      setOrderId(newOrderId)
+
+      const statusResponse = await fetch(`/api/checkin/api/orders/${newOrderId}/status`)
+      if (statusResponse.ok) {
+        const status = (await statusResponse.json()) as OrderStatusUpdate
+        applyOrderStatusUpdate(status)
+      } else {
+        setOrderStatus('Reserving')
+      }
+      setDraft([])
+    } catch {
+      rejectOrder(GENERIC_ORDER_REJECTION_REASON)
+      setDraft([])
+    } finally {
+      setIsReserving(false)
+    }
   }
 
   async function submitPayment(method: PaymentMethod) {
+    if (!orderId) return
+
     setIsPaying(true)
 
-    const awaitingLines = cart.filter((line) => line.status === 'AwaitingPayment')
-    await Promise.all(
-      awaitingLines.map((line) =>
-        fetch(`/api/checkin/api/tickets/${line.ticketId}/pay`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ method }),
-        }),
-      ),
-    )
+    try {
+      const response = await fetch(`/api/checkin/api/orders/${orderId}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method }),
+      })
 
-    const resolved = await reconcileStatuses(awaitingLines.map((l) => l.ticketId))
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        rejectOrder(body?.error ?? GENERIC_PAYMENT_REJECTION_REASON)
+        setIsPaying(false)
+        return
+      }
+    } catch {
+      rejectOrder(GENERIC_PAYMENT_REJECTION_REASON)
+      setIsPaying(false)
+      return
+    }
+
+    const resolved = await reconcileOrderStatus(orderId)
     if (!resolved) setIsPaying(false)
   }
 
-  return { draft, cart, buyer, isReserving, isPaying, setBuyer, addToDraft, removeDraftLine, resetPurchase, reservar, submitPayment }
+  return {
+    draft,
+    cart,
+    buyer,
+    isReserving,
+    isPaying,
+    orderStatus,
+    orderRejectionReason,
+    setBuyer,
+    addToDraft,
+    removeDraftLine,
+    resetPurchase,
+    reservar,
+    submitPayment,
+  }
 }

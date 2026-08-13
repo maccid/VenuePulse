@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BuyerData, CartLine, DraftLine, PaymentMethod, TicketType, ZoneOccupancy } from '../shared/types'
+import type { BuyerData, CartLine, DraftLine, OrderStatus, PaymentMethod, TicketType, ZoneOccupancy } from '../shared/types'
 import { MAX_TICKETS_PER_PURCHASE } from '../shared/types'
 import { matchTicketType, pricingByZoneId } from '../shared/zoneTicketType'
 import StadiumMap from './map/StadiumMap'
@@ -15,6 +15,8 @@ interface Props {
   buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  orderStatus: OrderStatus | null
+  orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
   onAddToDraft: (zoneId: string, ticketTypeId: string, quantity: number) => void
   onRemoveDraftLine: (zoneId: string, ticketTypeId: string) => void
@@ -31,6 +33,8 @@ export default function PurchaseFlow({
   buyer,
   isReserving,
   isPaying,
+  orderStatus,
+  orderRejectionReason,
   onBuyerChange,
   onAddToDraft,
   onRemoveDraftLine,
@@ -96,6 +100,8 @@ export default function PurchaseFlow({
         buyer={buyer}
         isReserving={isReserving}
         isPaying={isPaying}
+        orderStatus={orderStatus}
+        orderRejectionReason={orderRejectionReason}
         onBuyerChange={onBuyerChange}
         onRemoveDraftLine={onRemoveDraftLine}
         onResetPurchase={onResetPurchase}
