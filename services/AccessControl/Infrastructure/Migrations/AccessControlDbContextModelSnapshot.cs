@@ -51,6 +51,11 @@ namespace VenuePulse.AccessControl.Infrastructure.Migrations
                     b.Property<int>("Reserved")
                         .HasColumnType("integer");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
                     b.HasKey("Id");
 
                     b.HasIndex("EventId");

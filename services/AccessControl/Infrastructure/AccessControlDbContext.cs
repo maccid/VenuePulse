@@ -28,6 +28,12 @@ public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbConte
             builder.HasIndex(z => z.EventId);
             builder.HasIndex(z => new { z.EventId, z.Name }).IsUnique();
             builder.Ignore(z => z.DomainEvents);
+
+            // Token de concurrencia optimista: Zone no lo expone como propiedad C# (el dominio es
+            // persistence-ignorant, ver .ia/RULES.md) — vive solo aquí como shadow property. Cierra
+            // el lost-update entre Reserve/Release/Confirm concurrentes sobre la misma zona, descartado
+            // como fuera de alcance en ADR 0027 y resuelto aquí como su propio fix.
+            builder.Property<byte[]>("RowVersion").IsRowVersion();
         });
 
         modelBuilder.Entity<ZoneOccupancySnapshot>(builder =>
