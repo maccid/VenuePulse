@@ -10,6 +10,14 @@ function reasonText(rejectionReason: string): string {
       return 'no se pudo reservar el aforo a tiempo'
     case 'PaymentTimedOut':
       return 'no se eligió método de pago a tiempo, el aforo se liberó'
+    case 'TooManyTickets':
+      return 'el pedido superaba el máximo de entradas permitido por compra'
+    case 'PricingUnavailable':
+      return 'no se pudieron obtener los precios para completar el pedido'
+    case 'PriceChanged':
+      return 'el precio cambió justo antes de confirmar tu pedido'
+    case 'InsufficientAvailability':
+      return 'no había aforo suficiente para las unidades solicitadas'
     default:
       return 'el pago simulado ha fallado (compensación real: aforo liberado)'
   }

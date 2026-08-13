@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BuyerData, CartLine, PaymentMethod } from '../../shared/types'
+import type { BuyerData, CartLine, OrderStatus, PaymentMethod } from '../../shared/types'
 import { SagaTimeline } from './SagaTimeline'
 import { ChevronDownIcon } from '../../shared/icons'
 import PaymentForm from '../PaymentForm'
@@ -12,6 +12,8 @@ interface Props {
   reservationExpired: boolean
   buyer: BuyerData
   isPaying: boolean
+  orderStatus: OrderStatus | null
+  orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
   onSubmitPayment: (method: PaymentMethod) => void
 }
@@ -22,17 +24,19 @@ export default function ReservedCartSummary({
   reservationExpired,
   buyer,
   isPaying,
+  orderStatus,
+  orderRejectionReason,
   onBuyerChange,
   onSubmitPayment,
 }: Props) {
   const [summaryOpen, setSummaryOpen] = useState(false)
   const activeLines = cart.filter((l) => l.status !== 'Rejected')
   const cartTotal = activeLines.reduce((sum, l) => sum + l.unitPrice, 0)
-  const awaitingPayment = cart.some((l) => l.status === 'AwaitingPayment' || l.status === 'ProcessingPayment')
+  const awaitingPayment = orderStatus === 'AwaitingPayment'
   const confirmedTickets = cart.filter((l) => l.status === 'Confirmed' || l.status === 'CheckedIn')
   const groups = groupCartLines(cart)
   const rejectedLine = cart.find((l) => l.status === 'Rejected')
-  const timelineReason = rejectedLine?.rejectionReason ?? null
+  const timelineReason = orderRejectionReason ?? rejectedLine?.rejectionReason ?? null
 
   return (
     <>
@@ -86,8 +90,8 @@ export default function ReservedCartSummary({
       )}
 
       {allResolved && !awaitingPayment && (
-        <p className={`cart-panel__done${activeLines.length > 0 ? '' : ' cart-panel__done--error'}`}>
-          {activeLines.length > 0 ? '✔ Compra completada.' : 'La compra no se pudo completar.'}
+        <p className={`cart-panel__done${orderStatus === 'Rejected' ? ' cart-panel__done--error' : ''}`}>
+          {orderStatus === 'Rejected' ? 'La compra no se pudo completar.' : '✔ Compra completada.'}
         </p>
       )}
 

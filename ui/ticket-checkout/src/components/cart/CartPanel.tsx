@@ -1,4 +1,4 @@
-import type { BuyerData, CartLine, DraftLine, PaymentMethod, TicketType } from '../../shared/types'
+import type { BuyerData, CartLine, DraftLine, OrderStatus, PaymentMethod, TicketType } from '../../shared/types'
 import { formatCountdown, useCountdown } from '../../shared/useCountdown'
 import { CartIcon, ReloadIcon } from '../../shared/icons'
 import DraftCart from './DraftCart'
@@ -11,6 +11,8 @@ interface Props {
   buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  orderStatus: OrderStatus | null
+  orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
   onRemoveDraftLine: (zoneId: string, ticketTypeId: string) => void
   onResetPurchase: () => void
@@ -31,15 +33,16 @@ export default function CartPanel({
   buyer,
   isReserving,
   isPaying,
+  orderStatus,
+  orderRejectionReason,
   onBuyerChange,
   onRemoveDraftLine,
   onResetPurchase,
   onReservar,
   onSubmitPayment,
 }: Props) {
-  const hasReservation = cart.length > 0
-  const allResolved =
-    cart.length > 0 && cart.every((l) => l.status === 'Confirmed' || l.status === 'Rejected' || l.status === 'CheckedIn')
+  const hasReservation = orderStatus !== null
+  const allResolved = orderStatus === 'Completed' || orderStatus === 'Rejected'
   const countdown = useCountdown(earliestActiveExpiry(cart))
   const reservationExpired = countdown !== null && countdown <= 0
 
@@ -81,6 +84,8 @@ export default function CartPanel({
           reservationExpired={reservationExpired}
           buyer={buyer}
           isPaying={isPaying}
+          orderStatus={orderStatus}
+          orderRejectionReason={orderRejectionReason}
           onBuyerChange={onBuyerChange}
           onSubmitPayment={onSubmitPayment}
         />

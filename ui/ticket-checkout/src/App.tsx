@@ -17,6 +17,8 @@ export default function App({ eventId, holder }: Props) {
     buyer,
     isReserving,
     isPaying,
+    orderStatus,
+    orderRejectionReason,
     setBuyer,
     addToDraft,
     removeDraftLine,
@@ -40,6 +42,8 @@ export default function App({ eventId, holder }: Props) {
           buyer={buyer}
           isReserving={isReserving}
           isPaying={isPaying}
+          orderStatus={orderStatus}
+          orderRejectionReason={orderRejectionReason}
           onBuyerChange={setBuyer}
           onAddToDraft={addToDraft}
           onRemoveDraftLine={removeDraftLine}
