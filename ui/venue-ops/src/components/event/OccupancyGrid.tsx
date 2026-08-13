@@ -16,7 +16,7 @@ export default function OccupancyGrid({ event, zones, scanTicket, onZonesReload 
   const hasConfirmedSales = zones.some((zone) => zone.confirmedSold > 0)
 
   return (
-    <div className="mode-grid">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(360px,1fr))] items-start gap-6">
       <ZonesDashboard zones={zones} />
       <SimulationPanel
         eventId={event.id}

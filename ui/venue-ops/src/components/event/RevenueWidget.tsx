@@ -11,33 +11,35 @@ const CURRENCY = new Intl.NumberFormat('es-ES', { style: 'currency', currency: '
 
 export default function RevenueWidget({ revenue, error, estimatedRevenue, sold }: Props) {
   return (
-    <section className="card revenue-widget">
+    <section className="card">
       <h2>Ventas e ingresos</h2>
 
-      {error && <p className="scan-result scan-result--error">{error}</p>}
+      {error && (
+        <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{error}</p>
+      )}
 
-      {!error && revenue === null && <p className="prediction-empty">Cargando ingresos…</p>}
+      {!error && revenue === null && <p className="m-0 text-sm text-text-muted">Cargando ingresos…</p>}
 
       {!error && revenue !== null && (
-        <div className="revenue-widget__stats">
-          <div className="prediction-stat">
-            <span className="prediction-stat__value">{sold}</span>
-            <span className="prediction-stat__label">entradas vendidas</span>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
+            <span className="text-[24px] font-bold tracking-[-0.01em]">{sold}</span>
+            <span className="text-xs text-text-muted">entradas vendidas</span>
           </div>
-          <div className="prediction-stat">
-            <span className="prediction-stat__value">{CURRENCY.format(revenue.confirmedRevenue)}</span>
-            <span className="prediction-stat__label">confirmados · {revenue.confirmedCount} entradas</span>
+          <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
+            <span className="text-[24px] font-bold tracking-[-0.01em]">{CURRENCY.format(revenue.confirmedRevenue)}</span>
+            <span className="text-xs text-text-muted">confirmados · {revenue.confirmedCount} entradas</span>
           </div>
-          <div className="prediction-stat">
-            <span className="prediction-stat__value">{CURRENCY.format(revenue.pendingRevenue)}</span>
-            <span className="prediction-stat__label">pendientes · {revenue.pendingCount} entradas</span>
+          <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
+            <span className="text-[24px] font-bold tracking-[-0.01em]">{CURRENCY.format(revenue.pendingRevenue)}</span>
+            <span className="text-xs text-text-muted">pendientes · {revenue.pendingCount} entradas</span>
           </div>
         </div>
       )}
 
-      <div className="revenue-widget__estimate">
-        <span className="revenue-widget__estimate-value">{CURRENCY.format(estimatedRevenue)}</span>
-        <span className="revenue-widget__estimate-label">
+      <div className="mt-4 flex items-baseline gap-2 border-t border-dashed border-border pt-4">
+        <span className="font-[650] text-text">{CURRENCY.format(estimatedRevenue)}</span>
+        <span className="text-xs text-text-muted">
           estimado a precio de catálogo (incluye venta simulada)
         </span>
       </div>

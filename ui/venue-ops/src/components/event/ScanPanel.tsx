@@ -17,10 +17,11 @@ export default function ScanPanel({ onScan }: Props) {
   }
 
   return (
-    <section className="card scan-panel">
+    <section className="card mb-6">
       <h2>Escanear entrada</h2>
-      <form onSubmit={handleSubmit}>
+      <form className="flex gap-3" onSubmit={handleSubmit}>
         <input
+          className="flex-1"
           placeholder="ID de la entrada"
           value={ticketId}
           onChange={(e) => setTicketId(e.target.value)}
@@ -29,10 +30,14 @@ export default function ScanPanel({ onScan }: Props) {
         <button type="submit">Escanear</button>
       </form>
       {scanResult.kind === 'ok' && (
-        <p className="scan-result scan-result--ok">Check-in registrado, aforo actualizado.</p>
+        <p className="mt-4 flex items-center gap-2 text-sm text-success before:content-['✔'] before:text-success">
+          Check-in registrado, aforo actualizado.
+        </p>
       )}
       {scanResult.kind === 'error' && (
-        <p className="scan-result scan-result--error">{scanResult.message}</p>
+        <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">
+          {scanResult.message}
+        </p>
       )}
     </section>
   )

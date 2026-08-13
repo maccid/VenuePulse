@@ -58,9 +58,9 @@ export default function PredictionPanel({ eventId, eventStartsAtUtc }: Props) {
 
   if (noData) {
     return (
-      <section className="card prediction-panel">
-        <h2>Predicción de ocupación</h2>
-        <p className="prediction-empty">
+      <section className="card mb-6">
+        <h2 className="mb-4">Predicción de ocupación</h2>
+        <p className="m-0 text-sm text-text-muted">
           Ejecuta la simulación (fase de llegadas) para ver la predicción de ocupación.
         </p>
       </section>
@@ -69,10 +69,12 @@ export default function PredictionPanel({ eventId, eventStartsAtUtc }: Props) {
 
   if (prediction === null) {
     return (
-      <section className="card prediction-panel">
-        <h2>Predicción de ocupación</h2>
-        {error && <p className="scan-result scan-result--error">{error}</p>}
-        {!error && <p className="prediction-empty">Cargando predicción…</p>}
+      <section className="card mb-6">
+        <h2 className="mb-4">Predicción de ocupación</h2>
+        {error && (
+          <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{error}</p>
+        )}
+        {!error && <p className="m-0 text-sm text-text-muted">Cargando predicción…</p>}
       </section>
     )
   }
@@ -85,27 +87,27 @@ export default function PredictionPanel({ eventId, eventStartsAtUtc }: Props) {
     : 'Sin historia de llegadas aún — no-shows asumidos (8%)'
 
   return (
-    <section className="card prediction-panel">
-      <h2>Predicción de ocupación</h2>
+    <section className="card mb-6">
+      <h2 className="mb-4">Predicción de ocupación</h2>
 
       <PredictionChart prediction={prediction} />
 
-      <div className="prediction-stats">
-        <div className="prediction-stat">
-          <span className="prediction-stat__value">{prediction.predictedTotalArrivals}</span>
-          <span className="prediction-stat__label">llegadas previstas</span>
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
+          <span className="text-[24px] font-bold tracking-[-0.01em]">{prediction.predictedTotalArrivals}</span>
+          <span className="text-xs text-text-muted">llegadas previstas</span>
         </div>
-        <div className="prediction-stat">
-          <span className="prediction-stat__value">{prediction.predictedNoShows}</span>
-          <span className="prediction-stat__label">no-shows previstos</span>
+        <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
+          <span className="text-[24px] font-bold tracking-[-0.01em]">{prediction.predictedNoShows}</span>
+          <span className="text-xs text-text-muted">no-shows previstos</span>
         </div>
-        <div className="prediction-stat">
-          <span className="prediction-stat__value">{noShowPct}%</span>
-          <span className="prediction-stat__label">tasa de no-shows</span>
+        <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
+          <span className="text-[24px] font-bold tracking-[-0.01em]">{noShowPct}%</span>
+          <span className="text-xs text-text-muted">tasa de no-shows</span>
         </div>
       </div>
 
-      <p className="zone-meta">{fitNote}</p>
+      <p className="mt-1 text-sm text-text-muted">{fitNote}</p>
     </section>
   )
 }

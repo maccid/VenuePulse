@@ -32,9 +32,9 @@ export default function StadiumMap({ zones, mode = 'sales' }: Props) {
   const unmapped = zones.filter((z) => !stands[z.name])
 
   return (
-    <div className="stadium-map">
-      <svg viewBox="0 0 340 280" role="img" aria-label="Mapa del evento" className="stadium-map__svg">
-        <rect x="8" y="8" width="324" height="264" rx="85" className="stadium-map__exterior" />
+    <div className="mb-6">
+      <svg viewBox="0 0 340 280" role="img" aria-label="Mapa del evento" className="block h-auto w-full max-w-[360px]">
+        <rect x="8" y="8" width="324" height="264" rx="85" className="fill-bg stroke-border-strong" />
 
         {isConcert ? <ConcertStage /> : <MatchField />}
 
@@ -44,17 +44,23 @@ export default function StadiumMap({ zones, mode = 'sales' }: Props) {
       </svg>
 
       {unmapped.length > 0 && (
-        <ul className="stadium-map__fallback">
+        <ul className="mt-2 list-none p-0 text-sm text-text-muted">
           {unmapped.map((zone) => (
             <li key={zone.zoneId}>{zone.name}</li>
           ))}
         </ul>
       )}
 
-      <ul className="stadium-map__legend">
-        <li className="stadium-map__legend-item stadium-map__legend-item--low">{LEGEND_LABEL[mode].low}</li>
-        <li className="stadium-map__legend-item stadium-map__legend-item--mid">{LEGEND_LABEL[mode].mid}</li>
-        <li className="stadium-map__legend-item stadium-map__legend-item--high">{LEGEND_LABEL[mode].high}</li>
+      <ul className="mt-2 flex flex-wrap list-none gap-4 p-0 text-xs text-text-muted">
+        <li className="flex items-center gap-1.5 before:content-[''] before:size-2.5 before:rounded-full before:bg-success">
+          {LEGEND_LABEL[mode].low}
+        </li>
+        <li className="flex items-center gap-1.5 before:content-[''] before:size-2.5 before:rounded-full before:bg-accent">
+          {LEGEND_LABEL[mode].mid}
+        </li>
+        <li className="flex items-center gap-1.5 before:content-[''] before:size-2.5 before:rounded-full before:bg-danger">
+          {LEGEND_LABEL[mode].high}
+        </li>
       </ul>
     </div>
   )

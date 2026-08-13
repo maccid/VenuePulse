@@ -17,6 +17,8 @@
   --color-danger-bg: var(--vp-danger-bg);
   --color-success: var(--vp-success);
   --color-success-bg: var(--vp-success-bg);
+  --color-blue: var(--vp-blue);
+  --color-blue-hover: var(--vp-blue-hover);
 
   --radius-sm: var(--vp-radius-sm);
   --radius-md: var(--vp-radius-md);

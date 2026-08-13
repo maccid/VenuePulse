@@ -21,16 +21,16 @@ export default function EventList({ events, activeId, onSelect, onCreate }: Prop
   const sorted = [...events].sort((a, b) => b.startsAtUtc.localeCompare(a.startsAtUtc))
 
   return (
-    <section className="event-list">
-      <h2 className="event-list__title">Eventos</h2>
-      <button type="button" className="event-list__create" onClick={onCreate}>
+    <section className="flex flex-col gap-3">
+      <h2 className="mb-0">Eventos</h2>
+      <button type="button" className="mb-1 w-full" onClick={onCreate}>
         Crear nuevo evento
       </button>
 
       {sorted.length === 0 ? (
-        <p className="event-list__empty">No hay eventos todavía.</p>
+        <p className="m-0 text-sm text-text-muted">No hay eventos todavía.</p>
       ) : (
-        <ul className="event-list__items">
+        <ul className="m-0 flex list-none flex-col gap-3 p-0">
           {sorted.map((ev) => {
             const date = new Date(ev.startsAtUtc)
             const day = date.getDate()
@@ -44,21 +44,27 @@ export default function EventList({ events, activeId, onSelect, onCreate }: Prop
               <li key={ev.id}>
                 <button
                   type="button"
-                  className={`event-list__item${active ? ' event-list__item--active' : ''}`}
+                  className={`flex w-full items-center gap-3 rounded-md border p-3 text-left text-text ${active ? 'border-accent bg-surface shadow-sm' : 'border-border bg-transparent hover:bg-accent-bg'}`}
                   onClick={() => onSelect(ev.id)}
                 >
-                  <span className="event-list__date">
-                    <span className="event-list__month">{month}</span>
-                    <span className="event-list__day">{day}</span>
+                  <span className="flex w-12 flex-shrink-0 flex-col items-center rounded-md bg-accent-bg py-1.5 text-accent">
+                    <span className="text-xs font-bold uppercase">{month}</span>
+                    <span className="text-lg font-bold leading-[1.1]">{day}</span>
                   </span>
-                  <span className="event-list__body">
-                    <span className="event-list__meta">
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-xs text-text-muted">
                       {weekday} · {time} · {TYPE_LABEL[ev.type]}
                     </span>
-                    <span className="event-list__name">{ev.name}</span>
-                    <span className="event-list__venue">{ev.venueName}</span>
+                    <span className="truncate font-[650] text-text">{ev.name}</span>
+                    <span className="truncate text-sm text-text-muted">{ev.venueName}</span>
                   </span>
-                  {badge && <span className={`event-list__badge event-list__badge--${ev.status.toLowerCase()}`}>{badge}</span>}
+                  {badge && (
+                    <span
+                      className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs ${ev.status === 'Cancelled' ? 'bg-danger text-text-on-accent' : 'bg-border-strong text-text'}`}
+                    >
+                      {badge}
+                    </span>
+                  )}
                 </button>
               </li>
             )

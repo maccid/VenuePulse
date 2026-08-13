@@ -7,9 +7,9 @@ interface Props {
 
 export default function ZonesDashboard({ zones }: Props) {
   return (
-    <section className="zones-dashboard">
-      <h2>Aforo por puerta</h2>
-      <div className="zone-grid">
+    <section>
+      <h2 className="mb-4">Aforo por puerta</h2>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
         {zones.map((z) => (
           <ZoneGauge key={z.zoneId} zone={z} />
         ))}

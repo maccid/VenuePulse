@@ -31,7 +31,8 @@ usuario") sin valor para un lector externo — esos se borran sin más, sin dest
 Reserva de ADR (próximo libre tras `0027`): `0028` → Bloque 24 (GUID de grupo). `0029` → Bloque 25
 (Groups por evento en SignalR + roadmap de backplane Redis).
 
-- [ ] **Bloque 23 — `fix/checkout-draft-live-price`** (`ticket-checkout`, sin asignar): el precio de
+- [x] **Bloque 23 — `fix/checkout-draft-live-price`** (`ticket-checkout`, Claude Code, **mergeado a
+  `develop`**): el precio de
   una línea del carrito-borrador se congela en el instante de pulsar "Añadir"
   (`App.tsx:207`, `unitPrice: ticketType.effectivePrice` guardado en `DraftLine`) y ya no seguía el
   precio dinámico en vivo de `/hubs/pricing` mientras la línea seguía sin reservar — a diferencia
@@ -45,9 +46,9 @@ Reserva de ADR (próximo libre tras `0027`): `0028` → Bloque 24 (GUID de grupo
   solo en el instante en que `onReservar` arma la llamada real al backend se captura el precio
   vigente en ese momento, que a partir de ahí sí queda inmutable como `Ticket.Price` (ADR 0021, sin
   cambios ahí). Ficheros: `App.tsx`, `CartPanel.tsx`, `PurchaseFlow.tsx`. Sin ADR nuevo (bug fix,
-  no decisión de arquitectura — mismo criterio que el Bloque 1). Reproducido leyendo código, no
-  verificado aún en real: falta confirmar con `docker compose up --build` que el precio del
-  borrador sube/baja en vivo con la ocupación antes de pulsar "Reservar".
+  no decisión de arquitectura — mismo criterio que el Bloque 1). Build/lint en verde. **Verificación
+  pendiente**: `docker compose up --build` — falta confirmar en real que el precio del borrador
+  sube/baja en vivo con la ocupación antes de pulsar "Reservar".
 
 - [ ] **Bloque 24 — `feature/checkin-group-guid`** (`CheckIn`, sin asignar): GUID de grupo para
   compras múltiples — cuando se emiten varias entradas juntas en la misma compra (misma zona o
@@ -407,13 +408,29 @@ Próximo libre para nuevas ramas: `0019`.
   **Npgsql rechaza offsets ≠ 0 en `timestamptz`** — el write fallaba silenciosamente en el worker
   y rompía todo el pipeline simulación→predicción; ahora se normaliza a UTC. Regresión completa
   de la solución en verde (salvo los 2 integration tests de CheckIn, flaky pre-existente).
-- [~] **Bloque 12 — `feature/ui-tailwind`** (Claude Code, parcial dentro del Bloque 14): Tailwind
-  v4 + `@tailwindcss/vite` ya montado en las 3 apps, tokens `--vp-*`/`--tc-*` mapeados a `@theme`
-  (conviven con el CSS BEM existente). Todo lo **nuevo/reescrito** en el Bloque 14 (catálogo,
-  carrito, popup, formulario de pago, plano, feed de actividad) usa Tailwind directamente, sin
-  pasar por BEM. **Pendiente**: migrar los componentes que no se tocaron esta ronda (`SiteHeader`
-  en ambas apps, `ScanPanel`, `SimulationPanel`, `PredictionPanel`/`PredictionChart`, `ZoneGauge`) —
-  siguen en BEM, conviven sin problema, se migran en una pasada más pequeña cuando toque.
+- [x] **Bloque 12 — `feature/ui-tailwind`** (Claude Code): Tailwind v4 + `@tailwindcss/vite` ya
+  montado en las 3 apps, tokens `--vp-*`/`--tc-*` mapeados a `@theme` (conviven con el CSS BEM
+  existente en `shell`/`ticket-checkout`, sin tocar). Todo lo **nuevo/reescrito** en el Bloque 14
+  (catálogo, carrito, popup, formulario de pago, plano, feed de actividad) ya usaba Tailwind
+  directamente. **Cerrado en esta pasada** (ampliación de alcance sobre lo que decía este párrafo:
+  al revisar `venue-ops/src` completo aparecieron más componentes en BEM de los que constaban aquí,
+  añadidos en bloques posteriores al 14/18/21/22): `SiteHeader`, `ScanPanel`, `SimulationPanel`/
+  `SimulationControls`, `PredictionPanel`/`PredictionChart`, `ZoneGauge` (el subconjunto original
+  de este párrafo) + `ActivityFeed`, `EventCreateForm`, `EventList`, `PhaseIndicator`,
+  `RevenueWidget`, `SalesLayout`, `EventWorkspace`, `OccupancyGrid`, `ZonesDashboard`,
+  `StadiumMap`/`StadiumBackground`/`ZoneShape`, `Modal`, `App` (layout raíz). `venue-ops/App.css`
+  queda solo con `.card` (único primitivo compartido que se mantiene a propósito, igual que en el
+  resto de migraciones de esta ronda, en vez de repetir sus 4 utilidades en cada sitio que lo usa);
+  `ops-detail`/`ops-new-event`/`sales-layout__panel` (duplicaban exactamente el estilo de `.card`)
+  se reemplazan por `card` en vez de reescribirse en Tailwind. `index.css` gana el alias
+  `--color-blue`/`--color-blue-hover` (patrón ya existente, faltaba ese token). Build (`tsc -b` +
+  `vite build`) y lint (`oxlint`) en verde; verificado que ninguna clase BEM eliminada sigue
+  referenciada en ningún `.tsx` (grep exhaustivo). **Verificado visualmente** con Chrome headless
+  (estado vacío de `venue-ops`: cabecera, listado de eventos, tarjeta de detalle) — sin backend
+  levantado, así que `ZoneGauge`/`ActivityFeed`/`StadiumMap`/`Modal`/`PhaseIndicator`/
+  `RevenueWidget`/`PredictionPanel` (dependen de datos reales de evento) **quedan sin comprobación
+  visual real**, pendiente de una pasada con `docker compose up --build`. `shell`/`ticket-checkout`
+  no tocados en esta pasada (siguen en BEM, fuera de alcance de este bloque desde el principio).
 - [x] **Bloque 14 — `feature/checkout-cart-tailwind`** (Claude Code, ampliación de alcance pedida
   al revisar el Bloque 13 ya mergeado): más realismo en la compra y en operaciones, resuelto sin
   sobreingeniería. Cambios:

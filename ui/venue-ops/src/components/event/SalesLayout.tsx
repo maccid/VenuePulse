@@ -28,12 +28,12 @@ export default function SalesLayout({
   const totalSold = zones.reduce((sum, zone) => sum + zone.confirmedSold, 0)
 
   return (
-    <div className="sales-layout">
-      <div className="sales-layout__main">
-        <section className="sales-layout__panel">
-          <h2 className="sales-layout__panel-title">
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
+        <section className="card">
+          <h2 className="flex items-center gap-2">
             <svg
-              className="sales-layout__panel-icon"
+              className="size-[18px] text-accent"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -60,9 +60,9 @@ export default function SalesLayout({
         )}
       </div>
 
-      <div className="sales-layout__footer">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
         <RevenueWidget revenue={revenue} error={revenueError} estimatedRevenue={estimatedRevenue} sold={totalSold} />
-        <section className="sales-layout__panel">
+        <section className="card">
           <ActivityFeed entries={activity} />
         </section>
       </div>
