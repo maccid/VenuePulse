@@ -1,5 +1,6 @@
 namespace VenuePulse.AccessControl.Application;
 
+using Microsoft.EntityFrameworkCore;
 using VenuePulse.Core.Domain;
 
 public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
@@ -49,121 +50,113 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         return zone is null ? null : ToDto(zone);
     }
 
-    public async Task<bool> TryReserveSlotAsync(Guid zoneId, CancellationToken cancellationToken)
-    {
-        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
+    public Task<bool> TryReserveSlotAsync(Guid zoneId, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync(zoneId, zone =>
+        {
+            // Zona cancelada = evento cancelado (ADR 0020): la reserva se rechaza igual que si
+            // estuviera llena. El motivo "ZoneFull" en el fallo es un pelo impreciso, pero la Saga
+            // solo necesita saber "no se pudo reservar" para rechazar la compra — no merece un tipo
+            // de fallo nuevo. Se re-evalúa en cada intento sobre datos frescos: si la zona se llenó
+            // mientras reintentábamos por un conflicto de concurrencia, el resultado debe reflejarlo.
+            if (zone.Cancelled || zone.AvailableToSell <= 0)
+                return (ShouldSave: false, Result: false);
 
-        // Zona cancelada = evento cancelado (ADR 0020): la reserva se rechaza igual que si estuviera
-        // llena. El motivo "ZoneFull" en el fallo es un pelo impreciso, pero la Saga solo necesita
-        // saber "no se pudo reservar" para rechazar la compra — no merece un tipo de fallo nuevo.
-        if (zone.Cancelled || zone.AvailableToSell <= 0)
-            return false;
+            zone.ReserveSlot();
+            return (ShouldSave: true, Result: true);
+        }, cancellationToken);
 
-        zone.ReserveSlot();
-        await zoneRepository.SaveAsync(zone, cancellationToken);
-        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
-        return true;
-    }
+    public Task ConfirmSlotAsync(Guid zoneId, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync(zoneId, zone => zone.ConfirmSlot(), cancellationToken);
 
-    public async Task ConfirmSlotAsync(Guid zoneId, CancellationToken cancellationToken)
-    {
-        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
-
-        zone.ConfirmSlot();
-        await zoneRepository.SaveAsync(zone, cancellationToken);
-        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
-    }
-
-    public async Task ReleaseSlotAsync(Guid zoneId, CancellationToken cancellationToken)
-    {
-        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
-
-        zone.ReleaseSlot();
-        await zoneRepository.SaveAsync(zone, cancellationToken);
-        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
-    }
+    public Task ReleaseSlotAsync(Guid zoneId, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync(zoneId, zone => zone.ReleaseSlot(), cancellationToken);
 
     public async Task CancelEventZonesAsync(Guid eventId, CancellationToken cancellationToken)
     {
         var zones = await zoneRepository.GetAllAsync(eventId, cancellationToken);
         foreach (var zone in zones)
+            await ExecuteWithRetryAsync(zone.Id, z => z.Cancel(), cancellationToken);
+    }
+
+    public Task ReleaseConfirmedSlotAsync(Guid zoneId, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync(zoneId, zone => zone.ReleaseConfirmedSlot(), cancellationToken);
+
+    public Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync(zoneId, zone =>
         {
-            zone.Cancel();
-            await zoneRepository.SaveAsync(zone, cancellationToken);
-            await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
-        }
-    }
+            zone.RecordCheckIn();
+            return (ShouldSave: true, Result: zone.CheckedIn);
+        }, cancellationToken);
 
-    public async Task ReleaseConfirmedSlotAsync(Guid zoneId, CancellationToken cancellationToken)
-    {
-        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
+    public Task<ZoneOccupancyDto> ApplySimulatedSalesAsync(Guid zoneId, int quantity, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync(zoneId, zone =>
+        {
+            zone.RecordSimulatedSales(quantity);
+            return (ShouldSave: true, Result: ToDto(zone));
+        }, cancellationToken);
 
-        zone.ReleaseConfirmedSlot();
-        await zoneRepository.SaveAsync(zone, cancellationToken);
-        await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
-    }
-
-    public async Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken)
-    {
-        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
-
-        zone.RecordCheckIn();
-        await zoneRepository.SaveAsync(zone, cancellationToken);
-
-        var dto = ToDto(zone);
-        await notifier.NotifyOccupancyChangedAsync(dto, cancellationToken);
-
-        return zone.CheckedIn;
-    }
-
-    public async Task<ZoneOccupancyDto> ApplySimulatedSalesAsync(Guid zoneId, int quantity, CancellationToken cancellationToken)
-    {
-        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
-
-        zone.RecordSimulatedSales(quantity);
-        await zoneRepository.SaveAsync(zone, cancellationToken);
-
-        var dto = ToDto(zone);
-        await notifier.NotifyOccupancyChangedAsync(dto, cancellationToken);
-
-        return dto;
-    }
-
-    public async Task<ZoneOccupancyDto> ApplySimulatedCheckInsAsync(Guid zoneId, int quantity, CancellationToken cancellationToken)
-    {
-        var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-            ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
-
-        zone.RecordSimulatedCheckIns(quantity);
-        await zoneRepository.SaveAsync(zone, cancellationToken);
-
-        var dto = ToDto(zone);
-        await notifier.NotifyOccupancyChangedAsync(dto, cancellationToken);
-
-        return dto;
-    }
+    public Task<ZoneOccupancyDto> ApplySimulatedCheckInsAsync(Guid zoneId, int quantity, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync(zoneId, zone =>
+        {
+            zone.RecordSimulatedCheckIns(quantity);
+            return (ShouldSave: true, Result: ToDto(zone));
+        }, cancellationToken);
 
     public async Task ResetSimulationAsync(Guid eventId, CancellationToken cancellationToken)
     {
         var zones = await zoneRepository.GetAllAsync(eventId, cancellationToken);
         foreach (var zone in zones)
-        {
-            zone.ResetCounters();
-            await zoneRepository.SaveAsync(zone, cancellationToken);
-            await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
-        }
+            await ExecuteWithRetryAsync(zone.Id, z => z.ResetCounters(), cancellationToken);
 
         // Sin esto, la predicción (Bloque 11) acumula snapshots de corridas anteriores del mismo
         // evento y se envenena: puntos fuera de la ventana quedan pegados a progress 0/1 y el R²
         // se degrada. El reset debe dejar la serie temporal limpia para empezar de cero.
         await snapshotRepository.ClearForEventAsync(eventId, cancellationToken);
     }
+
+    /// <summary>Reintenta una mutación de <see cref="Domain.Zone"/> ante un conflicto de
+    /// concurrencia optimista (shadow property "RowVersion" en <c>AccessControlDbContext</c>, ver
+    /// ADR 0027 — candidato a ADR propio, resuelto aquí). Cada intento relee la zona con datos
+    /// frescos, así que <paramref name="mutate"/> debe volver a evaluar cualquier invariante sobre
+    /// el estado recién leído. Las excepciones de negocio del dominio (zona llena, sin reserva
+    /// pendiente, etc.) las lanza <paramref name="mutate"/> antes de llegar al <c>SaveAsync</c> y
+    /// se propagan sin reintentar — solo <see cref="DbUpdateConcurrencyException"/> se reintenta.</summary>
+    private async Task<T> ExecuteWithRetryAsync<T>(
+        Guid zoneId, Func<Domain.Zone, (bool ShouldSave, T Result)> mutate, CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
+                ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
+
+            var (shouldSave, result) = mutate(zone);
+            if (!shouldSave)
+                return result;
+
+            try
+            {
+                await zoneRepository.SaveAsync(zone, cancellationToken);
+                await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
+                return result;
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < maxAttempts)
+            {
+                // Otro proceso modificó la misma zona entre la lectura y la escritura (RowVersion
+                // no coincide) — se reintenta desde el principio del bucle con datos frescos.
+            }
+        }
+    }
+
+    /// <summary>Variante de <see cref="ExecuteWithRetryAsync{T}"/> para mutaciones que no
+    /// necesitan decidir si guardar o no (siempre mutan y guardan) ni devolver un resultado propio
+    /// más allá de completar la operación.</summary>
+    private Task ExecuteWithRetryAsync(Guid zoneId, Action<Domain.Zone> mutate, CancellationToken cancellationToken) =>
+        ExecuteWithRetryAsync<bool>(zoneId, zone =>
+        {
+            mutate(zone);
+            return (ShouldSave: true, Result: true);
+        }, cancellationToken);
 
     public async Task ProvisionZonesForEventAsync(Guid eventId, EventType eventType, CancellationToken cancellationToken)
     {
