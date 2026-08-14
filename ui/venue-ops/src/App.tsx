@@ -11,7 +11,7 @@ import './App.css'
 export default function App() {
   const { events, activeId, setActiveId, showCreate, setShowCreate, updateEvent, addEvent } = useEventCatalog()
   const { zonesByEvent, loadZones } = useZonesByEvent(activeId)
-  const activityByEvent = useTicketActivityFeed(zonesByEvent)
+  const activityByEvent = useTicketActivityFeed(activeId, zonesByEvent)
 
   async function scanTicket(ticketId: string): Promise<ScanResult> {
     const response = await fetch(`/api/checkin/api/tickets/${ticketId}/check-in`, { method: 'POST' })
