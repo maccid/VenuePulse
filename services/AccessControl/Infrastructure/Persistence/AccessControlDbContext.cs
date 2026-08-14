@@ -27,7 +27,6 @@ public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbConte
             builder.Property(z => z.Cancelled).IsRequired();
             builder.HasIndex(z => z.EventId);
             builder.HasIndex(z => new { z.EventId, z.Name }).IsUnique();
-            builder.Ignore(z => z.DomainEvents);
 
             // Token de concurrencia optimista: Zone no lo expone como propiedad C# (el dominio es
             // persistence-ignorant, ver .ia/RULES.md) — vive solo aquí como shadow property. Cierra
@@ -46,7 +45,6 @@ public sealed class AccessControlDbContext(DbContextOptions<AccessControlDbConte
             builder.Property(s => s.ConfirmedSold).IsRequired();
             builder.Property(s => s.CheckedIn).IsRequired();
             builder.HasIndex(s => new { s.EventId, s.RecordedAtUtc });
-            builder.Ignore(s => s.DomainEvents);
         });
 
         modelBuilder.Entity<ProcessedMessage>(builder =>

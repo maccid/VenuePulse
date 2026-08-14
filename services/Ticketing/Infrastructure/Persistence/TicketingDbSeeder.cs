@@ -14,8 +14,8 @@ using Event = VenuePulse.Ticketing.Domain.Event;
 /// — es una demo de un único recinto — pero cada uno tiene su propio aforo por zona: al
 /// sembrarse aquí, cada `Event` publica `EventCreated` (Add -> Publish -> SaveChanges, mismo
 /// patrón que <see cref="VenuePulse.CheckIn.Application.Commands.PurchaseTicketCommand"/>) y
-/// `AccessControl` aprovisiona sus 3 zonas fijas ya vinculadas a ese `EventId` (ver
-/// .ia/KNOWN-ISSUES.md).
+/// `AccessControl` aprovisiona sus zonas fijas (4 en partido, 6 en concierto — ver ADR 0025/0026)
+/// ya vinculadas a ese `EventId` (ver .ia/KNOWN-ISSUES.md).
 /// </summary>
 public static class TicketingDbSeeder
 {

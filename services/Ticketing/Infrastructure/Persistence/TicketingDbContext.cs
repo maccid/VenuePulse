@@ -23,7 +23,6 @@ public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> opti
             builder.Property(e => e.Type).HasConversion<string>().HasMaxLength(20).HasDefaultValue(EventType.Match);
             builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20).HasDefaultValue(EventStatus.OnSale);
             builder.Property(e => e.Relevance).HasConversion<string>().HasMaxLength(20).HasDefaultValue(EventRelevance.Standard);
-            builder.Ignore(e => e.DomainEvents);
 
             builder.OwnsMany(e => e.TicketTypes, tt =>
             {
@@ -33,7 +32,6 @@ public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> opti
                 tt.Property(t => t.Name).HasMaxLength(120).IsRequired();
                 tt.Property(t => t.Price).HasColumnType("decimal(10,2)");
                 tt.Property(t => t.Description).HasMaxLength(500);
-                tt.Ignore(t => t.DomainEvents);
             });
 
             builder.Navigation(e => e.TicketTypes).UsePropertyAccessMode(PropertyAccessMode.Field);

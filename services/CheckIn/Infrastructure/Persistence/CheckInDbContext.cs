@@ -23,7 +23,6 @@ public sealed class CheckInDbContext(DbContextOptions<CheckInDbContext> options)
             // Sin índice único: varias entradas comparten el mismo GroupId a propósito (un pedido
             // multi-entrada, ver ADR 0028) — solo acelera GetByGroupIdAsync.
             builder.HasIndex(t => t.GroupId);
-            builder.Ignore(t => t.DomainEvents);
         });
 
         modelBuilder.Entity<PurchaseOrder>(builder =>
@@ -33,7 +32,6 @@ public sealed class CheckInDbContext(DbContextOptions<CheckInDbContext> options)
             builder.Property(o => o.Holder).HasMaxLength(200).IsRequired();
             builder.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
             builder.Property(o => o.RejectionReason).HasMaxLength(200);
-            builder.Ignore(o => o.DomainEvents);
         });
 
         // Tablas del Outbox/Inbox transaccional de MassTransit (ver ADR 0002).
