@@ -1,7 +1,5 @@
 namespace VenuePulse.AccessControl.Application.Prediction;
 
-using VenuePulse.AccessControl.Application;
-
 /// <summary>
 /// Encaje del modelo de predicción (Bloque 11) sobre la serie temporal del simulador. La
 /// simulación escribe un snapshot por zona y tick, así que primero se agrega por instante a nivel

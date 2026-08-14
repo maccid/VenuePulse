@@ -31,9 +31,9 @@ public interface IZoneService
     /// Reserved.</summary>
     Task ReleaseConfirmedSlotAsync(Guid zoneId, CancellationToken cancellationToken);
 
-    /// <summary>Aprovisiona las 3 zonas fijas del recinto para un evento nuevo — el set depende
-    /// del tipo de evento (partido: gradas/puertas; concierto: pista + gradas). Idempotente:
-    /// si el evento ya tiene zonas (redelivery de EventCreated) no hace nada.</summary>
+    /// <summary>Aprovisiona las zonas fijas del recinto para un evento nuevo — el set depende
+    /// del tipo de evento (partido: 4 zonas, ver ADR 0025; concierto: 6 zonas, ver ADR 0026).
+    /// Idempotente: si el evento ya tiene zonas (redelivery de EventCreated) no hace nada.</summary>
     Task ProvisionZonesForEventAsync(Guid eventId, EventType eventType, CancellationToken cancellationToken);
 
     /// <summary>Venta simulada (motor de demo, Bloque 8): confirma entradas sin pasar por la

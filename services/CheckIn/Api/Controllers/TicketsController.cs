@@ -2,15 +2,10 @@ namespace VenuePulse.CheckIn.Api.Controllers;
 
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using VenuePulse.CheckIn.Api.Contracts;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Application.Commands;
 using VenuePulse.CheckIn.Application.Queries;
-
-public sealed record PurchaseTicketRequest(Guid EventId, Guid TicketTypeId, Guid ZoneId, string Holder, decimal Price);
-
-// "Card" | "Bizum" — Bizum es el gatillo determinista de la demo para forzar la compensación en
-// vivo (ver TicketPaymentSubmitted); cualquier otro valor se trata como pago exitoso.
-public sealed record SubmitPaymentRequest(string Method);
 
 [ApiController]
 [Route("api/tickets")]

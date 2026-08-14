@@ -1,7 +1,6 @@
 namespace VenuePulse.AccessControl.Application.Simulation;
 
 using System.Collections.Concurrent;
-using VenuePulse.AccessControl.Application;
 
 /// <summary>
 /// Motor de simulación de demo (Bloque 8). Singleton con estado en memoria: un run por evento,
