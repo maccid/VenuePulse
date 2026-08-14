@@ -1,4 +1,4 @@
-namespace VenuePulse.AccessControl.Application.Prediction;
+namespace VenuePulse.AccessControl.Application;
 
 /// <summary>Punto de la curva de llegada (histórica o proyectada): instante (tiempo simulado) y
 /// personas que han pasado el torniquete en ese momento.</summary>
