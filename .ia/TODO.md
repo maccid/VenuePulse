@@ -574,7 +574,7 @@ los tests de los 3 servicios (ADR 0008 se cumple); el modelo `Zone` (`Capacity`/
 `ConfirmedSold` vs `CheckedIn`) ya es coherente — lo único que faltaba era el scoping por evento
 (Bloque 1).
 
-## Pendiente de decidir (ver `docs/ROADMAP.md`)
+## Pendiente de decidir
 
 - [ ] **GUID de grupo para compras múltiples** — promovido a **Bloque 24** (ver "Reparto en oleadas
   ronda 4" más arriba), fuera de alcance del Bloque 22 a petición explícita del usuario.

@@ -49,8 +49,8 @@ Prometheus/Grafana/Seq, no una necesidad de esta demo.
   inaplicable a `venue-ops`, cuyo modelo es una conexión por hub multi-evento (ADR 0022). Elegir
   una primitiva que solo encaja en una de las dos apps sería resolver el caso simple y dejar el
   complejo sin tocar.
-- **Fusionar los 3 hubs en uno solo** (realtime gateway, un único WebSocket): ver
-  `docs/ROADMAP.md` — añade un salto de mensajería (servicio → RabbitMQ → hub agregado → cliente),
+- **Fusionar los 3 hubs en uno solo** (realtime gateway, un único WebSocket): añade un salto de
+  mensajería (servicio → RabbitMQ → hub agregado → cliente),
   un proceso nuevo con sus propios problemas de dedup/orden/pérdida, y no reduce el coste real
   (fan-out); es ortogonal a este ADR y queda como roadmap condicional.
 - **Filtrar en el cliente y ya está** (estado actual): sigue funcionando, pero envía cada
