@@ -1,38 +1,53 @@
 # Incidencias conocidas — VenuePulse
 
-## `PurchaseOrderFlowTests`: ida sin vuelta del doble de AccessControl en Testcontainers
+## `PurchaseOrderFlowTests`: dos síntomas distintos bajo Testcontainers (uno mitigado, otro sin explicar)
 
-**Síntoma**: los 3 tests de `services/CheckIn/IntegrationTests/PurchaseOrderFlowTests.cs` (ADR
-0028) que dependen de que la Saga real reserve aforo (todos salvo el de precio desactualizado,
-que no llega a reservar nada) fallan de forma intermitente por timeout en esta máquina de
-desarrollo, incluso con el margen del test subido de 90s a 180s.
+**Síntoma original**: los 3 tests de `services/CheckIn/IntegrationTests/PurchaseOrderFlowTests.cs`
+(ADR 0028) que dependen de que la Saga real reserve aforo (todos salvo el de precio
+desactualizado) fallan de forma intermitente en esta máquina de desarrollo, incluso con el margen
+del test subido de 90s a 180s y con la máquina en completo reposo (0 contenedores de otros
+proyectos) — descartado por tanto que sea solo lentitud/contención de recursos.
 
-**Diagnóstico realizado** (logging directo en el doble de `AccessControl` + inspección manual de
-los documentos de Mongo/filas de Postgres durante la ejecución, no solo lectura del resultado
-final): el mensaje `ReserveZoneSlot` publicado por `TicketPurchaseSaga` SÍ llega al doble de
-`AccessControl` de este fichero (confirmado con logging), y este SÍ publica de vuelta
-`ZoneSlotReserved`/`ZoneSlotReservationFailed` — pero esa respuesta no siempre llega a procesarse
-por la Saga real. El watchdog de timeout (ADR 0010) hace exactamente lo que debe: a los 60
-segundos exactos, transiciona a `AwaitingLateReservationOutcome` con `RejectionReason:
-"ReservationTimedOut"`. No es un fallo del watchdog ni de la lógica de negocio de la
-`PurchaseOrderSaga` — verificada aparte, unitariamente (43/43 tests en verde, harness in-memory
-determinista, sin Docker) e inspeccionando a mano el estado real en Postgres/Mongo paso a paso.
+**Sub-causa 1 (identificada y mitigada)**: la `PurchaseOrderSaga` puede recibir dos
+`TicketPurchaseRejected` casi simultáneos (el rechazo de una línea disparando la cancelación
+inmediata de su hermana, que resuelve en milisegundos). MongoDB usa concurrencia optimista por
+versión al guardar el documento de la Saga — sin ninguna política de reintento configurada en
+todo el proyecto, el mensaje que "pierde" la carrera se descartaba a la primera sin más, dejando
+la Saga esperando para siempre un resultado que ya había ocurrido (el pedido se quedaba en
+`Reserving` indefinidamente). **Fix aplicado** (`fix/checkin-saga-message-retry`):
+`cfg.UseMessageRetry(r => r.Intervals(100, 300, 800))` en
+`services/Core/Messaging/MessagingExtensions.cs::AddVenuePulseMessaging<TDbContext>` (afecta a
+`CheckIn` y `Ticketing`, únicos consumidores de ese overload). Verificado: el pedido ya llega
+correctamente a `Rejected` en vez de quedarse colgado. **Riesgo residual sin resolver**: en esa
+misma carrera, el motivo de rechazo (`RejectionReason`) mostrado a veces es el del último evento
+procesado (p. ej. `"EventCancelled"`) en vez del motivo real original (`"InsufficientAvailability"`)
+— la garantía todo-o-nada se cumple (el pedido se rechaza completo, ambas líneas se resuelven), solo
+el texto del motivo puede ser impreciso en este caso concreto. Candidato a revisar si se demuestra
+que confunde al usuario final en real (hoy el frontend ya no muestra el motivo por-ticket, solo el
+del pedido, así que el impacto visible es limitado).
 
-**Causa raíz no confirmada**: la ida (app → doble) funciona; la vuelta (doble → app) se pierde de
-forma intermitente. Candidatos considerados sin poder confirmar ninguno con certeza en el tiempo
-disponible: contención de recursos en esta máquina en concreto (agravada por varias horas de
-recompilaciones seguidas, un ciclo de suspensión del propio equipo a mitad de la sesión de
-depuración, y decenas de contenedores de otros proyectos corriendo en paralelo — no un problema de
-recursos asignados a Docker Desktop, que ya tenía las 14 CPU y ~16 GB de RAM al máximo razonable
-sin arriesgar el resto del sistema), o alguna condición de carrera específica de este arnés de 3
-Testcontainers efímeros + 2 Sagas Mongo en el mismo proceso.
+**Sub-causa 2 (sin causa raíz confirmada, no mitigada por el fix de reintento)**: en el camino
+feliz y en el de Bizum, una entrada individual puede quedarse en `Pending` más de 60 segundos sin
+llegar siquiera a `AwaitingPayment` — confirmado con logging directo que el doble de
+`AccessControl` de este fichero SÍ recibe `ReserveZoneSlot` y SÍ publica de vuelta
+`ZoneSlotReserved`, pero esa respuesta no siempre llega a procesarse por la
+`TicketPurchaseSaga` real. El watchdog de timeout (ADR 0010) hace lo correcto ante esto (rechaza a
+los 60s con `"ReservationTimedOut"`) — no es un fallo del watchdog. Persiste igual con la máquina
+en reposo y con la política de reintento ya aplicada, lo que descarta tanto "solo es lentitud" como
+"es la misma carrera de concurrencia de Mongo que la sub-causa 1". Hipótesis más probable sin
+confirmar: algo específico de que este test abra **dos conexiones de bus MassTransit distintas**
+contra el mismo RabbitMQ (la de la propia app + el doble de `AccessControl` de este fichero) —
+`TicketPurchaseFlowTests` (mismo patrón de doble, sin la `PurchaseOrderSaga` encima) no tiene este
+síntoma documentado, lo que apunta a algo de este arnés en concreto y no a la lógica de negocio
+(ya verificada aparte: 130 tests unitarios/arquitectura en verde, inspección manual de Postgres/
+Mongo mostrando el comportamiento correcto paso a paso cuando sí progresa).
 
 **Mismo criterio que la intermitencia ya documentada para `TicketPurchaseFlowTests`** (ver más
 abajo, "Test de integración de la Saga — camino de compensación intermitente en Testcontainers"):
-no se ha vuelto a intentar forzar un test 100% fiable en este entorno concreto — coste/beneficio
-no lo justifica para una demo, y la corrección de la lógica de negocio ya está verificada por
-otras vías. Candidato a reconfirmar en un entorno más limpio (CI, o esta misma máquina en reposo)
-antes de darlo por bug real si se repite con evidencia nueva.
+no se ha seguido persiguiendo un test 100% fiable en este entorno concreto tras aplicar la mitigación
+razonable disponible — coste/beneficio no lo justifica para una demo, y la corrección de la lógica
+de negocio ya está verificada por otras vías. Candidato a reconfirmar en un entorno más limpio (CI)
+antes de invertir más tiempo si se repite con evidencia nueva.
 
 ## Referencias a `olix` eliminadas del contexto de trabajo (RESUELTO)
 
