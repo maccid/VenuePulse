@@ -1,6 +1,37 @@
 @VenuePulse.AccessControl.Api_HostAddress = http://localhost:5199
 
-GET {{VenuePulse.AccessControl.Api_HostAddress}}/weatherforecast/
+### Zonas de un evento (aforo)
+GET {{VenuePulse.AccessControl.Api_HostAddress}}/api/zones?eventId={{eventId}}
 Accept: application/json
+
+### Ocupación de una zona concreta
+GET {{VenuePulse.AccessControl.Api_HostAddress}}/api/zones/{{zoneId}}/occupancy
+Accept: application/json
+
+### Predicción de ocupación de un evento
+GET {{VenuePulse.AccessControl.Api_HostAddress}}/api/prediction/events/{{eventId}}?eventStartsAtUtc=2026-09-01T20:00:00Z
+Accept: application/json
+
+### Arrancar simulación (Ventas o Arrivals)
+POST {{VenuePulse.AccessControl.Api_HostAddress}}/api/simulation/events/{{eventId}}/start
+Content-Type: application/json
+
+{
+  "mode": "Sales",
+  "eventStartsAtUtc": "2026-09-01T20:00:00Z",
+  "durationSeconds": 20,
+  "targetSoldPct": 0.85,
+  "noShowPct": 0.08
+}
+
+### Parar simulación
+POST {{VenuePulse.AccessControl.Api_HostAddress}}/api/simulation/events/{{eventId}}/stop
+
+### Estado de la simulación
+GET {{VenuePulse.AccessControl.Api_HostAddress}}/api/simulation/events/{{eventId}}/status
+Accept: application/json
+
+### Reiniciar simulación
+POST {{VenuePulse.AccessControl.Api_HostAddress}}/api/simulation/events/{{eventId}}/reset
 
 ###

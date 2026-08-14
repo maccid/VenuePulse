@@ -1,6 +1,28 @@
 @VenuePulse.Ticketing.Api_HostAddress = http://localhost:5101
 
-GET {{VenuePulse.Ticketing.Api_HostAddress}}/weatherforecast/
+### Catálogo de eventos
+GET {{VenuePulse.Ticketing.Api_HostAddress}}/api/events
 Accept: application/json
+
+### Tipos de entrada de un evento
+GET {{VenuePulse.Ticketing.Api_HostAddress}}/api/events/{{eventId}}/ticket-types
+Accept: application/json
+
+### Alta de evento (Operaciones)
+POST {{VenuePulse.Ticketing.Api_HostAddress}}/api/events
+Content-Type: application/json
+
+{
+  "name": "Derbi de la ciudad",
+  "startsAtUtc": "2026-09-01T20:00:00Z",
+  "type": "Match",
+  "relevance": "Special"
+}
+
+### Cerrar venta de un evento
+POST {{VenuePulse.Ticketing.Api_HostAddress}}/api/events/{{eventId}}/close-sales
+
+### Cancelar un evento
+POST {{VenuePulse.Ticketing.Api_HostAddress}}/api/events/{{eventId}}/cancel
 
 ###
