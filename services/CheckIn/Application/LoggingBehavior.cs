@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace VenuePulse.Core.Cqrs;
+namespace VenuePulse.CheckIn.Application;
 
 /// <summary>
 /// Único pipeline behavior compartido: registra cada comando/consulta que pasa por MediatR
