@@ -17,6 +17,15 @@ public sealed class TicketPurchaseSagaState : SagaStateMachineInstance, ISagaVer
 
     public Guid ZoneId { get; set; }
 
+    /// <summary>
+    /// <c>PurchaseOrder.Id</c> cuando esta entrada nace como línea de un pedido multi-entrada (ver
+    /// ADR 0028) — propagado desde <see cref="TicketPurchaseRequested"/>, nulo en una compra suelta
+    /// (pre-ADR 0028). Solo se reenvía en los eventos publicados por esta Saga para que la
+    /// <c>PurchaseOrderSaga</c> orquestadora pueda correlacionar esta línea con su pedido, sin que
+    /// esta Saga sepa nada de pedidos.
+    /// </summary>
+    public Guid? GroupId { get; set; }
+
     public DateTimeOffset RequestedAtUtc { get; set; }
 
     public DateTimeOffset? SlotReservedAtUtc { get; set; }

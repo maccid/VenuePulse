@@ -46,6 +46,7 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
                 .Then(context =>
                 {
                     context.Saga.ZoneId = context.Message.ZoneId;
+                    context.Saga.GroupId = context.Message.GroupId;
                     context.Saga.RequestedAtUtc = context.Message.OccurredOnUtc;
                 })
                 .Publish(context => new ReserveZoneSlot(context.Saga.CorrelationId, context.Saga.ZoneId))
@@ -61,10 +62,10 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
                 // Publicado DESPUÉS de que MassTransit persista la transición — quien reacciona a
                 // esto (TicketReadyForPaymentConsumer) tiene la garantía de que la Saga ya está de
                 // verdad en AwaitingPayment, a diferencia de reaccionar a SlotReserved en paralelo.
-                .Publish(context => new TicketAwaitingPayment(context.Saga.CorrelationId)),
+                .Publish(context => new TicketAwaitingPayment(context.Saga.CorrelationId, context.Saga.GroupId)),
             When(SlotReservationFailed)
                 .Then(context => context.Saga.RejectionReason = context.Message.Reason)
-                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Message.Reason))
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Message.Reason, context.Saga.GroupId))
                 .TransitionTo(Rejected)
                 .Finalize(),
             // AccessControl no respondió a tiempo (ver ADR 0010) — pero puede que sí haya llegado
@@ -80,7 +81,7 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
             // se rechaza sin publicar ReleaseZoneSlot.
             When(Cancelled)
                 .Then(context => context.Saga.RejectionReason = "EventCancelled")
-                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "EventCancelled"))
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "EventCancelled", context.Saga.GroupId))
                 .TransitionTo(Rejected)
                 .Finalize());
 
@@ -99,7 +100,7 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
                 .TransitionTo(Confirming),
             // Confirma que de verdad nunca llegó a reservarse — nada que compensar.
             When(SlotReservationFailed)
-                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!))
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!, context.Saga.GroupId))
                 .TransitionTo(Rejected)
                 .Finalize());
 
@@ -141,12 +142,12 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
             // en curso resuelve solo (Confirmado/Rechazado), sin relación con la cancelación.
             Ignore(Cancelled),
             When(SlotConfirmed)
-                .Publish(context => new TicketPurchaseConfirmed(context.Saga.CorrelationId))
+                .Publish(context => new TicketPurchaseConfirmed(context.Saga.CorrelationId, context.Saga.GroupId))
                 .TransitionTo(Completed)
                 .Finalize(),
             When(SlotReleased)
                 .Then(context => context.Saga.RejectionReason ??= "PaymentFailed")
-                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!))
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!, context.Saga.GroupId))
                 .TransitionTo(Rejected)
                 .Finalize());
 

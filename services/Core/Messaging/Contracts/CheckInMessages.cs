@@ -1,7 +1,14 @@
 namespace VenuePulse.Core.Messaging.Contracts;
 
-/// <summary>Evento iniciador de la TicketPurchaseSaga (CorrelationId = Id de la entrada).</summary>
-public sealed record TicketPurchaseRequested(Guid CorrelationId, Guid ZoneId) : IntegrationEvent;
+/// <summary>
+/// Evento iniciador de la TicketPurchaseSaga (CorrelationId = Id de la entrada). <c>GroupId</c>
+/// (ADR 0028) es el <c>PurchaseOrder.Id</c> cuando la entrada nace como parte de un pedido
+/// multi-entrada — opcional al final para no romper ningún call-site existente (compra suelta,
+/// pre-ADR 0028). La <c>PurchaseOrderSaga</c> orquestadora lo usa para correlacionar este mensaje
+/// con la línea hermana que representa dentro de un mismo pedido, sin que la propia
+/// TicketPurchaseSaga sepa nada de pedidos.
+/// </summary>
+public sealed record TicketPurchaseRequested(Guid CorrelationId, Guid ZoneId, Guid? GroupId = null) : IntegrationEvent;
 
 /// <summary>
 /// Publicado por la propia Saga al transicionar a "AwaitingPayment" (no por quien reacciona a
@@ -9,9 +16,10 @@ public sealed record TicketPurchaseRequested(Guid CorrelationId, Guid ZoneId) : 
 /// Saga en Mongo haya terminado de verdad esa transición. Dos consumidores independientes del
 /// mismo ZoneSlotReserved (la Saga y el proyector del Ticket) no tienen garantía de orden entre
 /// sí; publicando esto DESPUÉS de persistir su propio estado, la Saga se convierte en la única
-/// fuente de verdad de "cuándo" pasa esto.
+/// fuente de verdad de "cuándo" pasa esto. <c>GroupId</c> propagado desde <see cref="TicketPurchaseRequested"/>
+/// (ver ADR 0028) para que la <c>PurchaseOrderSaga</c> pueda correlacionar esta línea con su pedido.
 /// </summary>
-public sealed record TicketAwaitingPayment(Guid CorrelationId) : IntegrationEvent;
+public sealed record TicketAwaitingPayment(Guid CorrelationId, Guid? GroupId = null) : IntegrationEvent;
 
 /// <summary>
 /// Publicado por la Api cuando el cliente elige método de pago en el paso "AwaitingPayment" de
@@ -20,11 +28,13 @@ public sealed record TicketAwaitingPayment(Guid CorrelationId) : IntegrationEven
 /// </summary>
 public sealed record TicketPaymentSubmitted(Guid CorrelationId, bool SimulateFailure) : IntegrationEvent;
 
-/// <summary>Publicado por la Saga al finalizar con éxito.</summary>
-public sealed record TicketPurchaseConfirmed(Guid CorrelationId) : IntegrationEvent;
+/// <summary>Publicado por la Saga al finalizar con éxito. <c>GroupId</c> propagado (ver ADR 0028),
+/// mismo motivo que <see cref="TicketAwaitingPayment"/>.</summary>
+public sealed record TicketPurchaseConfirmed(Guid CorrelationId, Guid? GroupId = null) : IntegrationEvent;
 
-/// <summary>Publicado por la Saga tras una compensación (aforo lleno o "pago" simulado fallido).</summary>
-public sealed record TicketPurchaseRejected(Guid CorrelationId, string Reason) : IntegrationEvent;
+/// <summary>Publicado por la Saga tras una compensación (aforo lleno o "pago" simulado fallido).
+/// <c>GroupId</c> propagado (ver ADR 0028), mismo motivo que <see cref="TicketAwaitingPayment"/>.</summary>
+public sealed record TicketPurchaseRejected(Guid CorrelationId, string Reason, Guid? GroupId = null) : IntegrationEvent;
 
 /// <summary>
 /// Publicado por <c>ReservationTimeoutMonitor</c> cuando una reserva lleva demasiado tiempo en

@@ -17,6 +17,7 @@ builder.Services.AddVenuePulseTracing(
 builder.Services.AddCheckInApplication();
 builder.Services.AddCheckInInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<ITicketStatusNotifier, SignalRTicketStatusNotifier>();
+builder.Services.AddSingleton<IOrderStatusNotifier, SignalROrderStatusNotifier>();
 builder.Services.AddSignalR();
 
 builder.Services.AddControllers();

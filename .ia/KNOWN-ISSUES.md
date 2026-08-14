@@ -1,5 +1,39 @@
 # Incidencias conocidas — VenuePulse
 
+## `PurchaseOrderFlowTests`: ida sin vuelta del doble de AccessControl en Testcontainers
+
+**Síntoma**: los 3 tests de `services/CheckIn/IntegrationTests/PurchaseOrderFlowTests.cs` (ADR
+0028) que dependen de que la Saga real reserve aforo (todos salvo el de precio desactualizado,
+que no llega a reservar nada) fallan de forma intermitente por timeout en esta máquina de
+desarrollo, incluso con el margen del test subido de 90s a 180s.
+
+**Diagnóstico realizado** (logging directo en el doble de `AccessControl` + inspección manual de
+los documentos de Mongo/filas de Postgres durante la ejecución, no solo lectura del resultado
+final): el mensaje `ReserveZoneSlot` publicado por `TicketPurchaseSaga` SÍ llega al doble de
+`AccessControl` de este fichero (confirmado con logging), y este SÍ publica de vuelta
+`ZoneSlotReserved`/`ZoneSlotReservationFailed` — pero esa respuesta no siempre llega a procesarse
+por la Saga real. El watchdog de timeout (ADR 0010) hace exactamente lo que debe: a los 60
+segundos exactos, transiciona a `AwaitingLateReservationOutcome` con `RejectionReason:
+"ReservationTimedOut"`. No es un fallo del watchdog ni de la lógica de negocio de la
+`PurchaseOrderSaga` — verificada aparte, unitariamente (43/43 tests en verde, harness in-memory
+determinista, sin Docker) e inspeccionando a mano el estado real en Postgres/Mongo paso a paso.
+
+**Causa raíz no confirmada**: la ida (app → doble) funciona; la vuelta (doble → app) se pierde de
+forma intermitente. Candidatos considerados sin poder confirmar ninguno con certeza en el tiempo
+disponible: contención de recursos en esta máquina en concreto (agravada por varias horas de
+recompilaciones seguidas, un ciclo de suspensión del propio equipo a mitad de la sesión de
+depuración, y decenas de contenedores de otros proyectos corriendo en paralelo — no un problema de
+recursos asignados a Docker Desktop, que ya tenía las 14 CPU y ~16 GB de RAM al máximo razonable
+sin arriesgar el resto del sistema), o alguna condición de carrera específica de este arnés de 3
+Testcontainers efímeros + 2 Sagas Mongo en el mismo proceso.
+
+**Mismo criterio que la intermitencia ya documentada para `TicketPurchaseFlowTests`** (ver más
+abajo, "Test de integración de la Saga — camino de compensación intermitente en Testcontainers"):
+no se ha vuelto a intentar forzar un test 100% fiable en este entorno concreto — coste/beneficio
+no lo justifica para una demo, y la corrección de la lógica de negocio ya está verificada por
+otras vías. Candidato a reconfirmar en un entorno más limpio (CI, o esta misma máquina en reposo)
+antes de darlo por bug real si se repite con evidencia nueva.
+
 ## Referencias a `olix` eliminadas del contexto de trabajo (RESUELTO)
 
 Se ha quitado la palabra "olix" de `.ia/PRODUCT-VISION.md`, `.ia/TODO.md` y, por último, de
