@@ -18,6 +18,15 @@ public sealed class Ticket : Entity<Guid>, IAuditable
     public string? RejectionReason { get; private set; }
 
     /// <summary>
+    /// <c>PurchaseOrder.Id</c> cuando esta entrada nace como una línea de un pedido multi-entrada
+    /// (ver ADR 0028) — nulo en una compra suelta (pre-ADR 0028, sigue soportada). Absorbe el
+    /// alcance del antiguo Bloque 24 ("GUID de grupo para compras múltiples"): el mismo valor sirve
+    /// para el escaneo conjunto de las entradas de un pedido (ampliación de seguimiento, no
+    /// construida en esta ronda).
+    /// </summary>
+    public Guid? GroupId { get; private set; }
+
+    /// <summary>
     /// Precio efectivo que el cliente ya vio en el popup de compra (Bloque 14), fijado en el
     /// momento de la compra e inmutable después — los ingresos no varían retroactivamente si el
     /// precio dinámico de <c>Ticketing</c> cambia más tarde (ver ADR 0021, sección 5 del plan). El
@@ -46,6 +55,17 @@ public sealed class Ticket : Entity<Guid>, IAuditable
         TicketTypeId = ticketTypeId;
         ZoneId = zoneId;
         Status = TicketStatus.Pending;
+    }
+
+    /// <summary>Vincula esta entrada a su <c>PurchaseOrder</c> (ver ADR 0028) — solo una vez, en el
+    /// mismo instante en que se crea como parte de un pedido (<c>PlaceOrderCommandHandler</c>), por
+    /// eso lanza si ya tenía un grupo en vez de permitir reasignarlo.</summary>
+    public void AssignToGroup(Guid groupId)
+    {
+        if (GroupId.HasValue)
+            throw new InvalidOperationException("La entrada ya pertenece a un pedido.");
+
+        GroupId = groupId;
     }
 
     /// <summary>El aforo ya está reservado de verdad (ver TicketPurchaseSaga) — a partir de aquí

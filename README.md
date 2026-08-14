@@ -95,8 +95,12 @@ alcance), métricas agregadas con Prometheus/Grafana, Module Federation, autosca
 con carga real. El objetivo fue profundidad sobre amplitud.
 
 **Autenticación entre servicios (decisión de alcance):** los servicios no se llaman por HTTP
-entre sí — se comunican por el bus de mensajes (RabbitMQ/MassTransit), cuya autenticación es la
-del broker (credenciales + vhost aislado + TLS), no OAuth client-credentials entre procesos.
-El único HTTP es usuario → gateway → backend, y ahí no hay identidad de usuario (JWT/OIDC en el
+entre sí para comandos/escrituras — se comunican por el bus de mensajes (RabbitMQ/MassTransit),
+cuya autenticación es la del broker (credenciales + vhost aislado + TLS), no OAuth
+client-credentials entre procesos. **Única excepción, desde ADR 0028:** `CheckIn` hace una lectura
+HTTP síncrona a `Ticketing` (`GET /api/events/{id}/ticket-types`) para validar el precio vigente al
+crear un pedido — es una lectura sin efectos secundarios en un instante puntual, no un comando ni un
+flujo continuo, así que no se desacopla por bus (ver el ADR para la justificación completa). El
+resto del tráfico usuario → gateway → backend sigue sin identidad de usuario (JWT/OIDC en el
 gateway quedaría fuera de alcance, como IdentityServer/Azure AD B2C arriba). Si algún día se
 desplegara público: secretos del broker, TLS en nginx e identidad de usuario en el gateway.

@@ -50,17 +50,18 @@ Reserva de ADR (próximo libre tras `0027`): `0028` → Bloque 24 (GUID de grupo
   pendiente**: `docker compose up --build` — falta confirmar en real que el precio del borrador
   sube/baja en vivo con la ocupación antes de pulsar "Reservar".
 
-- [ ] **Bloque 24 — `feature/checkin-group-guid`** (`CheckIn`, sin asignar): GUID de grupo para
-  compras múltiples — cuando se emiten varias entradas juntas en la misma compra (misma zona o
-  distintas), poder validarlas todas de una vez en `venue-ops`/check-in con un único código de
-  grupo (p. ej. `group-<GUID>`), manteniendo el GUID individual de cada entrada para escanearla por
-  separado si hace falta. Alcance ya fijado en la sección "Pendiente de decidir" (más abajo, se
-  retira de ahí al abrir este bloque): modelo de dominio nuevo en `CheckIn` (campo de grupo en
-  `Ticket`, migración EF aditiva) y el endpoint de validación/check-in aceptando tanto el código
-  individual como el grupal. No cubierto por ADR 0025 — requiere ADR propio (0028) porque el modelo
-  de agrupación (¿un `GroupId` por línea de compra, o reutilizar algún identificador ya existente
-  de la Saga?) es una decisión de dominio no trivial, no una ceremonia. Sin dependencia con el
-  Bloque 23 ni el 25 — puede ir en paralelo.
+- [x] **Bloque 24 — `feature/checkin-group-guid`** (`CheckIn`) — **absorbido y sustituido por
+  `feature/checkin-purchase-order` (ADR 0028)**: el problema real detrás de este bloque (comprar
+  varias entradas en una misma compra) resultó no ser solo "falta un código de grupo para
+  escanear" — el usuario reportó, al revisar el flujo real, que comprar N entradas hoy dispara N
+  peticiones independientes sin ninguna garantía de todo-o-nada (si 1 de 10 falla, te quedas con
+  9) y sin validar que el precio siga siendo el aceptado. El `GroupId` que resuelve esto nace como
+  parte de la `PurchaseOrderSaga` nueva (ADR 0028), que orquesta la reserva/pago/confirmación
+  atómica de las N entradas de un pedido — el mismo `GroupId` es el código de grupo que este
+  bloque quería para el escaneo conjunto. **Alcance NO completado en esta ronda** (queda de
+  seguimiento, ver ADR 0028 "Consecuencias"): el endpoint de *validación/check-in* que acepte el
+  código grupal en `venue-ops` — `Ticket.GroupId` queda listo y poblado, pero escanear
+  `group-<GUID>` en la puerta no se construye todavía.
 
 - [ ] **Bloque 25 — `feature/signalr-event-groups`** (los 3 hubs — `CheckIn` `/hubs/tickets`,
   `AccessControl` `/hubs/occupancy`, `Ticketing` `/hubs/pricing` —, sin asignar): hoy los 3 hubs
@@ -78,6 +79,22 @@ Reserva de ADR (próximo libre tras `0027`): `0028` → Bloque 24 (GUID de grupo
   ahora (Redis), con la condición explícita bajo la que sí se justificaría (N instancias de una
   misma API detrás de un load balancer, escenario de roadmap documentado en el README junto a
   Prometheus/Seq/Grafana).
+
+- [ ] **Bloque 26 — ADR 0028, `PurchaseOrderSaga` (pedidos multi-entrada atómicos)** (Claude Code,
+  **en curso**): reportado por el usuario tras probar el flujo real de compra — comprar N entradas
+  dispara N peticiones independientes sin atomicidad (si 1 de 10 falla, hoy te quedas con 9) ni
+  validación de que el precio siga siendo el aceptado; además una entradas huérfanas por un fallo
+  de red sin capturar en el frontend explican por qué a veces "se liberan sitios sin razón" (ver
+  ADR 0028 para el diagnóstico completo). Absorbe y sustituye el Bloque 24 (ver arriba). Reparto en
+  3 ramas (worktrees), sin dependencia real entre sí salvo el contrato ya congelado en el plan:
+  - `fix/accesscontrol-zone-rowversion` (`AccessControl`): `RowVersion` + reintento en
+    `ZoneService` ante `DbUpdateConcurrencyException` — cierra el gap de concurrencia que el
+    propio ADR 0027 dejó abierto.
+  - `feature/checkin-purchase-order` (`CheckIn` + `Core.Messaging.Contracts`): `PurchaseOrderSaga`
+    orquestadora (Mongo, sin tocar `TicketPurchaseSaga`), validación de precio síncrona contra
+    `Ticketing`, `OrdersController`.
+  - `feature/checkout-order-atomic` (`ticket-checkout`): `useCheckoutCart` a 1 pedido en vez de N
+    peticiones sueltas, estado agregado de pedido visible en el carrito.
 
 ## Reparto en oleadas (ronda 3, gestión de eventos + rediseño Operaciones/Checkout)
 

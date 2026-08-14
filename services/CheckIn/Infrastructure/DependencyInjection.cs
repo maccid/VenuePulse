@@ -19,6 +19,17 @@ public static class DependencyInjection
                 .AddInterceptors(new AuditingSaveChangesInterceptor()));
 
         services.AddScoped<ITicketRepository, TicketRepository>();
+        services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+
+        services.AddSingleton(new TicketingClientOptions(
+            configuration["Ticketing:BaseUrl"] ?? "http://localhost:5101",
+            int.Parse(configuration["Ticketing:TimeoutSeconds"] ?? "5")));
+        services.AddHttpClient<ITicketingClient, TicketingClient>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<TicketingClientOptions>();
+            client.BaseAddress = new Uri(options.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
 
         services.AddSingleton(new SagaTimeoutOptions(
             ReservationTimeout: TimeSpan.FromSeconds(int.Parse(configuration["Saga:ReservationTimeoutSeconds"] ?? "60")),
@@ -39,11 +50,17 @@ public static class DependencyInjection
                 x.AddVenuePulseMongoSaga<TicketPurchaseSaga, TicketPurchaseSagaState>(
                     configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
+                x.AddVenuePulseMongoSaga<PurchaseOrderSaga, PurchaseOrderSagaState>(
+                    configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
+                    configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
 
                 x.AddConsumer<TicketReadyForPaymentConsumer>();
                 x.AddConsumer<TicketProcessingPaymentConsumer>();
                 x.AddConsumer<TicketPurchaseConfirmedConsumer>();
                 x.AddConsumer<TicketPurchaseRejectedConsumer>();
+                x.AddConsumer<PurchaseOrderReadyForPaymentConsumer>();
+                x.AddConsumer<PurchaseOrderCompletedConsumer>();
+                x.AddConsumer<PurchaseOrderRejectedConsumer>();
                 x.AddConsumer<ReservationWatchdogConsumer>();
                 // Nombre de cola explícito: mismo motivo que en AccessControl.Infrastructure.
                 // DependencyInjection — sin esto, ambos EventCancelledConsumer comparten cola.

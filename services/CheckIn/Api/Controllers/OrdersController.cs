@@ -1,0 +1,47 @@
+namespace VenuePulse.CheckIn.Api.Controllers;
+
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using VenuePulse.CheckIn.Application;
+using VenuePulse.CheckIn.Application.Commands;
+using VenuePulse.CheckIn.Application.Queries;
+
+public sealed record PlaceOrderLineDto(Guid TicketTypeId, Guid ZoneId, int Quantity, decimal UnitPrice);
+
+public sealed record PlaceOrderRequest(Guid EventId, string Holder, IReadOnlyList<PlaceOrderLineDto> Lines);
+
+// Mismo criterio Bizum-falla que TicketsController.Pay (ver ADR 0028: un único paso de pago para
+// el pedido completo, reenviado por la PurchaseOrderSaga a cada línea hermana).
+public sealed record SubmitOrderPaymentRequest(string Method);
+
+[ApiController]
+[Route("api/orders")]
+public sealed class OrdersController(ISender sender) : ControllerBase
+{
+    [HttpPost]
+    public async Task<IActionResult> Place(PlaceOrderRequest request, CancellationToken cancellationToken)
+    {
+        var lines = request.Lines
+            .Select(l => new PlaceOrderLineRequest(l.TicketTypeId, l.ZoneId, l.Quantity, l.UnitPrice))
+            .ToList();
+
+        var result = await sender.Send(new PlaceOrderCommand(request.EventId, request.Holder, lines), cancellationToken);
+
+        return result.IsSuccess ? Accepted(new { orderId = result.Value }) : BadRequest(new { error = result.Error });
+    }
+
+    [HttpPost("{orderId:guid}/pay")]
+    public async Task<IActionResult> Pay(Guid orderId, SubmitOrderPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var simulateFailure = string.Equals(request.Method, "Bizum", StringComparison.OrdinalIgnoreCase);
+        var result = await sender.Send(new SubmitOrderPaymentCommand(orderId, simulateFailure), cancellationToken);
+        return result.IsSuccess ? Accepted() : BadRequest(new { error = result.Error });
+    }
+
+    [HttpGet("{orderId:guid}/status")]
+    public async Task<ActionResult<OrderStatusDto>> GetStatus(Guid orderId, CancellationToken cancellationToken)
+    {
+        var status = await sender.Send(new GetOrderStatusQuery(orderId), cancellationToken);
+        return status is null ? NotFound() : Ok(status);
+    }
+}

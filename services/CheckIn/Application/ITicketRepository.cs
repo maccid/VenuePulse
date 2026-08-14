@@ -18,6 +18,10 @@ public interface ITicketRepository
     /// ambos necesitan ver todos los estados de las entradas del evento, no solo una parte.</summary>
     Task<IReadOnlyList<Ticket>> GetByEventIdAsync(Guid eventId, CancellationToken cancellationToken);
 
+    /// <summary>Usado por <c>GetOrderStatusQueryHandler</c> (ADR 0028) para derivar las líneas de
+    /// un <see cref="PurchaseOrder"/> agrupando sus entradas — el pedido no guarda líneas propias.</summary>
+    Task<IReadOnlyList<Ticket>> GetByGroupIdAsync(Guid groupId, CancellationToken cancellationToken);
+
     Task AddAsync(Ticket ticket, CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);

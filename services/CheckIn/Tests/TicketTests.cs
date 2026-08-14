@@ -141,4 +141,34 @@ public class TicketTests
 
         ticket.Status.Should().Be(TicketStatus.Refunded);
     }
+
+    [Fact]
+    public void Una_entrada_nace_sin_pedido_asignado()
+    {
+        var ticket = NewPendingTicket();
+
+        ticket.GroupId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Se_puede_vincular_una_entrada_a_un_pedido()
+    {
+        var ticket = NewPendingTicket();
+        var orderId = Guid.NewGuid();
+
+        ticket.AssignToGroup(orderId);
+
+        ticket.GroupId.Should().Be(orderId);
+    }
+
+    [Fact]
+    public void No_se_puede_vincular_una_entrada_a_un_pedido_dos_veces()
+    {
+        var ticket = NewPendingTicket();
+        ticket.AssignToGroup(Guid.NewGuid());
+
+        var act = () => ticket.AssignToGroup(Guid.NewGuid());
+
+        act.Should().Throw<InvalidOperationException>();
+    }
 }

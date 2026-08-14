@@ -143,6 +143,9 @@ services:
       RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
       Mongo__ConnectionString: "mongodb://mongo:27017"
       Mongo__SagaDatabase: "venuepulse_sagas"
+      # Única llamada HTTP síncrona entre dos backends del proyecto (ver ADR 0028, decisión 2):
+      # PlaceOrderCommand valida el precio de cada línea contra Ticketing antes de reservar nada.
+      Ticketing__BaseUrl: "http://api-ticketing:8080"
       Cors__AllowedOrigins__0: "http://localhost:8080"
       Observability__OtlpEndpoint: "http://jaeger:4317"
     ports:
@@ -153,6 +156,12 @@ services:
       rabbitmq:
         condition: service_healthy
       mongo:
+        condition: service_healthy
+      # Nuevo (ADR 0028): a diferencia del resto de dependencias entre servicios (siempre por
+      # bus), PlaceOrderCommand necesita a Ticketing respondiendo YA por HTTP para poder crear un
+      # pedido — sin esto, la primera petición tras un arranque en frío puede fallar con
+      # "PricingUnavailable" mientras Ticketing todavía no atiende peticiones.
+      api-ticketing:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
