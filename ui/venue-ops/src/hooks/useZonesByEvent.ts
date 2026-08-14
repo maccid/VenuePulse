@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ZoneOccupancy } from '../shared/types'
-import { createHubConnection } from '../shared/hubConnection'
+import { useEventScopedConnection } from '../shared/useEventScopedConnection'
 
 export function useZonesByEvent(activeId: string | null) {
   const [zonesByEvent, setZonesByEvent] = useState<Record<string, ZoneOccupancy[]>>({})
@@ -10,9 +10,7 @@ export function useZonesByEvent(activeId: string | null) {
     zonesByEventRef.current = zonesByEvent
   }, [zonesByEvent])
 
-  useEffect(() => {
-    const connection = createHubConnection('/hubs/occupancy')
-
+  useEventScopedConnection('/hubs/occupancy', activeId, (connection) => {
     connection.on('occupancyChanged', (updated: ZoneOccupancy) => {
       setZonesByEvent((prev) => {
         const existing = prev[updated.eventId]
@@ -26,13 +24,7 @@ export function useZonesByEvent(activeId: string | null) {
         return { ...prev, [updated.eventId]: next }
       })
     })
-
-    connection.start().catch((err) => console.error('No se pudo conectar al hub de aforo', err))
-
-    return () => {
-      connection.stop()
-    }
-  }, [])
+  })
 
   function loadZones(eventId: string) {
     fetch(`/api/access-control/api/zones?eventId=${eventId}`)

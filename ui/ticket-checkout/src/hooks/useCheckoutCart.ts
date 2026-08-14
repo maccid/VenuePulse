@@ -128,17 +128,22 @@ export function useCheckoutCart(
       applyOrderStatusUpdate(update)
     })
 
+    async function joinEvent() {
+      await connection.invoke('JoinEvent', eventId).catch(() => undefined)
+    }
+
     connection.onreconnected(() => {
+      void joinEvent()
       const { orderId: currentOrderId, status } = orderRef.current
       if (currentOrderId && !isResolvedOrderStatus(status)) void reconcileOrderStatus(currentOrderId)
     })
 
-    connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
+    connection.start().then(joinEvent).catch((err) => console.error('No se pudo conectar al hub de entradas', err))
 
     return () => {
       connection.stop()
     }
-  }, [])
+  }, [eventId])
 
   useEffect(() => {
     if (isPaying && isResolvedOrderStatus(orderStatus)) {

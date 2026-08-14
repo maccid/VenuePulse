@@ -63,22 +63,27 @@ Reserva de ADR (próximo libre tras `0027`): `0028` → Bloque 24 (GUID de grupo
   código grupal en `venue-ops` — `Ticket.GroupId` queda listo y poblado, pero escanear
   `group-<GUID>` en la puerta no se construye todavía.
 
-- [ ] **Bloque 25 — `feature/signalr-event-groups`** (los 3 hubs — `CheckIn` `/hubs/tickets`,
-  `AccessControl` `/hubs/occupancy`, `Ticketing` `/hubs/pricing` —, sin asignar): hoy los 3 hubs
+- [x] **Bloque 25 — `feature/signalr-event-groups`** (los 3 hubs — `CheckIn` `/hubs/tickets`,
+  `AccessControl` `/hubs/occupancy`, `Ticketing` `/hubs/pricing` —, **implementado en rama por
+  opencode**): hoy los 3 hubs
   hacen broadcast a **todos** los clientes conectados sin `Groups`, así que un cliente viendo el
   evento A recibe también los mensajes del evento B (sobre-broadcast) — esto es además una causa
   plausible de ruido/confusión con el precio en vivo que motivó la aclaración del Bloque 23, aunque
   el bug de ese bloque es un problema distinto (congelado en frontend, no de scoping del hub).
-  Alcance de este bloque, **decisión ya tomada con el usuario**: solo se implementa el scoping real
-  por `Groups` (un grupo de SignalR por `EventId`, cada notifier añade/filtra por grupo al conectar
-  el cliente con el `eventId` correspondiente) — es una corrección real y necesaria incluso con una
-  sola instancia de cada API. El **backplane Redis se documenta, no se construye**: sin necesidad
-  demostrada de más de una instancia por servicio en esta demo, añadirlo ahora sería exactamente la
-  sobre-ingeniería que ADR 0006 ya evitó para Prometheus/Seq — mismo criterio, no una excepción.
-  ADR 0029 debe registrar ambas mitades: la decisión tomada (Groups por evento) y la descartada por
+  Implementado el scoping real por `Groups`: un grupo `"event-{eventId}"` por hub con métodos
+  `JoinEvent`/`LeaveEvent` invocados desde el cliente (no query param — `venue-ops` usa una sola
+  conexión por hub multi-evento, ADR 0022), los 4 notifiers pasan de `Clients.All` a
+  `Clients.Group`, y cada app re-entra al grupo en `onreconnected` (SignalR pierde grupos al
+  reconectar). Frontend: `ticket-checkout` (`useEventCatalog` occupancy+pricing,
+  `useCheckoutCart` tickets) y `venue-ops` (hook compartido nuevo `useEventScopedConnection`
+  centralizando join/leave por pestaña activa en `useZonesByEvent`/`useTicketActivityFeed`).
+  ADR 0029 registra ambas mitades: la decisión tomada (Groups por evento, con `JoinEvent`/`LeaveEvent`
+  en vez de query param y el porqué) y la descartada por
   ahora (Redis), con la condición explícita bajo la que sí se justificaría (N instancias de una
   misma API detrás de un load balancer, escenario de roadmap documentado en el README junto a
-  Prometheus/Seq/Grafana).
+  Prometheus/Seq/Grafana). Build backend y lint/build de `ticket-checkout`+`venue-ops` en verde.
+  **Verificación E2E pendiente**: `docker compose up --build` — confirmar en real que un cliente
+  del evento A ya no recibe actualizaciones del evento B (aforo/precios/entradas).
 
 - [ ] **Bloque 26 — ADR 0028, `PurchaseOrderSaga` (pedidos multi-entrada atómicos)** (Claude Code,
   **en curso**): reportado por el usuario tras probar el flujo real de compra — comprar N entradas

@@ -37,12 +37,17 @@ export function useEventCatalog(eventId: string): EventCatalog {
       setZones((prev) => prev.map((z) => (z.zoneId === updated.zoneId ? updated : z)))
     })
 
-    connection.start().catch((err) => console.error('No se pudo conectar al hub de aforo', err))
+    async function joinEvent() {
+      await connection.invoke('JoinEvent', eventId).catch(() => undefined)
+    }
+
+    connection.onreconnected(joinEvent)
+    connection.start().then(joinEvent).catch((err) => console.error('No se pudo conectar al hub de aforo', err))
 
     return () => {
       connection.stop()
     }
-  }, [])
+  }, [eventId])
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/pricing').withAutomaticReconnect().build()
@@ -51,7 +56,12 @@ export function useEventCatalog(eventId: string): EventCatalog {
       if (updated.eventId === eventId) setTicketTypes(updated.ticketTypes)
     })
 
-    connection.start().catch((err) => console.error('No se pudo conectar al hub de precios', err))
+    async function joinEvent() {
+      await connection.invoke('JoinEvent', eventId).catch(() => undefined)
+    }
+
+    connection.onreconnected(joinEvent)
+    connection.start().then(joinEvent).catch((err) => console.error('No se pudo conectar al hub de precios', err))
 
     return () => {
       connection.stop()

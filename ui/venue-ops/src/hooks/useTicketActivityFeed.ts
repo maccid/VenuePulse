@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActivityEntry, TicketStatusUpdate, ZoneOccupancy } from '../shared/types'
-import { createHubConnection } from '../shared/hubConnection'
+import { useEventScopedConnection } from '../shared/useEventScopedConnection'
 
 const MAX_ACTIVITY_ENTRIES = 20
 
-export function useTicketActivityFeed(zonesByEvent: Record<string, ZoneOccupancy[]>) {
+export function useTicketActivityFeed(activeId: string | null, zonesByEvent: Record<string, ZoneOccupancy[]>) {
   const [activityByEvent, setActivityByEvent] = useState<Record<string, ActivityEntry[]>>({})
   const zonesByEventRef = useRef(zonesByEvent)
 
@@ -12,9 +12,7 @@ export function useTicketActivityFeed(zonesByEvent: Record<string, ZoneOccupancy
     zonesByEventRef.current = zonesByEvent
   }, [zonesByEvent])
 
-  useEffect(() => {
-    const connection = createHubConnection('/hubs/tickets')
-
+  useEventScopedConnection('/hubs/tickets', activeId, (connection) => {
     connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
       const shouldTrack =
         update.status === 'AwaitingPayment' || update.status === 'Confirmed' || update.status === 'Rejected'
@@ -34,13 +32,7 @@ export function useTicketActivityFeed(zonesByEvent: Record<string, ZoneOccupancy
         return { ...prev, [update.eventId]: [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES) }
       })
     })
-
-    connection.start().catch((err) => console.error('No se pudo conectar al hub de entradas', err))
-
-    return () => {
-      connection.stop()
-    }
-  }, [])
+  })
 
   return activityByEvent
 }
