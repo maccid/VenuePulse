@@ -33,6 +33,14 @@ public static class MessagingExtensions
             x.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(new Uri(rabbitMqConnectionString));
+                // Sin esto, un conflicto de concurrencia optimista al guardar una Saga en Mongo
+                // (dos mensajes casi simultáneos para la misma instancia, p. ej. el rechazo de una
+                // línea de PurchaseOrderSaga disparando la cancelación de su hermana, que resuelve
+                // en milisegundos) hace que el mensaje que pierde la carrera se descarte a la
+                // primera sin reintentar — la Saga se queda esperando para siempre un evento que en
+                // realidad ya ocurrió. Reintentos cortos, no un backoff largo: es un conflicto de
+                // versión que se resuelve solo, no un fallo transitorio de infraestructura.
+                cfg.UseMessageRetry(r => r.Intervals(100, 300, 800));
                 cfg.ConfigureEndpoints(context);
             });
         });
