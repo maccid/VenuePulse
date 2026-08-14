@@ -50,7 +50,7 @@ public static class DependencyInjection
                 x.AddVenuePulseMongoSaga<TicketPurchaseSaga, TicketPurchaseSagaState>(
                     configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
-                x.AddVenuePulseMongoSaga<PurchaseOrderSaga, PurchaseOrderSagaState>(
+                x.AddVenuePulseMongoSaga<PurchaseOrderSaga, PurchaseOrderSagaState, PurchaseOrderSagaDefinition>(
                     configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
 
