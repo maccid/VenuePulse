@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { HubConnection } from '@microsoft/signalr'
 import { createHubConnection } from './hubConnection'
+import { isAbortedHubStartError } from './hubErrors'
 
 export function useEventScopedConnection(
   hubPath: string,
@@ -27,7 +28,7 @@ export function useEventScopedConnection(
 
     connection.onreconnected(() => {
       const current = joinedEventRef.current
-      if (current) void connection.invoke('JoinEvent', current)
+      if (current) void connection.invoke('JoinEvent', current).catch(() => undefined)
     })
 
     connection
@@ -35,11 +36,13 @@ export function useEventScopedConnection(
       .then(() => {
         const current = activeIdRef.current
         if (current) {
-          void connection.invoke('JoinEvent', current)
+          void connection.invoke('JoinEvent', current).catch(() => undefined)
           joinedEventRef.current = current
         }
       })
-      .catch((err) => console.error(`No se pudo conectar al hub ${hubPath}`, err))
+      .catch((err) => {
+        if (!isAbortedHubStartError(err)) console.error(`No se pudo conectar al hub ${hubPath}`, err)
+      })
 
     return () => {
       joinedEventRef.current = null

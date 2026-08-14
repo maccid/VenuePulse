@@ -13,6 +13,7 @@ import type {
   TicketType,
   ZoneOccupancy,
 } from '../shared/types'
+import { isAbortedHubStartError } from '../shared/hubErrors'
 
 const GENERIC_ORDER_REJECTION_REASON = 'OrderRequestFailed'
 const GENERIC_PAYMENT_REJECTION_REASON = 'PaymentRequestFailed'
@@ -138,7 +139,9 @@ export function useCheckoutCart(
       if (currentOrderId && !isResolvedOrderStatus(status)) void reconcileOrderStatus(currentOrderId)
     })
 
-    connection.start().then(joinEvent).catch((err) => console.error('No se pudo conectar al hub de entradas', err))
+    connection.start().then(joinEvent).catch((err) => {
+      if (!isAbortedHubStartError(err)) console.error('No se pudo conectar al hub de entradas', err)
+    })
 
     return () => {
       connection.stop()

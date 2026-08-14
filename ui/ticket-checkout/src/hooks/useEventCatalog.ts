@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type { EventSummary, PricingChanged, TicketType, ZoneOccupancy } from '../shared/types'
+import { isAbortedHubStartError } from '../shared/hubErrors'
 
 interface EventCatalog {
   event: EventSummary | undefined
@@ -42,7 +43,9 @@ export function useEventCatalog(eventId: string): EventCatalog {
     }
 
     connection.onreconnected(joinEvent)
-    connection.start().then(joinEvent).catch((err) => console.error('No se pudo conectar al hub de aforo', err))
+    connection.start().then(joinEvent).catch((err) => {
+      if (!isAbortedHubStartError(err)) console.error('No se pudo conectar al hub de aforo', err)
+    })
 
     return () => {
       connection.stop()
@@ -61,7 +64,9 @@ export function useEventCatalog(eventId: string): EventCatalog {
     }
 
     connection.onreconnected(joinEvent)
-    connection.start().then(joinEvent).catch((err) => console.error('No se pudo conectar al hub de precios', err))
+    connection.start().then(joinEvent).catch((err) => {
+      if (!isAbortedHubStartError(err)) console.error('No se pudo conectar al hub de precios', err)
+    })
 
     return () => {
       connection.stop()
