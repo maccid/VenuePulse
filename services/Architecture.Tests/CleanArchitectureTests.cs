@@ -87,4 +87,34 @@ public class CleanArchitectureTests
             .Because("CQRS se reserva para donde hay asimetría real lectura/escritura (CheckIn)")
             .Check(Architecture);
     }
+
+    [Theory]
+    [InlineData("Ticketing", "AccessControl", "CheckIn")]
+    [InlineData("AccessControl", "Ticketing", "CheckIn")]
+    [InlineData("CheckIn", "Ticketing", "AccessControl")]
+    public void Un_servicio_no_referencia_directamente_a_otro(string service, string other1, string other2)
+    {
+        IObjectProvider<IType> ownLayers = Types()
+            .That().ResideInNamespace($"VenuePulse.{service}.Domain")
+            .Or().ResideInNamespace($"VenuePulse.{service}.Application")
+            .Or().ResideInNamespace($"VenuePulse.{service}.Infrastructure")
+            .As(service);
+
+        IObjectProvider<IType> otherServicesLayers = Types()
+            .That().ResideInNamespace($"VenuePulse.{other1}.Domain")
+            .Or().ResideInNamespace($"VenuePulse.{other1}.Application")
+            .Or().ResideInNamespace($"VenuePulse.{other1}.Infrastructure")
+            .Or().ResideInNamespace($"VenuePulse.{other2}.Domain")
+            .Or().ResideInNamespace($"VenuePulse.{other2}.Application")
+            .Or().ResideInNamespace($"VenuePulse.{other2}.Infrastructure")
+            .As($"{other1} / {other2}");
+
+        // Un microservicio, una base de datos (ver .ia/RULES.md) — la única dependencia compartida
+        // entre los 3 es VenuePulse.Core (Kernel/Bootstrap) y VenuePulse.Contracts (contratos de
+        // integración vía el bus), nunca el ensamblado de otro servicio directamente.
+        Types().That().Are(ownLayers)
+            .Should().NotDependOnAny(otherServicesLayers)
+            .Because("cada microservicio tiene su propia base de datos — la única dependencia compartida es Core/Contracts, nunca otro servicio directamente")
+            .Check(Architecture);
+    }
 }

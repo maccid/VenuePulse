@@ -5,6 +5,9 @@
   <Folder Name="/Core/">
     <Project Path="Core/VenuePulse.Core.csproj" />
   </Folder>
+  <Folder Name="/Contracts/">
+    <Project Path="Contracts/VenuePulse.Contracts.csproj" />
+  </Folder>
   <Folder Name="/AccessControl/" />
   <Folder Name="/AccessControl/Api/">
     <Project Path="AccessControl/Api/VenuePulse.AccessControl.Api.csproj" />

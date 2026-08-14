@@ -2,20 +2,23 @@ using Microsoft.EntityFrameworkCore;
 using VenuePulse.CheckIn.Api.Hubs;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Infrastructure;
+using VenuePulse.Core.Api;
 using VenuePulse.Core.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 
 const string ServiceName = "VenuePulse.CheckIn";
 
-builder.Host.UseVenuePulseSerilog(ServiceName);
+builder.Host.UseStructuredLogging(ServiceName);
 
-builder.Services.AddVenuePulseTracing(
+builder.Services.AddTracing(
     ServiceName,
     builder.Configuration["Observability:OtlpEndpoint"] ?? "http://localhost:4317");
 
-builder.Services.AddCheckInApplication();
-builder.Services.AddCheckInInfrastructure(builder.Configuration);
+builder.Services.AddExceptionHandling();
+
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<ITicketStatusNotifier, SignalRTicketStatusNotifier>();
 builder.Services.AddSingleton<IOrderStatusNotifier, SignalROrderStatusNotifier>();
 builder.Services.AddSignalR();
@@ -32,6 +35,8 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
         .AllowCredentials()));
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
 {

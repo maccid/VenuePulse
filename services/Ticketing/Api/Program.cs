@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MassTransit;
+using VenuePulse.Core.Api;
 using VenuePulse.Core.Observability;
 using VenuePulse.Ticketing.Api.Hubs;
 using VenuePulse.Ticketing.Application;
@@ -9,13 +10,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 const string ServiceName = "VenuePulse.Ticketing";
 
-builder.Host.UseVenuePulseSerilog(ServiceName);
+builder.Host.UseStructuredLogging(ServiceName);
 
-builder.Services.AddVenuePulseTracing(
+builder.Services.AddTracing(
     ServiceName,
     builder.Configuration["Observability:OtlpEndpoint"] ?? "http://localhost:4317");
 
-builder.Services.AddTicketingInfrastructure(builder.Configuration);
+builder.Services.AddExceptionHandling();
+
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<IPricingNotifier, SignalRPricingNotifier>();
 builder.Services.AddSignalR();
 
@@ -35,6 +38,8 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
         .AllowCredentials()));
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
 {

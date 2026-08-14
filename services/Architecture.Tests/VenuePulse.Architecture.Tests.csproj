@@ -31,6 +31,7 @@
     <ProjectReference Include="..\AccessControl\Domain\VenuePulse.AccessControl.Domain.csproj" />
     <ProjectReference Include="..\AccessControl\Application\VenuePulse.AccessControl.Application.csproj" />
     <ProjectReference Include="..\AccessControl\Infrastructure\VenuePulse.AccessControl.Infrastructure.csproj" />
+    <ProjectReference Include="..\Contracts\VenuePulse.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

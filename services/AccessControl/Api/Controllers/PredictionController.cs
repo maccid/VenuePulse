@@ -1,6 +1,7 @@
 namespace VenuePulse.AccessControl.Api.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using VenuePulse.AccessControl.Application;
 using VenuePulse.AccessControl.Application.Prediction;
 
 [ApiController]

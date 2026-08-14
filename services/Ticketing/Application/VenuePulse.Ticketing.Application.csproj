@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\VenuePulse.Ticketing.Domain.csproj" />
+    <ProjectReference Include="..\..\Contracts\VenuePulse.Contracts.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

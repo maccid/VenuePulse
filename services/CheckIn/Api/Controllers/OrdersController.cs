@@ -2,17 +2,10 @@ namespace VenuePulse.CheckIn.Api.Controllers;
 
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using VenuePulse.CheckIn.Api.Contracts;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Application.Commands;
 using VenuePulse.CheckIn.Application.Queries;
-
-public sealed record PlaceOrderLineDto(Guid TicketTypeId, Guid ZoneId, int Quantity, decimal UnitPrice);
-
-public sealed record PlaceOrderRequest(Guid EventId, string Holder, IReadOnlyList<PlaceOrderLineDto> Lines);
-
-// Mismo criterio Bizum-falla que TicketsController.Pay (ver ADR 0028: un único paso de pago para
-// el pedido completo, reenviado por la PurchaseOrderSaga a cada línea hermana).
-public sealed record SubmitOrderPaymentRequest(string Method);
 
 [ApiController]
 [Route("api/orders")]

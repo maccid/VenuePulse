@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\VenuePulse.CheckIn.Domain.csproj" />
+    <ProjectReference Include="..\..\Contracts\VenuePulse.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

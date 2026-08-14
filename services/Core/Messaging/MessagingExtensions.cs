@@ -14,7 +14,7 @@ namespace VenuePulse.Core.Messaging;
 /// </summary>
 public static class MessagingExtensions
 {
-    public static IServiceCollection AddVenuePulseMessaging<TDbContext>(
+    public static IServiceCollection AddMessaging<TDbContext>(
         this IServiceCollection services,
         string rabbitMqConnectionString,
         Action<IBusRegistrationConfigurator> configureConsumersAndSagas)
@@ -56,7 +56,7 @@ public static class MessagingExtensions
     /// 0015) — deliberadamente no genérico en <c>TDbContext</c> como el Outbox de arriba, para no
     /// forzar esa forma a servicios que no la necesiten.
     /// </summary>
-    public static IServiceCollection AddVenuePulseMessaging(
+    public static IServiceCollection AddMessaging(
         this IServiceCollection services,
         string rabbitMqConnectionString,
         Action<IBusRegistrationConfigurator> configureConsumers,
@@ -81,7 +81,7 @@ public static class MessagingExtensions
     /// Registra un state machine de Saga persistido en MongoDB en vez de EF Core — ver ADR
     /// sobre por qué el estado de la Saga vive en un documento y no en una fila relacional.
     /// </summary>
-    public static IBusRegistrationConfigurator AddVenuePulseMongoSaga<TStateMachine, TState>(
+    public static IBusRegistrationConfigurator AddMongoSaga<TStateMachine, TState>(
         this IBusRegistrationConfigurator configurator,
         string mongoConnectionString,
         string databaseName)
@@ -106,7 +106,7 @@ public static class MessagingExtensions
     /// evitar colisiones de concurrencia optimista en Mongo con mensajes casi simultáneos de la
     /// misma instancia — ver esa clase).
     /// </summary>
-    public static IBusRegistrationConfigurator AddVenuePulseMongoSaga<TStateMachine, TState, TDefinition>(
+    public static IBusRegistrationConfigurator AddMongoSaga<TStateMachine, TState, TDefinition>(
         this IBusRegistrationConfigurator configurator,
         string mongoConnectionString,
         string databaseName)
