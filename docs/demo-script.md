@@ -58,6 +58,19 @@ feliz y compensación, sin broker real), tests de arquitectura con ArchUnitNET q
 build** si el dominio depende de Infrastructure, y el test de integración con Testcontainers
 que reproduce el flujo completo contra Postgres+RabbitMQ+MongoDB reales.
 
+**CQRS solo donde aporta, no por checklist**: `CheckIn` es el único servicio con CQRS/MediatR
+(`Ticketing`/`AccessControl` son Application Service simple) — no por descuido, sino porque es
+el único con asimetría real lectura/escritura (la Saga de compra frente a una consulta directa),
+ver ADR 0003. `Architecture.Tests` lo hace cumplir: si MediatR apareciera en `Ticketing`/
+`AccessControl`, el build fallaría. Es el ejemplo más claro de criterio senior del proyecto:
+saber cuándo NO añadir un patrón es tan defendible como saber aplicarlo.
+
+**Cómo escalaría a un cuarto servicio**: un microservicio nuevo referenciaría `Core` (kit de
+dominio genérico, sin conocimiento de negocio) y `Contracts` (para publicar/suscribirse a
+eventos de integración) — cero cambios en los 3 servicios existentes. `Architecture.Tests`
+verificaría automáticamente que no acabe acoplado a ninguno de ellos por accidente (ver ADR
+0030).
+
 ## 5. Tarea en vivo con Claude Code (10 minutos)
 
 Dos opciones, según el tiempo disponible — pedir explícitamente que se narre el proceso, no
