@@ -101,6 +101,32 @@ public static class MessagingExtensions
     }
 
     /// <summary>
+    /// Variante con <typeparamref name="TDefinition"/> para sagas que necesitan configurar su
+    /// propio endpoint (p. ej. <c>PurchaseOrderSagaDefinition</c> particionando por pedido para
+    /// evitar colisiones de concurrencia optimista en Mongo con mensajes casi simultáneos de la
+    /// misma instancia — ver esa clase).
+    /// </summary>
+    public static IBusRegistrationConfigurator AddVenuePulseMongoSaga<TStateMachine, TState, TDefinition>(
+        this IBusRegistrationConfigurator configurator,
+        string mongoConnectionString,
+        string databaseName)
+        where TStateMachine : MassTransitStateMachine<TState>
+        where TState : class, SagaStateMachineInstance, ISagaVersion
+        where TDefinition : class, ISagaDefinition<TState>
+    {
+        EnsureGuidRepresentationRegistered();
+
+        configurator.AddSagaStateMachine<TStateMachine, TState, TDefinition>()
+            .MongoDbRepository(r =>
+            {
+                r.Connection = mongoConnectionString;
+                r.DatabaseName = databaseName;
+            });
+
+        return configurator;
+    }
+
+    /// <summary>
     /// MongoDB.Driver 2.19+ dejó de asumir una representación de Guid por defecto — sin este
     /// registro, serializar CUALQUIER Guid (como TicketPurchaseSagaState.ZoneId) lanza
     /// "GuidSerializer cannot serialize a Guid when GuidRepresentation is Unspecified" en el
