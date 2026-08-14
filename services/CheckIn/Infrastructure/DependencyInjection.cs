@@ -12,7 +12,7 @@ using VenuePulse.Core.Messaging;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddCheckInInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<CheckInDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("CheckInDb"))
@@ -43,14 +43,14 @@ public static class DependencyInjection
         services.AddSingleton(new PaymentProcessingOptions(
             Delay: TimeSpan.FromSeconds(int.Parse(configuration["Saga:PaymentProcessingDelaySeconds"] ?? "3"))));
 
-        services.AddVenuePulseMessaging<CheckInDbContext>(
+        services.AddMessaging<CheckInDbContext>(
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",
             x =>
             {
-                x.AddVenuePulseMongoSaga<TicketPurchaseSaga, TicketPurchaseSagaState>(
+                x.AddMongoSaga<TicketPurchaseSaga, TicketPurchaseSagaState>(
                     configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
-                x.AddVenuePulseMongoSaga<PurchaseOrderSaga, PurchaseOrderSagaState, PurchaseOrderSagaDefinition>(
+                x.AddMongoSaga<PurchaseOrderSaga, PurchaseOrderSagaState, PurchaseOrderSagaDefinition>(
                     configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
 

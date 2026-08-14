@@ -14,7 +14,7 @@ namespace VenuePulse.Core.Observability;
 /// </summary>
 public static class ObservabilityExtensions
 {
-    public static IHostBuilder UseVenuePulseSerilog(this IHostBuilder builder, string serviceName) =>
+    public static IHostBuilder UseStructuredLogging(this IHostBuilder builder, string serviceName) =>
         builder.UseSerilog((context, services, configuration) => configuration
             .ReadFrom.Configuration(context.Configuration)
             .Enrich.FromLogContext()
@@ -23,7 +23,7 @@ public static class ObservabilityExtensions
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] ({Service}) {Message:lj} traceId={TraceId} {NewLine}{Exception}"));
 
-    public static IServiceCollection AddVenuePulseTracing(
+    public static IServiceCollection AddTracing(
         this IServiceCollection services,
         string serviceName,
         string otlpEndpoint)

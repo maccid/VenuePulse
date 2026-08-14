@@ -9,7 +9,7 @@ using VenuePulse.Ticketing.Infrastructure.Consumers;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddTicketingInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<TicketingDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("TicketingDb")));
@@ -18,7 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IZoneDemandRepository, ZoneDemandRepository>();
         services.AddScoped<ITicketingService, TicketingService>();
 
-        services.AddVenuePulseMessaging<TicketingDbContext>(
+        services.AddMessaging<TicketingDbContext>(
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",
             x => x.AddConsumer<ZoneOccupancyChangedConsumer>());
 

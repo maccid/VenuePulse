@@ -10,7 +10,16 @@ namespace VenuePulse.Core.Api;
 /// </summary>
 public static class ApiExtensions
 {
-    public static IMvcBuilder AddVenuePulseControllersWithStringEnums(this IServiceCollection services) =>
+    public static IMvcBuilder AddControllersWithStringEnums(this IServiceCollection services) =>
         services.AddControllers().AddJsonOptions(options =>
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+    /// <summary>
+    /// Registra <see cref="GlobalExceptionHandler"/> como red de seguridad para excepciones no
+    /// controladas. Llamar junto con <c>app.UseExceptionHandler()</c> en el pipeline.
+    /// </summary>
+    public static IServiceCollection AddExceptionHandling(this IServiceCollection services) =>
+        services
+            .AddExceptionHandler<GlobalExceptionHandler>()
+            .AddProblemDetails();
 }

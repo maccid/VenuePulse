@@ -13,7 +13,7 @@ using VenuePulse.Core.Messaging;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddAccessControlInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AccessControlDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("AccessControlDb")));
@@ -28,7 +28,7 @@ public static class DependencyInjection
 
         services.AddScoped(typeof(InboxDeduplicationFilter<>));
 
-        services.AddVenuePulseMessaging(
+        services.AddMessaging(
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",
             x =>
             {

@@ -8,19 +8,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 const string ServiceName = "VenuePulse.AccessControl";
 
-builder.Host.UseVenuePulseSerilog(ServiceName);
+builder.Host.UseStructuredLogging(ServiceName);
 
-builder.Services.AddVenuePulseTracing(
+builder.Services.AddTracing(
     ServiceName,
     builder.Configuration["Observability:OtlpEndpoint"] ?? "http://localhost:4317");
 
-builder.Services.AddAccessControlInfrastructure(builder.Configuration);
+builder.Services.AddExceptionHandling();
+
+builder.Services.AddInfrastructure(builder.Configuration);
 // Scoped, no Singleton: ahora inyecta IPublishEndpoint (scoped en MassTransit) para publicar
 // ZoneOccupancyChanged además del push por SignalR.
 builder.Services.AddScoped<IZoneOccupancyNotifier, SignalRZoneOccupancyNotifier>();
 builder.Services.AddSignalR();
 
-builder.Services.AddVenuePulseControllersWithStringEnums();
+builder.Services.AddControllersWithStringEnums();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
@@ -32,6 +34,8 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
         .AllowCredentials()));
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
 {
