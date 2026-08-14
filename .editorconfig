@@ -1,0 +1,6 @@
+root = true
+
+# Migraciones EF generadas por `dotnet ef`: los usings redundantes (System con ImplicitUsings,
+# namespace padre) son ruido del tooling, no código que revisar a mano.
+[**/Migrations/*.cs]
+dotnet_analyzer_diagnostic.IDE0005.severity = none
