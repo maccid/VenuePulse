@@ -123,7 +123,16 @@ public sealed class PurchaseOrderSaga : MassTransitStateMachine<PurchaseOrderSag
                     context.Saga.PendingTicketIds = context.Saga.PendingTicketIds.Concat(context.Saga.ReadyTicketIds).ToList();
                     context.Saga.ReadyTicketIds = [];
                 })
-                .TransitionTo(CancellingLines));
+                // Pedido de una sola línea (o última hermana ya resuelta): no queda nadie que
+                // cancelar, así que ningún TicketRejected futuro va a volver a comprobar la
+                // condición de cierre en CancellingLines — rechazar aquí mismo, no dejar la Saga
+                // esperando un evento que nunca llegará.
+                .IfElse(context => context.Saga.PendingTicketIds.Count == 0,
+                    noSiblings => noSiblings
+                        .Publish(context => new PurchaseOrderRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!))
+                        .TransitionTo(Rejected)
+                        .Finalize(),
+                    hasSiblings => hasSiblings.TransitionTo(CancellingLines)));
 
         During(CancellingLines,
             When(TicketRejected)
@@ -143,7 +152,89 @@ public sealed class PurchaseOrderSaga : MassTransitStateMachine<PurchaseOrderSag
                     foreach (var ticketRef in context.Saga.Tickets)
                         await context.Publish(new TicketPaymentSubmitted(ticketRef.TicketId, context.Message.SimulateFailure));
                 })
-                .TransitionTo(ConfirmingLines));
+                .TransitionTo(ConfirmingLines),
+            // Un TicketRejected puede llegar aquí por dos motivos distintos, sin que esta Saga haya
+            // visto todavía OrderPaymentSubmitted:
+            // (a) la línea agotó su propio timeout de pago (PaymentTimedOut) o el evento se canceló
+            //     mientras esa línea seguía sin pagar (EventCancelled, ver
+            //     TicketPurchaseSaga.During(AwaitingPayment)) — las hermanas siguen sin haber pagado
+            //     de verdad, hay que cancelarlas (mismo patrón que ReservingLines).
+            // (b) ventana de carrera equivalente a ADR 0027 pero a nivel de pedido: el pago YA se
+            //     envió (la única vía por la que una TicketPurchaseSaga hermana rechaza con
+            //     "PaymentFailed" es haber recibido TicketPaymentSubmitted, ver
+            //     TicketPurchaseSaga.During(Confirming)), pero la transición de esta Saga a
+            //     ConfirmingLines todavía no está persistida cuando ya llega el rechazo de la línea
+            //     más rápida — hay que compensar a las hermanas ya confirmadas, no cancelarlas
+            //     (mismo criterio que ConfirmingLines.When(TicketRejected)).
+            // Sin esta rama en cualquiera de los dos casos: UnhandledEventException, mensaje a la
+            // cola de error tras los reintentos, pedido colgado en AwaitingPayment para siempre — el
+            // caso (b) se ha visto en real con una línea ya Confirmed y el pedido sin resolver.
+            When(TicketRejected)
+                .IfElse(context => context.Message.Reason is "PaymentTimedOut" or "EventCancelled",
+                    notYetPaid => notYetPaid
+                        .Then(context =>
+                        {
+                            context.Saga.RejectionReason = context.Message.Reason;
+                            context.Saga.ReadyTicketIds.Remove(context.Message.CorrelationId);
+                        })
+                        .ThenAsync(async context =>
+                        {
+                            foreach (var ticketId in context.Saga.ReadyTicketIds)
+                                await context.Publish(new TicketPurchaseCancelled(ticketId));
+
+                            context.Saga.PendingTicketIds = context.Saga.ReadyTicketIds.ToList();
+                            context.Saga.ReadyTicketIds = [];
+                        })
+                        // Pedido de una sola línea (o última hermana ya resuelta): no queda nadie
+                        // que cancelar, así que no hay ningún TicketRejected futuro que vuelva a
+                        // comprobar la condición de cierre en CancellingLines — rechazar aquí mismo,
+                        // no dejar la Saga esperando un evento que nunca llegará.
+                        .IfElse(context => context.Saga.PendingTicketIds.Count == 0,
+                            noSiblings => noSiblings
+                                .Publish(context => new PurchaseOrderRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!))
+                                .TransitionTo(Rejected)
+                                .Finalize(),
+                            hasSiblings => hasSiblings.TransitionTo(CancellingLines)),
+                    alreadyPaid => alreadyPaid
+                        .Then(context =>
+                        {
+                            context.Saga.RejectionReason ??= context.Message.Reason;
+                            context.Saga.PendingTicketIds = context.Saga.Tickets
+                                .Select(t => t.TicketId)
+                                .Where(id => id != context.Message.CorrelationId)
+                                .ToList();
+                        })
+                        .IfElse(context => context.Saga.PendingTicketIds.Count == 0,
+                            allResolved => allResolved
+                                .ThenAsync(context => CompensateConfirmedAsync(context.Saga, context))
+                                .Publish(context => new PurchaseOrderRejected(context.Saga.CorrelationId, context.Saga.RejectionReason!))
+                                .TransitionTo(Rejected)
+                                .Finalize(),
+                            stillConfirming => stillConfirming.TransitionTo(ConfirmingLines))),
+            // Ventana de carrera equivalente a la de ADR 0027 pero a nivel de pedido: el pago ya se
+            // envió (OrderPaymentSubmitted se procesó, es la única vía por la que una TicketPurchaseSaga
+            // hermana recibe TicketPaymentSubmitted), pero la propia transición de esta Saga a
+            // ConfirmingLines puede no estar aún persistida cuando ya llega la confirmación de una
+            // línea que resolvió más rápido. Sin esta rama, el mismo UnhandledEventException deja el
+            // pedido colgado en AwaitingPayment con una entrada ya Confirmed — visto en real. Se
+            // resuelve igual que ConfirmingLines: registra la confirmación y, si no queda ninguna
+            // pendiente, completa el pedido (no puede haber ninguna rechazada todavía, es la primera
+            // resolución que llega).
+            When(TicketConfirmed)
+                .Then(context =>
+                {
+                    context.Saga.ConfirmedTicketIds.Add(context.Message.CorrelationId);
+                    context.Saga.PendingTicketIds = context.Saga.Tickets
+                        .Select(t => t.TicketId)
+                        .Where(id => id != context.Message.CorrelationId)
+                        .ToList();
+                })
+                .IfElse(context => context.Saga.PendingTicketIds.Count == 0,
+                    allConfirmed => allConfirmed
+                        .Publish(context => new PurchaseOrderCompleted(context.Saga.CorrelationId))
+                        .TransitionTo(Completed)
+                        .Finalize(),
+                    stillConfirming => stillConfirming.TransitionTo(ConfirmingLines)));
 
         During(ConfirmingLines,
             When(TicketConfirmed)

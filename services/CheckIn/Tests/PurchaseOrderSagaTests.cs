@@ -114,6 +114,30 @@ public class PurchaseOrderSagaTests
     }
 
     [Fact]
+    public async Task Pedido_de_una_sola_linea_sin_aforo_rechaza_sin_quedarse_esperando_hermanas_inexistentes()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var orderId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var ticket1 = Guid.NewGuid();
+        var zone1 = Guid.NewGuid();
+
+        await harness.Bus.Publish(new PurchaseOrderRequested(
+            orderId, eventId, [new PurchaseOrderTicketRef(ticket1, zone1)]));
+        await harness.Consumed.Any<PurchaseOrderRequested>();
+
+        // Sin hermanas: tras cancelar (nada que cancelar), PendingTicketIds ya queda vacío al
+        // entrar en CancellingLines. Si esa rama transiciona sin comprobar la condición de cierre,
+        // ningún TicketRejected futuro la va a re-evaluar (no hay más líneas) y el pedido se queda
+        // colgado en CancellingLines para siempre.
+        await harness.Bus.Publish(new TicketPurchaseRejected(ticket1, "ZoneFull", orderId));
+
+        (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderRejected>(m => m.Context.Message.Reason == "InsufficientAvailability"))).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Una_linea_rechazada_al_pagar_compensa_a_la_hermana_ya_confirmada()
     {
         var (provider, harness) = await StartHarnessAsync();
@@ -148,5 +172,100 @@ public class PurchaseOrderSagaTests
 
         // La línea 2 (la que falló) nunca se compensa con estos dos mensajes — ya está rechazada.
         (await harness.Published.Any<ReleaseConfirmedZoneSlot>(m => m.Context.Message.CorrelationId == ticket2)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Timeout_de_pago_de_una_linea_en_AwaitingPayment_cancela_la_hermana_y_rechaza_el_pedido()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var orderId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var ticket1 = Guid.NewGuid();
+        var zone1 = Guid.NewGuid();
+        var ticket2 = Guid.NewGuid();
+        var zone2 = Guid.NewGuid();
+
+        await harness.Bus.Publish(new PurchaseOrderRequested(
+            orderId, eventId, [new PurchaseOrderTicketRef(ticket1, zone1), new PurchaseOrderTicketRef(ticket2, zone2)]));
+        await harness.Consumed.Any<PurchaseOrderRequested>();
+
+        await harness.Bus.Publish(new TicketAwaitingPayment(ticket1, orderId));
+        await harness.Bus.Publish(new TicketAwaitingPayment(ticket2, orderId));
+        (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderAwaitingPayment>())).Should().BeTrue();
+
+        // El cliente nunca llega a pulsar pagar — la línea 1 agota su propio timeout de pago (ver
+        // TicketPurchaseSaga.During(AwaitingPayment).When(TimedOut)) sin que esta Saga haya visto
+        // OrderPaymentSubmitted. Antes de este fix, esto era un UnhandledEventException: ningún
+        // When(TicketRejected) declarado en AwaitingPayment dejaba el pedido colgado para siempre.
+        await harness.Bus.Publish(new TicketPurchaseRejected(ticket1, "PaymentTimedOut", orderId));
+
+        (await EventuallyAsync(() => harness.Published.Any<TicketPurchaseCancelled>(m => m.Context.Message.CorrelationId == ticket2))).Should().BeTrue();
+
+        await harness.Bus.Publish(new TicketPurchaseRejected(ticket2, "EventCancelled", orderId));
+
+        (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderRejected>(m => m.Context.Message.Reason == "PaymentTimedOut"))).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Confirmacion_de_linea_antes_de_persistir_ConfirmingLines_completa_el_pedido_de_una_sola_linea()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var orderId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var ticket1 = Guid.NewGuid();
+        var zone1 = Guid.NewGuid();
+
+        await harness.Bus.Publish(new PurchaseOrderRequested(
+            orderId, eventId, [new PurchaseOrderTicketRef(ticket1, zone1)]));
+        await harness.Consumed.Any<PurchaseOrderRequested>();
+
+        await harness.Bus.Publish(new TicketAwaitingPayment(ticket1, orderId));
+        (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderAwaitingPayment>())).Should().BeTrue();
+
+        // No se publica PurchaseOrderPaymentSubmitted a mano aquí a propósito: simula la ventana de
+        // carrera real (ver ADR 0027 a nivel de pedido) donde TicketPurchaseConfirmed de la única
+        // línea llega correlacionado por GroupId mientras la Saga del pedido sigue (desde su propio
+        // punto de vista) en AwaitingPayment. Antes de este fix, esto era un UnhandledEventException
+        // y el pedido se quedaba colgado en AwaitingPayment con la entrada ya Confirmed — visto en
+        // real.
+        await harness.Bus.Publish(new TicketPurchaseConfirmed(ticket1, orderId));
+
+        (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderCompleted>())).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Rechazo_de_linea_ya_pagada_antes_de_persistir_ConfirmingLines_rechaza_el_pedido()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var orderId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var ticket1 = Guid.NewGuid();
+        var zone1 = Guid.NewGuid();
+        var ticket2 = Guid.NewGuid();
+        var zone2 = Guid.NewGuid();
+
+        await harness.Bus.Publish(new PurchaseOrderRequested(
+            orderId, eventId, [new PurchaseOrderTicketRef(ticket1, zone1), new PurchaseOrderTicketRef(ticket2, zone2)]));
+        await harness.Consumed.Any<PurchaseOrderRequested>();
+
+        await harness.Bus.Publish(new TicketAwaitingPayment(ticket1, orderId));
+        await harness.Bus.Publish(new TicketAwaitingPayment(ticket2, orderId));
+        (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderAwaitingPayment>())).Should().BeTrue();
+
+        // Mismo tipo de carrera que el test anterior, pero la línea más rápida rechaza con
+        // "PaymentFailed" (pago real ya enviado, no un timeout de pre-pago) — hay que compensar, no
+        // cancelar, aunque el pedido siga mostrando AwaitingPayment desde su propio punto de vista.
+        await harness.Bus.Publish(new TicketPurchaseConfirmed(ticket1, orderId));
+        await harness.Bus.Publish(new TicketPurchaseRejected(ticket2, "PaymentFailed", orderId));
+
+        (await EventuallyAsync(() => harness.Published.Any<ReleaseConfirmedZoneSlot>(m => m.Context.Message.CorrelationId == ticket1 && m.Context.Message.ZoneId == zone1))).Should().BeTrue();
+        (await harness.Published.Any<TicketRefunded>(m => m.Context.Message.CorrelationId == ticket1)).Should().BeTrue();
+        (await harness.Published.Any<PurchaseOrderRejected>(m => m.Context.Message.Reason == "PaymentFailed")).Should().BeTrue();
     }
 }
