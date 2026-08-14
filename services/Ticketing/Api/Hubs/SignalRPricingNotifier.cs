@@ -7,5 +7,5 @@ public sealed class SignalRPricingNotifier(IHubContext<PricingHub> hubContext) :
 {
     public Task NotifyPricingChangedAsync(
         Guid eventId, IReadOnlyCollection<TicketTypeDto> ticketTypes, CancellationToken cancellationToken) =>
-        hubContext.Clients.All.SendAsync("pricingChanged", new { eventId, ticketTypes }, cancellationToken);
+        hubContext.Clients.Group(PricingHub.GroupName(eventId)).SendAsync("pricingChanged", new { eventId, ticketTypes }, cancellationToken);
 }

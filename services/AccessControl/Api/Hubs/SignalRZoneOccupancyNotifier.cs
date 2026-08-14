@@ -17,7 +17,7 @@ public sealed class SignalRZoneOccupancyNotifier(IHubContext<OccupancyHub> hubCo
 {
     public async Task NotifyOccupancyChangedAsync(ZoneOccupancyDto occupancy, CancellationToken cancellationToken)
     {
-        await hubContext.Clients.All.SendAsync("occupancyChanged", occupancy, cancellationToken);
+        await hubContext.Clients.Group(OccupancyHub.GroupName(occupancy.EventId)).SendAsync("occupancyChanged", occupancy, cancellationToken);
 
         await publishEndpoint.Publish(
             new ZoneOccupancyChanged(

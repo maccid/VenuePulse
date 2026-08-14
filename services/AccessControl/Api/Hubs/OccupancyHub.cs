@@ -3,7 +3,20 @@ namespace VenuePulse.AccessControl.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
 /// <summary>
-/// Un único hub, sin grupos: para el tamaño de esta demo todos los clientes conectados
-/// (venue-ops, shell) reciben todas las actualizaciones de aforo.
+/// Scoping por evento vía grupos de SignalR (ADR 0029): cada cliente entra al grupo
+/// "event-{eventId}" con <see cref="JoinEvent"/> y solo recibe el aforo de ese evento.
 /// </summary>
-public sealed class OccupancyHub : Hub;
+public sealed class OccupancyHub : Hub
+{
+    public async Task JoinEvent(Guid eventId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, GroupName(eventId));
+    }
+
+    public async Task LeaveEvent(Guid eventId)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupName(eventId));
+    }
+
+    internal static string GroupName(Guid eventId) => $"event-{eventId}";
+}

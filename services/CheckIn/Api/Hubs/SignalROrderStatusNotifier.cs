@@ -8,5 +8,5 @@ using VenuePulse.CheckIn.Application;
 public sealed class SignalROrderStatusNotifier(IHubContext<TicketStatusHub> hubContext) : IOrderStatusNotifier
 {
     public Task NotifyStatusChangedAsync(OrderStatusDto status, CancellationToken cancellationToken) =>
-        hubContext.Clients.All.SendAsync("orderStatusChanged", status, cancellationToken);
+        hubContext.Clients.Group(TicketStatusHub.GroupName(status.EventId)).SendAsync("orderStatusChanged", status, cancellationToken);
 }
