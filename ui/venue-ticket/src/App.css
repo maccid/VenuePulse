@@ -304,6 +304,12 @@ ticket-checkout-app {
   color: var(--tc-muted);
 }
 
+.cancel-confirm__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 /* Carrito. La tarjeta visual (fondo, borde, radio, padding, sombra) la comparte con la cabecera y
    el plano (regla conjunta arriba) para que las tres cards se vean iguales. */
 .cart-panel {
