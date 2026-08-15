@@ -6,6 +6,7 @@ WORKDIR /src
 
 COPY services/Directory.Build.props services/Directory.Packages.props ./
 COPY services/Core/VenuePulse.Core.csproj Core/
+COPY services/Contracts/VenuePulse.Contracts.csproj Contracts/
 COPY services/CheckIn/Domain/VenuePulse.CheckIn.Domain.csproj CheckIn/Domain/
 COPY services/CheckIn/Application/VenuePulse.CheckIn.Application.csproj CheckIn/Application/
 COPY services/CheckIn/Infrastructure/VenuePulse.CheckIn.Infrastructure.csproj CheckIn/Infrastructure/
@@ -13,6 +14,7 @@ COPY services/CheckIn/Api/VenuePulse.CheckIn.Api.csproj CheckIn/Api/
 RUN dotnet restore CheckIn/Api/VenuePulse.CheckIn.Api.csproj
 
 COPY services/Core/ Core/
+COPY services/Contracts/ Contracts/
 COPY services/CheckIn/ CheckIn/
 RUN dotnet publish CheckIn/Api/VenuePulse.CheckIn.Api.csproj -c Release -o /app --no-restore
 
