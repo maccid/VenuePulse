@@ -15,6 +15,7 @@ interface Props {
   buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  isCancelling: boolean
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
@@ -23,6 +24,7 @@ interface Props {
   onResetPurchase: () => void
   onReservar: () => void
   onSubmitPayment: (method: PaymentMethod) => void
+  onCancelOrder: () => void
 }
 
 export default function PurchaseFlow({
@@ -33,6 +35,7 @@ export default function PurchaseFlow({
   buyer,
   isReserving,
   isPaying,
+  isCancelling,
   orderStatus,
   orderRejectionReason,
   onBuyerChange,
@@ -41,6 +44,7 @@ export default function PurchaseFlow({
   onResetPurchase,
   onReservar,
   onSubmitPayment,
+  onCancelOrder,
 }: Props) {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
 
@@ -100,6 +104,7 @@ export default function PurchaseFlow({
         buyer={buyer}
         isReserving={isReserving}
         isPaying={isPaying}
+        isCancelling={isCancelling}
         orderStatus={orderStatus}
         orderRejectionReason={orderRejectionReason}
         onBuyerChange={onBuyerChange}
@@ -107,6 +112,7 @@ export default function PurchaseFlow({
         onResetPurchase={onResetPurchase}
         onReservar={onReservar}
         onSubmitPayment={onSubmitPayment}
+        onCancelOrder={onCancelOrder}
       />
     </div>
   )

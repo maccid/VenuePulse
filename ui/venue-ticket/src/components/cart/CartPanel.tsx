@@ -11,6 +11,7 @@ interface Props {
   buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  isCancelling: boolean
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
@@ -18,6 +19,7 @@ interface Props {
   onResetPurchase: () => void
   onReservar: () => void
   onSubmitPayment: (method: PaymentMethod) => void
+  onCancelOrder: () => void
 }
 
 function earliestActiveExpiry(lines: CartLine[]): string | null {
@@ -33,6 +35,7 @@ export default function CartPanel({
   buyer,
   isReserving,
   isPaying,
+  isCancelling,
   orderStatus,
   orderRejectionReason,
   onBuyerChange,
@@ -40,6 +43,7 @@ export default function CartPanel({
   onResetPurchase,
   onReservar,
   onSubmitPayment,
+  onCancelOrder,
 }: Props) {
   const hasReservation = orderStatus !== null
   const allResolved = orderStatus === 'Completed' || orderStatus === 'Rejected'
@@ -84,10 +88,12 @@ export default function CartPanel({
           reservationExpired={reservationExpired}
           buyer={buyer}
           isPaying={isPaying}
+          isCancelling={isCancelling}
           orderStatus={orderStatus}
           orderRejectionReason={orderRejectionReason}
           onBuyerChange={onBuyerChange}
           onSubmitPayment={onSubmitPayment}
+          onCancelOrder={onCancelOrder}
         />
       )}
     </aside>

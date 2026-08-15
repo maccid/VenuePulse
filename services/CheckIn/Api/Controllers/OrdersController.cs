@@ -31,6 +31,13 @@ public sealed class OrdersController(ISender sender) : ControllerBase
         return result.IsSuccess ? Accepted() : BadRequest(new { error = result.Error });
     }
 
+    [HttpPost("{orderId:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid orderId, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new CancelOrderCommand(orderId), cancellationToken);
+        return result.IsSuccess ? Accepted() : BadRequest(new { error = result.Error });
+    }
+
     [HttpGet("{orderId:guid}/status")]
     public async Task<ActionResult<OrderStatusDto>> GetStatus(Guid orderId, CancellationToken cancellationToken)
     {
