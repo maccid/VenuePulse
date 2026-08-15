@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ActivityEntry, TicketStatusUpdate, ZoneOccupancy } from '../shared/types'
-import { useEventScopedConnection } from '@venue/core'
+import type { ActivityEntry } from '../shared/types'
+import type { TicketStatusUpdate, ZoneOccupancy } from '@venue/core/domain'
+import { useEventScopedConnection } from '@venue/core/hub'
 
 const MAX_ACTIVITY_ENTRIES = 20
 

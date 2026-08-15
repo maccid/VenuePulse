@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { EventRelevance, EventSummary, EventType } from '../../shared/types'
+import type { EventRelevance, EventSummary, EventType } from '@venue/core/domain'
+import { InlineError } from '@venue/core/components'
 import { toDatetimeLocalInputValue } from '../../shared/datetime'
 import { useCreateEvent } from '../../hooks/useCreateEvent'
 
@@ -83,7 +84,7 @@ export default function EventCreateForm({ onCreated, onCancel }: Props) {
         </button>
       </div>
 
-      {shownError && <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{shownError}</p>}
+      <InlineError message={shownError} />
     </form>
   )
 }

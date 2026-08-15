@@ -1,4 +1,4 @@
-import type { OccupancyPrediction } from '../../shared/types'
+import type { OccupancyPrediction } from '@venue/core/domain'
 import {
   CHART_HEIGHT,
   CHART_MARGIN,

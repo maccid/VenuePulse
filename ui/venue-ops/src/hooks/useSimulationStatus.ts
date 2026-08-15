@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { SimulationRunStatus } from '../shared/types'
+import type { SimulationRunStatus } from '@venue/core/domain'
 
 const STATUS_POLL_MS = 500
 

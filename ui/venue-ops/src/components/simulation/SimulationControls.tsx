@@ -1,4 +1,4 @@
-import type { SimulationMode } from '../../shared/types'
+import type { SimulationMode } from '@venue/core/domain'
 import { MODE_LABELS } from './simulationLabels'
 
 export interface SimulationConfig {

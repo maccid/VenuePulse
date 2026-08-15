@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { EventRevenueDto } from '../shared/types'
+import type { EventRevenueDto } from '@venue/core/domain'
 
 const REVENUE_POLL_MS = 3000
 

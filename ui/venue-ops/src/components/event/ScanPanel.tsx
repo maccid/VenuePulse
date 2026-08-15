@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { InlineError } from '@venue/core/components'
 import type { ScanResult } from '../../shared/types'
 
 interface Props {
@@ -34,11 +35,7 @@ export default function ScanPanel({ onScan }: Props) {
           Check-in registrado, aforo actualizado.
         </p>
       )}
-      {scanResult.kind === 'error' && (
-        <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">
-          {scanResult.message}
-        </p>
-      )}
+      <InlineError message={scanResult.kind === 'error' ? scanResult.message : null} />
     </section>
   )
 }

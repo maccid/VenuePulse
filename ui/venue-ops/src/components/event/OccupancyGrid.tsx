@@ -1,8 +1,9 @@
-import type { EventSummary, ScanResult, ZoneOccupancy } from '../../shared/types'
+import type { ScanResult } from '../../shared/types'
+import type { EventSummary, ZoneOccupancy } from '@venue/core/domain'
 import PredictionPanel from '../prediction/PredictionPanel'
 import ScanPanel from './ScanPanel'
 import SimulationPanel from '../simulation/SimulationPanel'
-import StadiumMap from '../map/StadiumMap'
+import { StadiumMap } from '@venue/core/map'
 import ZonesDashboard from '../zones/ZonesDashboard'
 
 interface Props {
