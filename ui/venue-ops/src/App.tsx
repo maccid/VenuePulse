@@ -9,7 +9,8 @@ import EventWorkspace from './components/event/EventWorkspace'
 import './App.css'
 
 export default function App() {
-  const { events, activeId, setActiveId, showCreate, setShowCreate, updateEvent, addEvent } = useEventCatalog()
+  const { events, activeId, selectEvent, showCreate, startCreate, cancelCreate, updateEvent, addEvent } =
+    useEventCatalog()
   const { zonesByEvent, loadZones } = useZonesByEvent(activeId)
   const activityByEvent = useTicketActivityFeed(activeId, zonesByEvent)
 
@@ -32,8 +33,8 @@ export default function App() {
         <EventList
           events={events}
           activeId={activeId}
-          onSelect={setActiveId}
-          onCreate={() => setShowCreate(true)}
+          onSelect={selectEvent}
+          onCreate={startCreate}
         />
 
         {showCreate ? (
@@ -41,10 +42,9 @@ export default function App() {
             <EventCreateForm
               onCreated={(created) => {
                 addEvent(created)
-                setActiveId(created.id)
-                setShowCreate(false)
+                selectEvent(created.id)
               }}
-              onCancel={() => setShowCreate(false)}
+              onCancel={cancelCreate}
             />
           </div>
         ) : activeEvent ? (
