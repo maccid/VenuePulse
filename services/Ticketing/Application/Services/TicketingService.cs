@@ -33,9 +33,6 @@ public sealed class TicketingService(
         return @event.TicketTypes
             .Select(t =>
             {
-                // Relevancia antes y fuera de DynamicPricing (que sigue sin saber que existe) —
-                // ver ADR 0019: el tier de demanda que ve el presentador en directo solo debe
-                // significar ocupación, nunca "es caro porque el evento es especial".
                 var adjustedBasePrice = t.Price * relevanceMultiplier;
                 var (effectivePrice, tier) = DynamicPricing.Apply(adjustedBasePrice, occupancyPercentage);
                 return new TicketTypeDto(t.Id, t.EventId, t.Name, t.Price, adjustedBasePrice, t.Description, effectivePrice, tier);
@@ -50,8 +47,6 @@ public sealed class TicketingService(
         foreach (var (name, price, description) in DefaultTicketTypeCatalog.For(request.Type))
             @event.AddTicketType(Guid.NewGuid(), name, price, description);
 
-        // Add -> Publish -> SaveChanges (Outbox transaccional), mismo patrón que ya usa el seed
-        // data para EventCreated y PurchaseTicketCommandHandler en CheckIn (ver ADR 0019).
         await eventRepository.AddAsync(@event, cancellationToken);
 
         await publishEndpoint.Publish(

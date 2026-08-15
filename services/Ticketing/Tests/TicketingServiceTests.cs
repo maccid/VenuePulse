@@ -12,11 +12,6 @@ using VenuePulse.Ticketing.Domain;
 using VenuePulse.Ticketing.Infrastructure;
 using Event = VenuePulse.Ticketing.Domain.Event;
 
-/// <summary>
-/// TicketingService necesita IPublishEndpoint (CreateEventAsync/CancelEventAsync publican por
-/// Outbox, ver ADR 0019) — se usa el harness in-memory de MassTransit para obtenerlo real, mismo
-/// patrón que ZoneOccupancyChangedConsumerTests, en vez de instanciar el servicio a mano.
-/// </summary>
 public class TicketingServiceTests
 {
     private static async Task<(ServiceProvider Provider, ITestHarness Harness, ITicketingService Service, string DatabaseName)> StartAsync()
@@ -32,9 +27,6 @@ public class TicketingServiceTests
 
         services.AddMassTransitTestHarness(x => x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context)));
 
-        // Sin validateScopes (a diferencia de ZoneOccupancyChangedConsumerTests): aquí se
-        // resuelve ITicketingService (scoped) directamente desde el provider raíz para no tener
-        // que gestionar un IServiceScope aparte en cada test.
         var provider = services.BuildServiceProvider();
         var harness = provider.GetRequiredService<ITestHarness>();
         await harness.Start();
@@ -77,7 +69,6 @@ public class TicketingServiceTests
         var @event = await SeedEventAsync(databaseName);
 
         var demandRepository = new ZoneDemandRepository(OpenContext(databaseName));
-        // Aforo total 100, disponible 5 => 95% ocupado.
         await demandRepository.UpsertAsync(Guid.NewGuid(), @event.Id, capacity: 100, availableToSell: 5, confirmedSold: 95, checkedIn: 0, CancellationToken.None);
 
         var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
@@ -95,9 +86,6 @@ public class TicketingServiceTests
 
         var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
 
-        // Sin datos de demanda: BasePrice ya refleja la relevancia (100 x 1.5) y EffectivePrice
-        // también (por eso BasePrice y EffectivePrice coinciden aquí); el tier sigue siendo
-        // "Normal" porque DynamicPricing no sabe que la relevancia existe (ADR 0019).
         ticketTypes.Should().ContainSingle().Which.Should().Match<TicketTypeDto>(
             t => t.Price == 100m && t.BasePrice == 150m && t.EffectivePrice == 150m && t.PriceTier == DynamicPricing.TierNormal);
     }

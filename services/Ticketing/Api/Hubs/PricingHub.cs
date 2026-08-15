@@ -2,10 +2,7 @@ namespace VenuePulse.Ticketing.Api.Hubs;
 
 using Microsoft.AspNetCore.SignalR;
 
-/// <summary>
-/// Scoping por evento vía grupos de SignalR (ADR 0029): cada cliente entra al grupo
-/// "event-{eventId}" con <see cref="JoinEvent"/> y solo recibe los precios de ese evento.
-/// </summary>
+/// <summary>Hub de SignalR para notificar cambios de precio en vivo, agrupando clientes por evento.</summary>
 public sealed class PricingHub : Hub
 {
     public async Task JoinEvent(Guid eventId)

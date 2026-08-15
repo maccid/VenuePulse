@@ -11,7 +11,6 @@ public sealed class TicketType : Entity<Guid>
 
     private TicketType()
     {
-        // EF Core
     }
 
     internal TicketType(Guid id, Guid eventId, string name, decimal price, string? description) : base(id)

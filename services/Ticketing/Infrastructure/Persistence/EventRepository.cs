@@ -12,8 +12,6 @@ public sealed class EventRepository(TicketingDbContext dbContext) : IEventReposi
             .OrderBy(e => e.StartsAtUtc)
             .ToListAsync(cancellationToken);
 
-    // Sin AsNoTracking a propósito: los casos de uso que mutan el agregado (cerrar venta,
-    // cancelar) necesitan que SaveChangesAsync detecte el cambio de estado.
     public Task<Event?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         dbContext.Events
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);

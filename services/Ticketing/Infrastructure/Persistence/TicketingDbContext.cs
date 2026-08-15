@@ -43,7 +43,6 @@ public sealed class TicketingDbContext(DbContextOptions<TicketingDbContext> opti
             builder.HasKey(s => s.ZoneId);
         });
 
-        // Tablas del Outbox/Inbox transaccional de MassTransit (ver ADR 0002).
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
