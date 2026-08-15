@@ -1,5 +1,6 @@
 import type { ActivityEntry } from '../../shared/types'
 import type { EventRevenueDto, EventSummary, ZoneOccupancy } from '@venue/core/domain'
+import { MapPin } from 'lucide-react'
 import ActivityFeed from './ActivityFeed'
 import RevenueWidget from './RevenueWidget'
 import SimulationPanel from '../simulation/SimulationPanel'
@@ -33,19 +34,7 @@ export default function SalesLayout({
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
         <section className="card">
           <h2 className="flex items-center gap-2">
-            <svg
-              className="size-[18px] text-accent"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
+            <MapPin className="size-[18px] text-accent" aria-hidden="true" />
             Mapa del evento
           </h2>
           <StadiumMap zones={zones} mode="sales" />

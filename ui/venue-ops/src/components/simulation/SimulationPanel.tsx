@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SimulationMode, SimulationStartRequest } from '@venue/core/domain'
 import { InlineError } from '@venue/core/components'
+import { Play, RotateCw, Square } from 'lucide-react'
 import { useSimulationStatus } from '../../hooks/useSimulationStatus'
 import SimulationControls, { type SimulationConfig } from './SimulationControls'
 import { MODE_LABELS } from './simulationLabels'
@@ -69,25 +70,34 @@ export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulatio
 
       <div className="mb-4 flex gap-3">
         <button
+          type="button"
           onClick={() => control('start')}
           disabled={running || busy || eventId === ''}
-          className="disabled:cursor-not-allowed disabled:opacity-[0.55]"
+          className="flex size-11 items-center justify-center !p-0 disabled:cursor-not-allowed disabled:opacity-[0.55]"
+          title="Iniciar simulación"
+          aria-label="Iniciar simulación"
         >
-          {running ? 'En curso…' : 'Iniciar'}
+          <Play className="size-5 fill-current" aria-hidden="true" />
         </button>
         <button
+          type="button"
           onClick={() => control('stop')}
           disabled={!running || busy}
-          className="disabled:cursor-not-allowed disabled:opacity-[0.55]"
+          className="flex size-11 items-center justify-center !p-0 bg-danger hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-[0.55]"
+          title="Detener simulación"
+          aria-label="Detener simulación"
         >
-          Detener
+          <Square className="size-5 fill-current" aria-hidden="true" />
         </button>
         <button
+          type="button"
           onClick={() => control('reset')}
           disabled={busy || (running && status?.progress !== 0)}
-          className="disabled:cursor-not-allowed disabled:opacity-[0.55]"
+          className="flex size-11 items-center justify-center !p-0 bg-border-strong text-text hover:bg-border disabled:cursor-not-allowed disabled:opacity-[0.55]"
+          title="Reiniciar aforo"
+          aria-label="Reiniciar aforo"
         >
-          Reiniciar aforo
+          <RotateCw className="size-5" aria-hidden="true" />
         </button>
       </div>
 

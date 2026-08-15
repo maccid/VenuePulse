@@ -12,6 +12,7 @@
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
     "@venue/core": "file:../venue-core",
+    "lucide-react": "^1.31.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
