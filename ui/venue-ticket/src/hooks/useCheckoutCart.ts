@@ -189,14 +189,19 @@ export function useCheckoutCart(
 
     try {
       await api.post(API_ROUTES.orderCancel(orderId))
-    } catch {
+    } catch (error) {
+      try {
+        const status = await api.get<OrderStatusUpdate>(API_ROUTES.orderStatus(orderId))
+        applyOrderStatus(status)
+      } catch {
+        rejectOrder(orderErrorMessage(error, GENERIC_ORDER_REJECTION_REASON))
+      }
       setIsCancelling(false)
       return
     }
 
-    const resolved = await reconcile(orderId)
-    if (!resolved) setIsCancelling(false)
-  }, [orderId, orderStatus, reconcile])
+    resetPurchase()
+  }, [orderId, orderStatus, resetPurchase, applyOrderStatus, rejectOrder])
 
   return {
     draft,

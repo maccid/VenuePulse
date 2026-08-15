@@ -18,8 +18,18 @@ function reasonText(rejectionReason: string): string {
       return 'el precio cambió justo antes de confirmar tu pedido'
     case 'InsufficientAvailability':
       return 'no había aforo suficiente para las unidades solicitadas'
-    default:
+    case 'CancelledByCustomer':
+      return 'cancelaste la reserva'
+    case 'EventCancelled':
+      return 'el evento fue cancelado'
+    case 'PaymentFailed':
       return 'el pago simulado ha fallado (compensación real: aforo liberado)'
+    case 'OrderRequestFailed':
+      return 'no se pudo procesar el pedido, inténtalo de nuevo'
+    case 'PaymentRequestFailed':
+      return 'no se pudo procesar el pago, inténtalo de nuevo'
+    default:
+      return 'no se pudo completar la compra'
   }
 }
 

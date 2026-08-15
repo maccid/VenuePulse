@@ -5,6 +5,7 @@ import { ChevronDownIcon } from '../../shared/icons'
 import PaymentForm from '../PaymentForm'
 import { CartGroupRow } from './CartGroupRow'
 import { groupCartLines } from './cartGrouping'
+import CancelConfirmDialog from './CancelConfirmDialog'
 
 interface Props {
   cart: CartLine[]
@@ -34,6 +35,7 @@ export default function ReservedCartSummary({
   onCancelOrder,
 }: Props) {
   const [summaryOpen, setSummaryOpen] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const activeLines = cart.filter((l) => l.status !== 'Rejected')
   const cartTotal = activeLines.reduce((sum, l) => sum + l.unitPrice, 0)
   const awaitingPayment = orderStatus === 'AwaitingPayment'
@@ -100,9 +102,20 @@ export default function ReservedCartSummary({
       )}
 
       {!allResolved && !reservationExpired && (
-        <button type="button" className="cart-panel__cancel" disabled={isCancelling} onClick={onCancelOrder}>
+        <button type="button" className="cart-panel__cancel" disabled={isCancelling} onClick={() => setConfirmingCancel(true)}>
           {isCancelling ? 'Cancelando…' : 'Cancelar reserva'}
         </button>
+      )}
+
+      {confirmingCancel && (
+        <CancelConfirmDialog
+          isCancelling={isCancelling}
+          onDismiss={() => setConfirmingCancel(false)}
+          onConfirm={() => {
+            setConfirmingCancel(false)
+            onCancelOrder()
+          }}
+        />
       )}
 
       <SagaTimeline rejectionReason={timelineReason} />
