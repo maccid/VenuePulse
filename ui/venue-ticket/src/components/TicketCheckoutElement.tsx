@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { orderStore } from '@venue/core/state'
 import App from '../App.tsx'
 import { ensureStylesheetLoaded } from '../shared/ensureStylesheetLoaded'
 
@@ -9,6 +10,7 @@ export class TicketCheckoutElement extends HTMLElement {
   private root: Root | null = null
 
   async connectedCallback() {
+    if (!this.root) orderStore.getState().reset()
     await ensureStylesheetLoaded()
     if (this.root) return
     this.root = createRoot(this)
