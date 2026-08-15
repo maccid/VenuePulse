@@ -26,7 +26,8 @@ servicios + Core, y se mantiene bajo `services/` por comodidad de rutas relativa
 - CQRS/MediatR fuera de `CheckIn` (ceremonia sin beneficio, ver ADR 0003).
 - Repositorios genéricos — cada servicio tiene su propio repositorio con métodos explícitos.
 - `IConfiguration` inyectado directo — usar opciones tipadas cuando la configuración crezca.
-- Añadir infraestructura (Redis, Prometheus, Seq...) sin una necesidad real y documentada.
+- Añadir infraestructura (Redis, Prometheus, Seq, piezas nuevas de SigNoz...) sin una necesidad
+  real y documentada.
 - `COPY . .` en cualquier Dockerfile — siempre rutas explícitas.
 
 ## Definition of Done
@@ -36,5 +37,5 @@ servicios + Core, y se mantiene bajo `services/` por comodidad de rutas relativa
 - [ ] Si se toca la Saga: test de integración del camino feliz **y** de compensación.
 - [ ] Si se añade un evento/comando nuevo: vive en `VenuePulse.Core.Messaging.Contracts`.
 - [ ] Si se añade una decisión de arquitectura no trivial: ADR nuevo en `docs/architecture/adr/`.
-- [ ] `docker compose -f infra/docker-compose.yml up --build` sigue levantando los 11 contenedores.
+- [ ] `docker compose -f infra/docker-compose.yml up --build` sigue levantando el stack (17 contenedores con SigNoz).
 - [ ] Ningún Dockerfile nuevo hace `COPY . .`.

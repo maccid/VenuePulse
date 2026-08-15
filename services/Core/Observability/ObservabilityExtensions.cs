@@ -9,8 +9,11 @@ namespace VenuePulse.Core.Observability;
 
 /// <summary>
 /// Logging estructurado (Serilog, con TraceId/SpanId de OpenTelemetry como campo de
-/// correlación) + trazas distribuidas (OpenTelemetry -> Jaeger vía OTLP), compartido por los
-/// 3 servicios para que un mismo flujo de compra se pueda seguir de punta a punta en Jaeger.
+/// correlación) + telemetría exportada vía OTLP a SigNoz, compartido por los 3 servicios para
+/// que un mismo flujo de compra se pueda seguir de punta a punta en SigNoz.
+/// Los logs van por el sink Serilog OTLP (mismo endpoint que las trazas): cada log lleva
+/// <c>trace_id</c>/<c>span_id</c> del <c>Activity</c> ambiente, así que en SigNoz cada log queda
+/// correlacionado con su trace sin código adicional.
 /// </summary>
 public static class ObservabilityExtensions
 {
@@ -21,7 +24,15 @@ public static class ObservabilityExtensions
             .Enrich.WithSpan()
             .Enrich.WithProperty("Service", serviceName)
             .WriteTo.Console(
-                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] ({Service}) {Message:lj} traceId={TraceId} {NewLine}{Exception}"));
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] ({Service}) {Message:lj} traceId={TraceId} {NewLine}{Exception}")
+            .WriteTo.OpenTelemetry(options =>
+            {
+                options.Endpoint = context.Configuration["Observability:OtlpEndpoint"] ?? "http://localhost:4317";
+                options.ResourceAttributes = new Dictionary<string, object>
+                {
+                    ["service.name"] = serviceName,
+                };
+            }));
 
     public static IServiceCollection AddTracing(
         this IServiceCollection services,
