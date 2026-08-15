@@ -3,11 +3,6 @@ namespace VenuePulse.CheckIn.Domain;
 using VenuePulse.Core.Data;
 using VenuePulse.Core.Domain;
 
-/// <summary>
-/// Único agregado con orquestación real (vía TicketPurchaseSaga) y consistencia eventual con
-/// AccessControl. Aquí sí hay asimetría lectura/escritura real, por eso este es el único
-/// servicio con CQRS (ver ADR 0003).
-/// </summary>
 public sealed class Ticket : Entity<Guid>, IAuditable
 {
     public Guid EventId { get; private set; }
@@ -17,24 +12,10 @@ public sealed class Ticket : Entity<Guid>, IAuditable
     public TicketStatus Status { get; private set; }
     public string? RejectionReason { get; private set; }
 
-    /// <summary>
-    /// <c>PurchaseOrder.Id</c> cuando esta entrada nace como una línea de un pedido multi-entrada
-    /// (ver ADR 0028) — nulo en una compra suelta (pre-ADR 0028, sigue soportada). Absorbe el
-    /// alcance del antiguo Bloque 24 ("GUID de grupo para compras múltiples"): el mismo valor sirve
-    /// para el escaneo conjunto de las entradas de un pedido (ampliación de seguimiento, no
-    /// construida en esta ronda).
-    /// </summary>
     public Guid? GroupId { get; private set; }
 
-    /// <summary>
-    /// Precio efectivo que el cliente ya vio en el popup de compra (Bloque 14), fijado en el
-    /// momento de la compra e inmutable después — los ingresos no varían retroactivamente si el
-    /// precio dinámico de <c>Ticketing</c> cambia más tarde (ver ADR 0021, sección 5 del plan). El
-    /// cliente lo envía sin revalidar contra <c>Ticketing</c>, riesgo aceptado documentado en el ADR.
-    /// </summary>
     public decimal Price { get; private set; }
 
-    /// <summary>Rellenados por <see cref="AuditingSaveChangesInterceptor"/> al guardar — ver ADR 0011.</summary>
     public DateTimeOffset CreatedAtUtc { get; private set; }
     public DateTimeOffset? UpdatedAtUtc { get; private set; }
 
@@ -43,7 +24,6 @@ public sealed class Ticket : Entity<Guid>, IAuditable
 
     private Ticket()
     {
-        // EF Core
     }
 
     public Ticket(Guid id, Guid eventId, Guid ticketTypeId, Guid zoneId, string holder, decimal price) : base(id)
@@ -57,9 +37,6 @@ public sealed class Ticket : Entity<Guid>, IAuditable
         Status = TicketStatus.Pending;
     }
 
-    /// <summary>Vincula esta entrada a su <c>PurchaseOrder</c> (ver ADR 0028) — solo una vez, en el
-    /// mismo instante en que se crea como parte de un pedido (<c>PlaceOrderCommandHandler</c>), por
-    /// eso lanza si ya tenía un grupo en vez de permitir reasignarlo.</summary>
     public void AssignToGroup(Guid groupId)
     {
         if (GroupId.HasValue)
@@ -68,8 +45,6 @@ public sealed class Ticket : Entity<Guid>, IAuditable
         GroupId = groupId;
     }
 
-    /// <summary>El aforo ya está reservado de verdad (ver TicketPurchaseSaga) — a partir de aquí
-    /// la entrada espera a que el cliente elija método de pago.</summary>
     public void MarkAwaitingPayment()
     {
         if (Status != TicketStatus.Pending)
@@ -78,8 +53,6 @@ public sealed class Ticket : Entity<Guid>, IAuditable
         Status = TicketStatus.AwaitingPayment;
     }
 
-    /// <summary>La Saga ya sabe qué método de pago eligió el cliente y empieza a resolver el
-    /// resultado tras el delay configurable de "Procesando pago" (ver ADR 0021).</summary>
     public void MarkProcessingPayment()
     {
         if (Status != TicketStatus.AwaitingPayment)
@@ -115,9 +88,6 @@ public sealed class Ticket : Entity<Guid>, IAuditable
         CheckedInAtUtc = DateTimeOffset.UtcNow;
     }
 
-    /// <summary>Solo una entrada ya vendida (<see cref="TicketStatus.Confirmed"/>) puede
-    /// reembolsarse — ver ADR 0021 sobre por qué es un estado terminal distinto de
-    /// <see cref="TicketStatus.Rejected"/>.</summary>
     public void Refund()
     {
         if (Status != TicketStatus.Confirmed)

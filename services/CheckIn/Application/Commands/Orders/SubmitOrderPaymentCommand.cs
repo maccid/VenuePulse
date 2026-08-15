@@ -8,12 +8,6 @@ using VenuePulse.Core.Messaging.Contracts;
 
 public sealed record SubmitOrderPaymentCommand(Guid OrderId, bool SimulateFailure) : IRequest<Result>;
 
-/// <summary>
-/// Único paso de pago para el pedido completo (ADR 0028) — la <c>PurchaseOrderSaga</c> reenvía
-/// <see cref="TicketPaymentSubmitted"/> a cada línea hermana (ver estado <c>AwaitingPayment</c> de
-/// esa Saga); este handler solo valida y publica <see cref="PurchaseOrderPaymentSubmitted"/> una
-/// vez, mismo patrón que <see cref="SubmitPaymentCommand"/> para una entrada suelta.
-/// </summary>
 public sealed class SubmitOrderPaymentCommandHandler(IPurchaseOrderRepository repository, IPublishEndpoint publishEndpoint)
     : IRequestHandler<SubmitOrderPaymentCommand, Result>
 {

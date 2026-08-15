@@ -6,12 +6,6 @@ using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Infrastructure.Sagas.Timeout;
 using VenuePulse.Core.Messaging.Contracts;
 
-/// <summary>
-/// Compone el <see cref="OrderStatusDto"/> completo a partir de la cabecera del pedido y de sus
-/// líneas (entradas agrupadas por <c>GroupId</c>, ver ADR 0028) — mismo patrón que
-/// <c>GetOrderStatusQueryHandler</c>, reutilizado por los 3 consumers de este fichero para no
-/// repetir la composición.
-/// </summary>
 internal static class OrderStatusComposer
 {
     public static async Task<OrderStatusDto> ComposeAsync(
@@ -34,12 +28,7 @@ internal static class OrderStatusComposer
     }
 }
 
-/// <summary>
-/// La <c>PurchaseOrderSaga</c> ya transicionó a "AwaitingPayment" (todas sus líneas reservaron
-/// aforo) — refleja ese hecho en el <see cref="VenuePulse.CheckIn.Domain.PurchaseOrder"/>, mismo
-/// motivo que <c>TicketReadyForPaymentConsumer</c> (ADR 0018/0028): escucha el evento publicado
-/// por la Saga tras persistir su propia transición, no un evento en paralelo con ella.
-/// </summary>
+/// <summary>Consume PurchaseOrderAwaitingPayment: marca el pedido como esperando pago y notifica el nuevo estado.</summary>
 public sealed class PurchaseOrderReadyForPaymentConsumer(
     IPurchaseOrderRepository orderRepository,
     ITicketRepository ticketRepository,
@@ -64,16 +53,7 @@ public sealed class PurchaseOrderReadyForPaymentConsumer(
     }
 }
 
-/// <summary>
-/// El cliente ya envió el pago del pedido completo — refleja la transición en el
-/// <see cref="VenuePulse.CheckIn.Domain.PurchaseOrder"/> antes de que llegue su resolución
-/// final. Sin este consumer, <see cref="PurchaseOrderCompletedConsumer"/> nunca podía completar
-/// el pedido: <c>PurchaseOrder.Complete()</c> exige el estado <c>Confirming</c>, pero nada lo
-/// transicionaba ahí — <c>PurchaseOrderSaga</c> ya lo hace en su propio estado (Mongo), pero
-/// ningún consumer reflejaba ese mismo paso en Postgres. Mismo motivo que
-/// <see cref="PurchaseOrderReadyForPaymentConsumer"/>: escucha el evento que ya publica
-/// <c>SubmitOrderPaymentCommandHandler</c> al validar y aceptar el pago, no un evento en paralelo.
-/// </summary>
+/// <summary>Consume PurchaseOrderPaymentSubmitted: marca el pedido como confirmando líneas y notifica el nuevo estado.</summary>
 public sealed class PurchaseOrderConfirmingConsumer(
     IPurchaseOrderRepository orderRepository,
     ITicketRepository ticketRepository,
@@ -98,6 +78,7 @@ public sealed class PurchaseOrderConfirmingConsumer(
     }
 }
 
+/// <summary>Consume PurchaseOrderCompleted: marca el pedido como completado y notifica el nuevo estado.</summary>
 public sealed class PurchaseOrderCompletedConsumer(
     IPurchaseOrderRepository orderRepository,
     ITicketRepository ticketRepository,
@@ -122,6 +103,7 @@ public sealed class PurchaseOrderCompletedConsumer(
     }
 }
 
+/// <summary>Consume PurchaseOrderRejected: marca el pedido como rechazado y notifica el nuevo estado.</summary>
 public sealed class PurchaseOrderRejectedConsumer(
     IPurchaseOrderRepository orderRepository,
     ITicketRepository ticketRepository,

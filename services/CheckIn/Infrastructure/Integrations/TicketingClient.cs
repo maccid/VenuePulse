@@ -6,21 +6,8 @@ using Microsoft.Extensions.Logging;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.Core.Domain;
 
-/// <summary>
-/// Única llamada HTTP síncrona entre dos backends del proyecto (ver ADR 0028, decisión 2):
-/// <c>GET /api/events/{eventId}/ticket-types</c>, endpoint ya existente de <c>Ticketing</c> (ver
-/// <c>VenuePulse.Ticketing.Api.Controllers.EventsController</c>). Sin Polly (a propósito, ver ADR
-/// 0028) — cualquier fallo (red, timeout, deserialización) se traduce a un único
-/// <see cref="Result"/> de fallo, sin reintentos. La causa del fallo queda loggeada aquí (con el
-/// <c>EventId</c> afectado) para que se pueda distinguir en Seq un problema de red de un timeout
-/// o de un contrato roto — el command solo ve <c>PricingUnavailable</c>.
-/// </summary>
 public sealed class TicketingClient(HttpClient httpClient, ILogger<TicketingClient> logger) : ITicketingClient
 {
-    // Shape MÍNIMO del TicketTypeDto real de Ticketing (Id/EffectivePrice) que este cliente
-    // necesita — deserialización tolerante a los campos extra (Name/Price/BasePrice/...) de
-    // System.Text.Json, sin referenciar el ensamblado de Ticketing (ver .ia/RULES.md, "un
-    // microservicio, sus propios contratos").
     private sealed record TicketTypeResponse(Guid Id, decimal EffectivePrice);
 
     public async Task<Result<IReadOnlyCollection<TicketTypeSnapshot>>> GetTicketTypesAsync(Guid eventId, CancellationToken cancellationToken)
@@ -54,8 +41,6 @@ public sealed class TicketingClient(HttpClient httpClient, ILogger<TicketingClie
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            // Timeout del propio HttpClient (HttpClient.Timeout), distinto de una cancelación real
-            // del caller — mismo motivo de fallo que un error de red.
             logger.LogWarning("Timeout al consultar precios del evento {EventId}", eventId);
             return Result.Failure<IReadOnlyCollection<TicketTypeSnapshot>>("PricingUnavailable");
         }

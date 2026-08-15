@@ -11,22 +11,6 @@ using Testcontainers.RabbitMq;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.Core.Messaging.Contracts;
 
-/// <summary>
-/// La pieza más contundente del repo: prueba la Saga de extremo a extremo contra
-/// infraestructura REAL (Postgres, RabbitMQ, MongoDB vía Testcontainers), no mocks. AccessControl
-/// no se levanta como servicio — un consumidor mínimo dentro del propio test hace de doble para
-/// simular sus respuestas, manteniendo el test rápido sin perder realismo de infraestructura.
-/// Cubre explícitamente el camino feliz Y el camino de compensación (ver ADR 0001).
-/// Timeout generoso (90s): arrancar 3 contenedores + el host completo de ASP.NET Core en una
-/// máquina compartida bajo carga puede tardar más que en un runner de CI dedicado.
-///
-/// NOTA (ver .ia/KNOWN-ISSUES.md): "Bizum_compensa_y_rechaza_la_entrada" se ha observado flaky en
-/// este arnés de Testcontainers — el doble de AccessControl recibe y responde ReserveZoneSlot
-/// correctamente y rápido, pero la Saga real del host de pruebas no siempre llega a procesar esa
-/// respuesta a tiempo y acaba rechazada por ReservationTimedOut. No reproduce contra el stack real
-/// (docker compose, RabbitMQ/Postgres/Mongo persistentes en vez de contenedores efímeros), donde
-/// tarjeta y bizum se han verificado a mano repetidamente.
-/// </summary>
 public sealed class TicketPurchaseFlowTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine").Build();
@@ -47,19 +31,12 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
             builder.UseSetting("RabbitMq:ConnectionString", _rabbitMq.GetConnectionString());
             builder.UseSetting("Mongo:ConnectionString", _mongo.GetConnectionString());
             builder.UseSetting("Mongo:SagaDatabase", "venuepulse_sagas_test");
-            // Más generoso que el valor de producción (30s, appsettings.json): el arranque en frío
-            // del host + 3 Testcontainers en una máquina bajo carga puede comerse buena parte de
-            // ese margen antes de que la primera reserva real llegue a completarse.
             builder.UseSetting("Saga:ReservationTimeoutSeconds", "60");
-            // A cero en tests: el delay artificial de "Procesando pago" (ADR 0021) es solo para que
-            // el presentador lo perciba en la demo en vivo, no para el arnés de Testcontainers.
             builder.UseSetting("Saga:PaymentProcessingDelaySeconds", "0");
         });
 
         _client = _apiFactory.CreateClient();
 
-        // Doble de AccessControl: mismo broker real, responde exactamente lo que respondería
-        // el servicio real a cada comando de zona.
         _fakeAccessControlBus = Bus.Factory.CreateUsingRabbitMq(cfg =>
         {
             cfg.Host(new Uri(_rabbitMq.GetConnectionString()));
@@ -111,11 +88,6 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
         status.RejectionReason.Should().Be("PaymentFailed");
     }
 
-    /// <summary>
-    /// Cubre la cascada de cancelación (ADR 0021): una entrada ya confirmada se reembolsa, una
-    /// que todavía no eligió pago se rechaza vía la propia Saga — con infraestructura real, no el
-    /// arnés in-memory (que ya cubre las dos ramas por separado en <c>TicketPurchaseSagaTests</c>).
-    /// </summary>
     [Fact]
     public async Task Cancelar_el_evento_reembolsa_las_confirmadas_y_rechaza_las_pendientes()
     {
@@ -154,13 +126,6 @@ public sealed class TicketPurchaseFlowTests : IAsyncLifetime
         return body.GetProperty("ticketId").GetGuid();
     }
 
-    // Entre que el Ticket llega a "AwaitingPayment" (columna de Postgres, lo que consulta
-    // PollUntilAsync) y ese mismo hecho queda también confirmado en la Saga (documento de Mongo,
-    // lo que valida SubmitPaymentCommandHandler) hay un salto de mensaje real por RabbitMQ — en la
-    // UI real esto es invisible porque el botón de pago solo aparece tras la notificación SignalR
-    // que dispara ese mismo consumer, pero aquí, sin SignalR, un GET justo tras ver el estado
-    // puede llegar a la ventana de unos pocos milisegundos antes de que cierre. Reintentar un par
-    // de veces refleja ese mismo comportamiento sin necesitar un cliente SignalR en el test.
     private async Task PayAsync(Guid ticketId, string method)
     {
         for (var attempt = 1; attempt <= 5; attempt++)

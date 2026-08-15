@@ -35,8 +35,6 @@ public static class DependencyInjection
             ReservationTimeout: TimeSpan.FromSeconds(int.Parse(configuration["Saga:ReservationTimeoutSeconds"] ?? "60")),
             PollInterval: TimeSpan.FromSeconds(int.Parse(configuration["Saga:TimeoutPollIntervalSeconds"] ?? "5"))));
         services.AddSingleton<ReservationTimeoutTracker>();
-        // Mismo singleton expuesto también por su puerto de Application (contador de reserva,
-        // ver ADR 0025) — GetTicketStatusQueryHandler no depende de Infrastructure directamente.
         services.AddSingleton<IReservationTimeoutReader>(sp => sp.GetRequiredService<ReservationTimeoutTracker>());
         services.AddHostedService<ReservationTimeoutMonitor>();
 
@@ -63,8 +61,6 @@ public static class DependencyInjection
                 x.AddConsumer<PurchaseOrderCompletedConsumer>();
                 x.AddConsumer<PurchaseOrderRejectedConsumer>();
                 x.AddConsumer<ReservationWatchdogConsumer>();
-                // Nombre de cola explícito: mismo motivo que en AccessControl.Infrastructure.
-                // DependencyInjection — sin esto, ambos EventCancelledConsumer comparten cola.
                 x.AddConsumer<EventCancelledConsumer>()
                     .Endpoint(e => e.Name = "CheckIn.EventCancelled");
                 x.AddConsumer<TicketRefundedConsumer>();

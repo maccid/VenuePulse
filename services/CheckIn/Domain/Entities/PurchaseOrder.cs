@@ -3,15 +3,6 @@ namespace VenuePulse.CheckIn.Domain;
 using VenuePulse.Core.Data;
 using VenuePulse.Core.Domain;
 
-/// <summary>
-/// Cabecera de un pedido multi-entrada (ADR 0028) — orquestado por la <c>PurchaseOrderSaga</c> por
-/// encima de N <c>TicketPurchaseSaga</c> aisladas, una por cada <see cref="Ticket"/> de este pedido
-/// (vinculadas por <see cref="Ticket.GroupId"/> = <see cref="Entity{TId}.Id"/> de este agregado).
-/// Sin líneas propias: las líneas se derivan agrupando los propios <see cref="Ticket"/> por
-/// <c>GroupId</c> cuando hace falta consultarlas (ver "Alternativas descartadas" del ADR 0028) —
-/// este agregado solo guarda la cabecera (<see cref="EventId"/>/<see cref="Holder"/>/
-/// <see cref="Status"/>/<see cref="RejectionReason"/>).
-/// </summary>
 public sealed class PurchaseOrder : Entity<Guid>, IAuditable
 {
     public Guid EventId { get; private set; }
@@ -19,13 +10,11 @@ public sealed class PurchaseOrder : Entity<Guid>, IAuditable
     public PurchaseOrderStatus Status { get; private set; }
     public string? RejectionReason { get; private set; }
 
-    /// <summary>Rellenados por <see cref="AuditingSaveChangesInterceptor"/> al guardar — ver ADR 0011.</summary>
     public DateTimeOffset CreatedAtUtc { get; private set; }
     public DateTimeOffset? UpdatedAtUtc { get; private set; }
 
     private PurchaseOrder()
     {
-        // EF Core
     }
 
     public PurchaseOrder(Guid id, Guid eventId, string holder) : base(id)
@@ -36,8 +25,6 @@ public sealed class PurchaseOrder : Entity<Guid>, IAuditable
         Status = PurchaseOrderStatus.Reserving;
     }
 
-    /// <summary>Todas las líneas reservaron aforo con éxito — el pedido completo espera un único
-    /// paso de pago (ver <c>PurchaseOrderSaga</c>, estado <c>AwaitingPayment</c>).</summary>
     public void MarkAwaitingPayment()
     {
         if (Status != PurchaseOrderStatus.Reserving)
@@ -46,9 +33,6 @@ public sealed class PurchaseOrder : Entity<Guid>, IAuditable
         Status = PurchaseOrderStatus.AwaitingPayment;
     }
 
-    /// <summary>El cliente ya eligió método de pago para el pedido completo — cada línea hermana
-    /// resuelve su propio pago por separado (ver <c>PurchaseOrderSaga</c>, estado
-    /// <c>ConfirmingLines</c>).</summary>
     public void MarkConfirming()
     {
         if (Status != PurchaseOrderStatus.AwaitingPayment)
@@ -65,9 +49,6 @@ public sealed class PurchaseOrder : Entity<Guid>, IAuditable
         Status = PurchaseOrderStatus.Completed;
     }
 
-    /// <summary>Rechazo todo-o-nada del pedido completo (ver ADR 0028) — válido desde cualquier
-    /// estado no terminal: precio desactualizado o aforo insuficiente en cualquier línea
-    /// (<c>Reserving</c>), o fallo de pago en cualquier línea (<c>Confirming</c>).</summary>
     public void Reject(string reason)
     {
         if (Status is not (PurchaseOrderStatus.Reserving or PurchaseOrderStatus.AwaitingPayment or PurchaseOrderStatus.Confirming))

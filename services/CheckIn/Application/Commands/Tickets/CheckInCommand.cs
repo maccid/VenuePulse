@@ -7,10 +7,6 @@ using VenuePulse.Core.Messaging.Contracts;
 
 public sealed record CheckInCommand(Guid TicketId) : IRequest<Result>;
 
-/// <summary>
-/// Escaneo físico en el torniquete (simulado desde venue-ops): valida la entrada y notifica a
-/// AccessControl para que incremente la ocupación en vivo de su zona.
-/// </summary>
 public sealed class CheckInCommandHandler(ITicketRepository repository, IPublishEndpoint publishEndpoint)
     : IRequestHandler<CheckInCommand, Result>
 {

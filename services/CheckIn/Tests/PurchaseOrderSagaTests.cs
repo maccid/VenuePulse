@@ -7,14 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using VenuePulse.CheckIn.Infrastructure.Sagas;
 using VenuePulse.Core.Messaging.Contracts;
 
-/// <summary>
-/// Tests de aplicación con el harness in-memory de MassTransit (sin broker ni Mongo reales, mismo
-/// patrón que <see cref="TicketPurchaseSagaTests"/>) — prueban la <see cref="PurchaseOrderSaga"/>
-/// orquestadora EN AISLAMIENTO, publicando a mano los eventos que en producción publicaría cada
-/// <c>TicketPurchaseSaga</c> hermana (ver ADR 0028): esta Saga nunca sabe de la existencia de esas
-/// Sagas, solo observa <see cref="TicketAwaitingPayment"/>/<see cref="TicketPurchaseConfirmed"/>/
-/// <see cref="TicketPurchaseRejected"/> correlacionados por <c>GroupId</c>.
-/// </summary>
 public class PurchaseOrderSagaTests
 {
     private static async Task<(ServiceProvider Provider, ITestHarness Harness)> StartHarnessAsync()
@@ -32,9 +24,6 @@ public class PurchaseOrderSagaTests
         return (provider, harness);
     }
 
-    // Mismo motivo que en TicketPurchaseSagaTests: un Publish anidado dentro de la resolución de
-    // otro mensaje (p. ej. PurchaseOrderRejected publicado al procesar el último TicketPurchaseRejected
-    // pendiente) puede no estar todavía en Published cuando Consumed.Any ya se resolvió.
     private static async Task<bool> EventuallyAsync(Func<Task<bool>> check, int timeoutMs = 3000)
     {
         var deadline = Environment.TickCount64 + timeoutMs;
@@ -64,8 +53,6 @@ public class PurchaseOrderSagaTests
             orderId, eventId, [new PurchaseOrderTicketRef(ticket1, zone1), new PurchaseOrderTicketRef(ticket2, zone2)]));
         await harness.Consumed.Any<PurchaseOrderRequested>();
 
-        // Ambas líneas reservaron aforo con éxito (publicado por cada TicketPurchaseSaga hermana,
-        // simulado a mano aquí) — solo cuando las DOS avisan, el pedido pasa a esperar pago.
         await harness.Bus.Publish(new TicketAwaitingPayment(ticket1, orderId));
         (await harness.Published.Any<PurchaseOrderAwaitingPayment>()).Should().BeFalse();
 
@@ -100,14 +87,9 @@ public class PurchaseOrderSagaTests
             orderId, eventId, [new PurchaseOrderTicketRef(ticket1, zone1), new PurchaseOrderTicketRef(ticket2, zone2)]));
         await harness.Consumed.Any<PurchaseOrderRequested>();
 
-        // La línea 1 no consigue reservar aforo (AccessControl la rechazó) mientras la línea 2
-        // seguía reservando — hay que cancelarla, no dejarla huérfana.
         await harness.Bus.Publish(new TicketPurchaseRejected(ticket1, "ZoneFull", orderId));
         (await EventuallyAsync(() => harness.Published.Any<TicketPurchaseCancelled>(m => m.Context.Message.CorrelationId == ticket2))).Should().BeTrue();
 
-        // La cancelación llega a la TicketPurchaseSaga de la línea 2 (simulado a mano aquí, ver
-        // TicketPurchaseSagaTests.Cancelacion_de_evento_en_Reserving_rechaza_sin_liberar_aforo) —
-        // como todavía no había reservado aforo, se rechaza directamente.
         await harness.Bus.Publish(new TicketPurchaseRejected(ticket2, "EventCancelled", orderId));
 
         (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderRejected>(m => m.Context.Message.Reason == "InsufficientAvailability"))).Should().BeTrue();
@@ -128,10 +110,6 @@ public class PurchaseOrderSagaTests
             orderId, eventId, [new PurchaseOrderTicketRef(ticket1, zone1)]));
         await harness.Consumed.Any<PurchaseOrderRequested>();
 
-        // Sin hermanas: tras cancelar (nada que cancelar), PendingTicketIds ya queda vacío al
-        // entrar en CancellingLines. Si esa rama transiciona sin comprobar la condición de cierre,
-        // ningún TicketRejected futuro la va a re-evaluar (no hay más líneas) y el pedido se queda
-        // colgado en CancellingLines para siempre.
         await harness.Bus.Publish(new TicketPurchaseRejected(ticket1, "ZoneFull", orderId));
 
         (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderRejected>(m => m.Context.Message.Reason == "InsufficientAvailability"))).Should().BeTrue();
@@ -161,8 +139,6 @@ public class PurchaseOrderSagaTests
         await harness.Bus.Publish(new PurchaseOrderPaymentSubmitted(orderId, SimulateFailure: false));
         await harness.Consumed.Any<PurchaseOrderPaymentSubmitted>();
 
-        // La línea 1 confirma su pago; la línea 2 lo rechaza (p. ej. Bizum) — el pedido completo se
-        // rechaza y hay que compensar la línea 1, que ya estaba vendida de verdad.
         await harness.Bus.Publish(new TicketPurchaseConfirmed(ticket1, orderId));
         await harness.Bus.Publish(new TicketPurchaseRejected(ticket2, "PaymentFailed", orderId));
 
@@ -170,7 +146,6 @@ public class PurchaseOrderSagaTests
         (await harness.Published.Any<TicketRefunded>(m => m.Context.Message.CorrelationId == ticket1)).Should().BeTrue();
         (await harness.Published.Any<PurchaseOrderRejected>(m => m.Context.Message.Reason == "PaymentFailed")).Should().BeTrue();
 
-        // La línea 2 (la que falló) nunca se compensa con estos dos mensajes — ya está rechazada.
         (await harness.Published.Any<ReleaseConfirmedZoneSlot>(m => m.Context.Message.CorrelationId == ticket2)).Should().BeFalse();
     }
 
@@ -195,10 +170,6 @@ public class PurchaseOrderSagaTests
         await harness.Bus.Publish(new TicketAwaitingPayment(ticket2, orderId));
         (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderAwaitingPayment>())).Should().BeTrue();
 
-        // El cliente nunca llega a pulsar pagar — la línea 1 agota su propio timeout de pago (ver
-        // TicketPurchaseSaga.During(AwaitingPayment).When(TimedOut)) sin que esta Saga haya visto
-        // OrderPaymentSubmitted. Antes de este fix, esto era un UnhandledEventException: ningún
-        // When(TicketRejected) declarado en AwaitingPayment dejaba el pedido colgado para siempre.
         await harness.Bus.Publish(new TicketPurchaseRejected(ticket1, "PaymentTimedOut", orderId));
 
         (await EventuallyAsync(() => harness.Published.Any<TicketPurchaseCancelled>(m => m.Context.Message.CorrelationId == ticket2))).Should().BeTrue();
@@ -226,12 +197,6 @@ public class PurchaseOrderSagaTests
         await harness.Bus.Publish(new TicketAwaitingPayment(ticket1, orderId));
         (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderAwaitingPayment>())).Should().BeTrue();
 
-        // No se publica PurchaseOrderPaymentSubmitted a mano aquí a propósito: simula la ventana de
-        // carrera real (ver ADR 0027 a nivel de pedido) donde TicketPurchaseConfirmed de la única
-        // línea llega correlacionado por GroupId mientras la Saga del pedido sigue (desde su propio
-        // punto de vista) en AwaitingPayment. Antes de este fix, esto era un UnhandledEventException
-        // y el pedido se quedaba colgado en AwaitingPayment con la entrada ya Confirmed — visto en
-        // real.
         await harness.Bus.Publish(new TicketPurchaseConfirmed(ticket1, orderId));
 
         (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderCompleted>())).Should().BeTrue();
@@ -258,9 +223,6 @@ public class PurchaseOrderSagaTests
         await harness.Bus.Publish(new TicketAwaitingPayment(ticket2, orderId));
         (await EventuallyAsync(() => harness.Published.Any<PurchaseOrderAwaitingPayment>())).Should().BeTrue();
 
-        // Mismo tipo de carrera que el test anterior, pero la línea más rápida rechaza con
-        // "PaymentFailed" (pago real ya enviado, no un timeout de pre-pago) — hay que compensar, no
-        // cancelar, aunque el pedido siga mostrando AwaitingPayment desde su propio punto de vista.
         await harness.Bus.Publish(new TicketPurchaseConfirmed(ticket1, orderId));
         await harness.Bus.Publish(new TicketPurchaseRejected(ticket2, "PaymentFailed", orderId));
 
