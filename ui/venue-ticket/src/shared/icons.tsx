@@ -5,7 +5,11 @@ export function CartIcon() {
 }
 
 export function ReloadIcon() {
-  return <RefreshCw className="cart-panel__reload-icon" aria-hidden="true" />
+  return <RefreshCw className="cart-panel__title-action-icon" aria-hidden="true" />
+}
+
+export function CancelReservationIcon() {
+  return <Trash2 className="cart-panel__title-action-icon" aria-hidden="true" />
 }
 
 export function ChevronDownIcon() {

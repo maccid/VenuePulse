@@ -24,6 +24,13 @@ function writeStoredOrderId(eventId: string, orderId: string | null) {
   else sessionStorageService.remove(orderStorageKey(eventId))
 }
 
+// Module-level, no de componente: sobrevive a que el usuario salga al listado y vuelva a entrar
+// (el checkout se desmonta/remonta dentro de la misma carga de página), pero se reinicia en una
+// recarga real. Solo el primer montaje de todo el checkout en esta carga de página puede
+// restaurar un pedido guardado en sessionStorage — así una vuelta al listado siempre arranca
+// limpio, y solo un refresco de verdad (dentro de la reserva) recupera la sesión en curso.
+let hasRestoredFromSessionThisPageLoad = false
+
 interface OrderStatusHook {
   orderId: string | null
   orderStatus: OrderStatus | null
@@ -106,6 +113,9 @@ export function useOrderStatus(eventId: string): OrderStatusHook {
   }, [eventId, resetOrder])
 
   useEffect(() => {
+    if (hasRestoredFromSessionThisPageLoad) return
+    hasRestoredFromSessionThisPageLoad = true
+
     const storedOrderId = readStoredOrderId(eventId)
     if (!storedOrderId) return
 
