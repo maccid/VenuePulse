@@ -183,7 +183,7 @@ services:
     container_name: venuepulse-web-shell
     build:
       context: ..
-      dockerfile: ui/shell/Dockerfile
+      dockerfile: ui/venue-shell/Dockerfile
     expose:
       - "80"
 
@@ -191,7 +191,7 @@ services:
     container_name: venuepulse-web-ticket-checkout
     build:
       context: ..
-      dockerfile: ui/ticket-checkout/Dockerfile
+      dockerfile: ui/venue-ticket/Dockerfile
     expose:
       - "80"
 

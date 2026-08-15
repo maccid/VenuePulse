@@ -45,7 +45,7 @@ Un servicio o app concreta:
 
 ```bash
 dotnet build services/Ticketing/Api/VenuePulse.Ticketing.Api.csproj
-npm run build --prefix ui/shell
+npm run build --prefix ui/venue-shell
 ```
 
 ## Flujo git

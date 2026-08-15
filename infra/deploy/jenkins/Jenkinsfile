@@ -33,7 +33,7 @@ pipeline {
                 axes {
                     axis {
                         name: 'APP'
-                        values 'shell', 'ticket-checkout', 'venue-ops'
+                        values 'venue-shell', 'venue-ticket', 'venue-ops'
                     }
                 }
                 stages {

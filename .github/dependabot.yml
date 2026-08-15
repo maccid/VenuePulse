@@ -6,12 +6,12 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "npm"
-    directory: "/ui/shell"
+    directory: "/ui/venue-shell"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "npm"
-    directory: "/ui/ticket-checkout"
+    directory: "/ui/venue-ticket"
     schedule:
       interval: "weekly"
 

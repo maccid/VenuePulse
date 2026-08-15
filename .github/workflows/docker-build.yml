@@ -24,10 +24,10 @@ jobs:
             dockerfile: services/CheckIn/Api/Dockerfile
             context: .
           - name: web-shell
-            dockerfile: ui/shell/Dockerfile
+            dockerfile: ui/venue-shell/Dockerfile
             context: .
           - name: web-ticket-checkout
-            dockerfile: ui/ticket-checkout/Dockerfile
+            dockerfile: ui/venue-ticket/Dockerfile
             context: .
           - name: web-venue-ops
             dockerfile: ui/venue-ops/Dockerfile

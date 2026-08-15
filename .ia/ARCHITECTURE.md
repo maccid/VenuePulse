@@ -24,7 +24,8 @@ services/       Backend .NET
                 reales de los 3 servicios + Core; falla el build si se viola una regla de capas.
                 Vive bajo services/ solo por comodidad de rutas relativas a los proyectos que
                 analiza (ver `.ia/RULES.md`).
-ui/             3 apps React independientes: shell, ticket-checkout (micro frontend), venue-ops
+ui/             3 apps React independientes (venue-shell, venue-ticket, venue-ops) + paquete
+                compartido venue-core (@venue/core: utilidades SignalR)
 infra/          docker-compose, K8s (Kustomize), Jenkinsfile, Nginx, guía Azure — todo separado
                 de services/ y ui/, sin dependencias de código en ningún sentido
 docs/           ADRs, AI-USAGE.md, demo-script.md

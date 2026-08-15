@@ -22,7 +22,7 @@ No tiene relación con ninguna marca real: los nombres del dominio (`VenuePulse`
 - **Persistencia poliglota con motivo**: Postgres (agregados de negocio), MongoDB (estado de
   la Saga — [ADR 0005](docs/architecture/adr/0005-persistencia-poliglota-saga-mongo.md)),
   RabbitMQ (mensajería).
-- **React con micro frontends real** (`shell` + `ticket-checkout` como Web Component) +
+- **React con micro frontends real** (`venue-shell` + `venue-ticket` como Web Component) +
   panel de operaciones — ver [ADR 0004](docs/architecture/adr/0004-microfrontends-nginx-webcomponents.md).
 - **Logs + trazas distribuidas en una sola UI** con OpenTelemetry + Seq, no solo logging —
   [ADR 0033](docs/architecture/adr/0033-observabilidad-seq-sustituye-jaeger.md).
@@ -37,7 +37,7 @@ No tiene relación con ninguna marca real: los nombres del dominio (`VenuePulse`
 services/   Backend .NET — 3 microservicios + librería compartida Core (VenuePulse.Core)
             Incluye Architecture.Tests/ (ArchUnitNET): tooling transversal que valida las reglas
             de capas sobre los ensamblados reales, no es un servicio más
-ui/         3 apps React independientes (shell, ticket-checkout, venue-ops)
+ui/         4 apps/paquetes React independientes (venue-shell, venue-ticket, venue-ops, venue-core)
 infra/      docker-compose, manifiestos K8s, Jenkinsfile, guía de Azure, Nginx de composición
 docs/       ADRs, AI-USAGE.md, demo-script.md
 ```
