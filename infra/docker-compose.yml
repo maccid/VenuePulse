@@ -68,6 +68,7 @@ services:
     container_name: venuepulse-seq
     environment:
       ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
     volumes:
       - seq-data:/data
     ports:
