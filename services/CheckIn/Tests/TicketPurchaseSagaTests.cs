@@ -150,6 +150,32 @@ public class TicketPurchaseSagaTests
     }
 
     [Fact]
+    public async Task Timeout_tardio_en_Confirming_se_ignora_sin_romper_la_saga()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReserved>();
+
+        await harness.Bus.Publish(new TicketPurchaseCancelled(ticketId, "EventCancelled"));
+        await harness.Consumed.Any<TicketPurchaseCancelled>();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeTrue();
+
+        await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
+        await harness.Consumed.Any<ReservationTimedOut>();
+
+        await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReleased>();
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "EventCancelled")).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Camino_de_compensacion_por_bizum_libera_el_aforo_reservado()
     {
         var (provider, harness) = await StartHarnessAsync();
