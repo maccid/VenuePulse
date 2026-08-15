@@ -30,11 +30,7 @@ ticket-checkout-app {
   gap: 16px;
 }
 
-/* Todo escopado bajo .ticket-checkout a propósito: este componente vive en light DOM dentro
-   de la página de shell (sin Shadow DOM, ver ADR 0004), así que nunca toca :root/body/h1...
-   El wrapper envuelve TODO el componente (cabecera + plano + carrito) y hace de contenedor
-   flex vertical: cabecera en su card, y debajo la fila de compra con dos cards iguales. */
-.ticket-checkout {
+:root {
   --tc-text: #1f2328;
   --tc-muted: #6b7280;
   --tc-text-on-accent: #ffffff;
@@ -50,7 +46,9 @@ ticket-checkout-app {
   --tc-radius-sm: 6px;
   --tc-radius-md: 10px;
   --tc-shadow-md: 0 8px 24px rgba(16, 24, 40, 0.08);
+}
 
+.ticket-checkout {
   font: 16px/1.5 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   color: var(--tc-text);
   display: flex;
