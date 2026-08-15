@@ -1,6 +1,6 @@
+import { useEffect, useState } from 'react'
 import type { BuyerData, CartLine, DraftLine, OrderStatus, PaymentMethod, TicketType } from '@venue/core/domain'
-import { formatCountdown, useCountdown } from '../../shared/useCountdown'
-import { CartIcon, ReloadIcon } from '../../shared/icons'
+import { CancelReservationIcon, CartIcon, ReloadIcon } from '../../shared/icons'
 import DraftCart from './DraftCart'
 import ReservedCartSummary from './ReservedCartSummary'
 
@@ -22,12 +22,6 @@ interface Props {
   onCancelOrder: () => void
 }
 
-function earliestActiveExpiry(lines: CartLine[]): string | null {
-  const deadlines = lines.filter((l) => l.status !== 'Rejected' && l.expiresAtUtc).map((l) => l.expiresAtUtc as string)
-  if (deadlines.length === 0) return null
-  return deadlines.reduce((earliest, d) => (new Date(d) < new Date(earliest) ? d : earliest))
-}
-
 export default function CartPanel({
   ticketTypes,
   draft,
@@ -45,28 +39,40 @@ export default function CartPanel({
   onSubmitPayment,
   onCancelOrder,
 }: Props) {
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const hasReservation = orderStatus !== null
   const allResolved = orderStatus === 'Completed' || orderStatus === 'Rejected'
-  const countdown = useCountdown(earliestActiveExpiry(cart))
-  const reservationExpired = countdown !== null && countdown <= 0
+  const canRequestCancel = hasReservation && !allResolved && !isPaying && !confirmingCancel
+
+  useEffect(() => {
+    if (!hasReservation) setConfirmingCancel(false)
+  }, [hasReservation])
 
   return (
     <aside className="ticket-checkout cart-panel">
       <h3 className="cart-panel__title">
         <CartIcon />
         <span>{hasReservation ? 'Tu compra' : 'Tus Reservas'}</span>
-        {hasReservation && countdown !== null && countdown > 0 && (
-          <span className="cart-panel__countdown-inline">Reserva expira en {formatCountdown(countdown)}</span>
-        )}
         {allResolved && (
           <button
             type="button"
-            className="cart-panel__reload"
+            className="cart-panel__title-action"
             onClick={onResetPurchase}
             aria-label="Reiniciar compra"
             title="Reiniciar compra"
           >
             <ReloadIcon />
+          </button>
+        )}
+        {canRequestCancel && (
+          <button
+            type="button"
+            className="cart-panel__title-action"
+            onClick={() => setConfirmingCancel(true)}
+            aria-label="Cancelar reserva"
+            title="Cancelar reserva"
+          >
+            <CancelReservationIcon />
           </button>
         )}
       </h3>
@@ -84,13 +90,13 @@ export default function CartPanel({
       {hasReservation && (
         <ReservedCartSummary
           cart={cart}
-          allResolved={allResolved}
-          reservationExpired={reservationExpired}
           buyer={buyer}
           isPaying={isPaying}
           isCancelling={isCancelling}
           orderStatus={orderStatus}
           orderRejectionReason={orderRejectionReason}
+          confirmingCancel={confirmingCancel}
+          onCloseCancelConfirm={() => setConfirmingCancel(false)}
           onBuyerChange={onBuyerChange}
           onSubmitPayment={onSubmitPayment}
           onCancelOrder={onCancelOrder}
