@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActivityEntry, TicketStatusUpdate, ZoneOccupancy } from '../shared/types'
-import { useEventScopedConnection } from 'venuepulse-core'
+import { useEventScopedConnection } from '@venue/core'
 
 const MAX_ACTIVITY_ENTRIES = 20
 

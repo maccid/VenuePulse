@@ -1,5 +1,5 @@
 {
-  "name": "venuepulse-ticket-checkout",
+  "name": "@venue/shell",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
-    "venuepulse-core": "file:../packages/core",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

@@ -12,7 +12,7 @@ import type {
   TicketType,
   ZoneOccupancy,
 } from '../shared/types'
-import { isAbortedHubStartError, createHubConnection } from 'venuepulse-core'
+import { isAbortedHubStartError, createHubConnection } from '@venue/core'
 
 const GENERIC_ORDER_REJECTION_REASON = 'OrderRequestFailed'
 const GENERIC_PAYMENT_REJECTION_REASON = 'PaymentRequestFailed'

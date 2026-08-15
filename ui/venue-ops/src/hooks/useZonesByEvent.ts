@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ZoneOccupancy } from '../shared/types'
-import { useEventScopedConnection } from 'venuepulse-core'
+import { useEventScopedConnection } from '@venue/core'
 
 export function useZonesByEvent(activeId: string | null) {
   const [zonesByEvent, setZonesByEvent] = useState<Record<string, ZoneOccupancy[]>>({})

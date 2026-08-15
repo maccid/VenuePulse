@@ -4,6 +4,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 COPY ui/.npmrc ./
 COPY ui/venue-ops/package.json ui/venue-ops/package-lock.json* ./
+COPY ui/venue-core/ ./venue-core/
 RUN npm ci
 COPY ui/venue-ops/ ./
 RUN npm run build

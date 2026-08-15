@@ -3,9 +3,10 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY ui/.npmrc ./
-COPY ui/ticket-checkout/package.json ui/ticket-checkout/package-lock.json* ./
+COPY ui/venue-ticket/package.json ui/venue-ticket/package-lock.json* ./
+COPY ui/venue-core/ ./venue-core/
 RUN npm ci
-COPY ui/ticket-checkout/ ./
+COPY ui/venue-ticket/ ./
 RUN npm run build
 
 FROM nginx:alpine

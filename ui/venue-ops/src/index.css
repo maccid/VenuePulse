@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* Alias de los tokens --vp-* existentes (paleta naranja de venue-ops) a @theme, ver
-   ui/shell/src/index.css para el mismo patrón y .ia/TODO.md Bloque 12. */
+   ui/venue-shell/src/index.css para el mismo patrón y .ia/TODO.md Bloque 12. */
 @theme {
   --color-text: var(--vp-text);
   --color-text-muted: var(--vp-text-muted);

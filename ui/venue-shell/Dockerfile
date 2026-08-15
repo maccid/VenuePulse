@@ -5,9 +5,9 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY ui/.npmrc ./
-COPY ui/shell/package.json ui/shell/package-lock.json* ./
+COPY ui/venue-shell/package.json ui/venue-shell/package-lock.json* ./
 RUN npm ci
-COPY ui/shell/ ./
+COPY ui/venue-shell/ ./
 RUN npm run build
 
 FROM nginx:alpine
