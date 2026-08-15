@@ -6,16 +6,7 @@ using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Infrastructure.Sagas.Timeout;
 using VenuePulse.Core.Messaging.Contracts;
 
-/// <summary>
-/// El aforo ya está reservado de verdad en AccessControl y la Saga ya transicionó a
-/// "AwaitingPayment" — refleja ese hecho en el propio Ticket para que la Api pueda rechazar un
-/// /pay prematuro con un error limpio en vez de dejar que el evento de pago llegue a la Saga en
-/// un estado que no lo espera. Escucha <see cref="TicketAwaitingPayment"/> (publicado por la
-/// propia Saga tras su transición), NO el <see cref="ZoneSlotReserved"/> original: reaccionar al
-/// mismo evento en paralelo que la Saga, sin esperar a que ella termine, deja una ventana real en
-/// la que el Ticket en Postgres dice "AwaitingPayment" antes de que la Saga en Mongo lo esté de
-/// verdad — visto en real, no es un caso hipotético (ver ADR 0018).
-/// </summary>
+/// <summary>Consume TicketAwaitingPayment: marca la entrada como esperando pago y notifica el nuevo estado.</summary>
 public sealed class TicketReadyForPaymentConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
@@ -42,11 +33,7 @@ public sealed class TicketReadyForPaymentConsumer(
     }
 }
 
-/// <summary>
-/// Publicado por la propia Saga justo antes de esperar el delay configurable de "Procesando
-/// pago" (ver ADR 0021) — refleja ese paso transitorio en el Ticket para que el timeline por
-/// SignalR lo muestre como un paso real, mismo patrón que <see cref="TicketReadyForPaymentConsumer"/>.
-/// </summary>
+/// <summary>Consume TicketProcessingPayment: marca la entrada como procesando pago y notifica el nuevo estado.</summary>
 public sealed class TicketProcessingPaymentConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
@@ -66,9 +53,6 @@ public sealed class TicketProcessingPaymentConsumer(
         await repository.SaveChangesAsync(context.CancellationToken);
         logger.LogInformation("Entrada {TicketId} procesando pago", ticket.Id);
 
-        // El watchdog ya des-trackeó al recibir TicketPaymentSubmitted (el cliente ya eligió
-        // método de pago) — aquí siempre será null, es el mismo lookup que en el resto de
-        // consumidores para no bifurcar el criterio (ver ADR 0025).
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
             new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, expiresAtUtc),
@@ -76,6 +60,7 @@ public sealed class TicketProcessingPaymentConsumer(
     }
 }
 
+/// <summary>Consume TicketPurchaseConfirmed: marca la entrada como confirmada y notifica el nuevo estado.</summary>
 public sealed class TicketPurchaseConfirmedConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,
@@ -102,6 +87,7 @@ public sealed class TicketPurchaseConfirmedConsumer(
     }
 }
 
+/// <summary>Consume TicketPurchaseRejected: marca la entrada como rechazada y notifica el nuevo estado.</summary>
 public sealed class TicketPurchaseRejectedConsumer(
     ITicketRepository repository,
     ITicketStatusNotifier notifier,

@@ -2,10 +2,7 @@ namespace VenuePulse.CheckIn.Api.Hubs;
 
 using Microsoft.AspNetCore.SignalR;
 
-/// <summary>
-/// Scoping por evento vía grupos de SignalR (ADR 0029): cada cliente entra al grupo
-/// "event-{eventId}" con <see cref="JoinEvent"/> y solo recibe el estado de sus tickets.
-/// </summary>
+/// <summary>Hub de estado de entradas y pedidos: agrupa a los clientes por evento para notificarles cambios de estado.</summary>
 public sealed class TicketStatusHub : Hub
 {
     public async Task JoinEvent(Guid eventId)

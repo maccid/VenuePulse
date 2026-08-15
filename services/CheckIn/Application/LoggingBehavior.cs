@@ -3,10 +3,6 @@ using Microsoft.Extensions.Logging;
 
 namespace VenuePulse.CheckIn.Application;
 
-/// <summary>
-/// Único pipeline behavior compartido: registra cada comando/consulta que pasa por MediatR
-/// (solo CheckIn usa CQRS, ver ADR — Ticketing y AccessControl son Application Services simples).
-/// </summary>
 public sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull

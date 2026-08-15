@@ -5,11 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using VenuePulse.Core.Messaging.Contracts;
 
-/// <summary>
-/// Sondea <see cref="ReservationTimeoutTracker"/> y publica <see cref="ReservationTimedOut"/>
-/// para las reservas que superaron el deadline — ver ADR 0010 para por qué es polling en vez de
-/// un <c>IMessageScheduler</c> de MassTransit.
-/// </summary>
 public sealed class ReservationTimeoutMonitor(
     ReservationTimeoutTracker tracker,
     IBus bus,

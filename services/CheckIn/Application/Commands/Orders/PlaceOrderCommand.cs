@@ -10,17 +10,6 @@ public sealed record PlaceOrderLineRequest(Guid TicketTypeId, Guid ZoneId, int Q
 
 public sealed record PlaceOrderCommand(Guid EventId, string Holder, IReadOnlyList<PlaceOrderLineRequest> Lines) : IRequest<Result<Guid>>;
 
-/// <summary>
-/// Pedido multi-entrada atómico (ADR 0028): crea UN <see cref="PurchaseOrder"/> y N
-/// <see cref="Ticket"/> hermanos (uno por unidad de cada línea), todos vinculados por
-/// <see cref="Ticket.GroupId"/> = <see cref="PurchaseOrder.Id"/>, y dispara tanto sus N
-/// <c>TicketPurchaseSaga</c> individuales (<see cref="TicketPurchaseRequested"/> por entrada) como
-/// la <c>PurchaseOrderSaga</c> orquestadora (<see cref="PurchaseOrderRequested"/>) — todo en la
-/// MISMA transacción vía el Outbox (Add -> Publish -> SaveChanges, un único
-/// <see cref="ITicketRepository.SaveChangesAsync"/> al final, ver <see cref="ITicketRepository"/>).
-/// La validación de límite/precio ocurre ANTES de tocar ningún repositorio o publicar nada — un
-/// pedido rechazado en esta fase no deja ningún rastro (ni Ticket ni PurchaseOrder).
-/// </summary>
 public sealed class PlaceOrderCommandHandler(
     ITicketRepository ticketRepository,
     IPurchaseOrderRepository orderRepository,
@@ -43,8 +32,6 @@ public sealed class PlaceOrderCommandHandler(
 
         foreach (var line in request.Lines)
         {
-            // Precio desactualizado en CUALQUIER línea rechaza el pedido completo (ADR 0028) — sin
-            // tocar ningún repositorio ni publicar nada, ni siquiera para las líneas que sí cuadran.
             if (!ticketTypesById.TryGetValue(line.TicketTypeId, out var ticketType) || ticketType.EffectivePrice != line.UnitPrice)
                 return Result.Failure<Guid>("PriceChanged");
         }

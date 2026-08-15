@@ -6,11 +6,6 @@ using VenuePulse.CheckIn.Domain;
 using VenuePulse.CheckIn.Infrastructure;
 using VenuePulse.Core.Data;
 
-/// <summary>
-/// Ejercita <see cref="AuditingSaveChangesInterceptor"/> (Bloque 4, ver ADR 0011) contra
-/// CheckInDbContext con el proveedor InMemory de EF Core — rápido y determinista, sin necesitar
-/// Postgres real (eso ya lo cubren las IntegrationTests con Testcontainers).
-/// </summary>
 public class AuditingSaveChangesInterceptorTests
 {
     private static CheckInDbContext CreateContext() =>

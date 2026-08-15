@@ -4,14 +4,6 @@ using MediatR;
 
 public sealed record GetOrderStatusQuery(Guid OrderId) : IRequest<OrderStatusDto?>;
 
-/// <summary>
-/// Compone el estado agregado de un pedido (ADR 0028) leyendo su cabecera
-/// (<see cref="IPurchaseOrderRepository"/>) y derivando sus líneas agrupando las entradas
-/// hermanas por <see cref="Domain.Ticket.GroupId"/> (<see cref="ITicketRepository.GetByGroupIdAsync"/>) —
-/// el pedido no guarda líneas propias, ver ADR 0028 "Alternativas descartadas". Mismo patrón de
-/// <see cref="IReservationTimeoutReader"/> que <see cref="GetTicketStatusQueryHandler"/> para el
-/// contador de reserva de cada línea.
-/// </summary>
 public sealed class GetOrderStatusQueryHandler(
     IPurchaseOrderRepository orderRepository,
     ITicketRepository ticketRepository,

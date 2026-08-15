@@ -12,12 +12,6 @@ public sealed record PurchaseTicketCommand(
     string Holder,
     decimal Price) : IRequest<Guid>;
 
-/// <summary>
-/// Escritura compleja: crea la entrada (Pending) y dispara la Saga publicando el evento
-/// iniciador dentro de la MISMA transacción vía el Outbox (Add -> Publish -> SaveChanges, en
-/// ese orden — ver <see cref="ITicketRepository"/>). Reserva el aforo y deja la entrada
-/// esperando a que el cliente elija método de pago (ver <see cref="SubmitPaymentCommand"/>).
-/// </summary>
 public sealed class PurchaseTicketCommandHandler(ITicketRepository repository, IPublishEndpoint publishEndpoint)
     : IRequestHandler<PurchaseTicketCommand, Guid>
 {
