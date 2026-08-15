@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { EventSummary } from '../shared/types'
+import type { EventSummary } from '@venue/core/domain'
 
 export function useEventCatalog() {
   const [events, setEvents] = useState<EventSummary[]>([])

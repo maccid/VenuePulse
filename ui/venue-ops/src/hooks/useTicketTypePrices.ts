@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { TicketType } from '../shared/types'
+import type { TicketType } from '@venue/core/domain'
 
 const PRICE_POLL_MS = 3000
 

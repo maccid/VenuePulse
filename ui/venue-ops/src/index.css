@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@source '../../venue-core/src';
 
 /* Alias de los tokens --vp-* existentes (paleta naranja de venue-ops) a @theme, ver
    ui/venue-shell/src/index.css para el mismo patrón y .ia/TODO.md Bloque 12. */

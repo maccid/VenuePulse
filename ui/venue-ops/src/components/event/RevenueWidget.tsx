@@ -1,4 +1,5 @@
-import type { EventRevenueDto } from '../../shared/types'
+import type { EventRevenueDto } from '@venue/core/domain'
+import { InlineError } from '@venue/core/components'
 
 interface Props {
   revenue: EventRevenueDto | null
@@ -14,9 +15,7 @@ export default function RevenueWidget({ revenue, error, estimatedRevenue, sold }
     <section className="card">
       <h2>Ventas e ingresos</h2>
 
-      {error && (
-        <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{error}</p>
-      )}
+      <InlineError message={error} />
 
       {!error && revenue === null && <p className="m-0 text-sm text-text-muted">Cargando ingresos…</p>}
 

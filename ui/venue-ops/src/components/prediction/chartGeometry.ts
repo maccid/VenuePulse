@@ -1,4 +1,4 @@
-import type { PredictionPoint } from '../../shared/types'
+import type { PredictionPoint } from '@venue/core/domain'
 
 export const CHART_WIDTH = 640
 export const CHART_HEIGHT = 240

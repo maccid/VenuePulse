@@ -1,8 +1,9 @@
-import type { ActivityEntry, EventRevenueDto, EventSummary, ZoneOccupancy } from '../../shared/types'
+import type { ActivityEntry } from '../../shared/types'
+import type { EventRevenueDto, EventSummary, ZoneOccupancy } from '@venue/core/domain'
 import ActivityFeed from './ActivityFeed'
 import RevenueWidget from './RevenueWidget'
 import SimulationPanel from '../simulation/SimulationPanel'
-import StadiumMap from '../map/StadiumMap'
+import { StadiumMap } from '@venue/core/map'
 
 interface Props {
   event: EventSummary

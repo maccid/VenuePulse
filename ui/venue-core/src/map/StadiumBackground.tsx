@@ -32,15 +32,15 @@ export function MatchField() {
 export function ConcertStage() {
   return (
     <>
-      <rect x="255" y="84" width="43" height="111" className="fill-text/85" />
-      <rect x="174" y="130" width="82" height="20" className="fill-text/85" />
+      <rect x="255" y="84" width="43" height="111" className="fill-slate-900/85" />
+      <rect x="174" y="130" width="82" height="20" className="fill-slate-900/85" />
       <text
         x="276.5"
         y="139.5"
         transform="rotate(-90 276.5 139.5)"
         textAnchor="middle"
         dominantBaseline="middle"
-        className="fill-surface text-[10px] font-bold tracking-[0.04em]"
+        className="fill-white text-[10px] font-bold tracking-[0.04em]"
       >
         ESCENARIO
       </text>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { SimulationMode, SimulationStartRequest } from '../../shared/types'
+import type { SimulationMode, SimulationStartRequest } from '@venue/core/domain'
+import { InlineError } from '@venue/core/components'
 import { useSimulationStatus } from '../../hooks/useSimulationStatus'
 import SimulationControls, { type SimulationConfig } from './SimulationControls'
 import { MODE_LABELS } from './simulationLabels'
@@ -104,9 +105,7 @@ export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulatio
         </div>
       )}
 
-      {error && (
-        <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{error}</p>
-      )}
+      <InlineError message={error} />
     </section>
   )
 }

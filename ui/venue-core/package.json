@@ -3,18 +3,44 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Utilidades compartidas entre los microfrontends de VenuePulse",
+  "description": "Core compartido de los microfrontends de VenuePulse: dominio, API, storage y estado",
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+    "./domain": {
+      "types": "./src/domain/index.ts",
+      "default": "./src/domain/index.ts"
+    },
+    "./api": {
+      "types": "./src/api/index.ts",
+      "default": "./src/api/index.ts"
+    },
+    "./hub": {
+      "types": "./src/hub/index.ts",
+      "default": "./src/hub/index.ts"
+    },
+    "./storage": {
+      "types": "./src/storage/index.ts",
+      "default": "./src/storage/index.ts"
+    },
+    "./state": {
+      "types": "./src/state/index.ts",
+      "default": "./src/state/index.ts"
+    },
+    "./map": {
+      "types": "./src/map/index.ts",
+      "default": "./src/map/index.ts"
+    },
+    "./map/map.css": "./src/map/map.css",
+    "./components": {
+      "types": "./src/components/index.ts",
+      "default": "./src/components/index.ts"
     }
   },
   "scripts": {
     "lint": "oxlint"
   },
   "dependencies": {
-    "@microsoft/signalr": "^8.0.7"
+    "@microsoft/signalr": "^8.0.7",
+    "zustand": "^5.0.3"
   },
   "peerDependencies": {
     "react": "^19.2.8"

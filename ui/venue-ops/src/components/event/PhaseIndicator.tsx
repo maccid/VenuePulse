@@ -1,4 +1,4 @@
-import type { EventStatus } from '../../shared/types'
+import type { EventStatus } from '@venue/core/domain'
 
 interface Props {
   status: EventStatus

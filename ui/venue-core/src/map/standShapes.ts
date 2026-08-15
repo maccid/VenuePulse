@@ -1,4 +1,22 @@
-import type { StandShape } from './ZoneShape'
+export interface RectGeometry {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface StandShape {
+  path?: string
+  rect?: RectGeometry
+  transform?: string
+  transformOrigin?: string
+  labelX: number
+  labelY: number
+  labelLines: string[]
+  lightX: number
+  lightY: number
+  tooltipY?: number
+}
 
 const ESTE_OESTE_TRANSFORM = 'matrix(-0.00261, -0.70282102, 0.98233294, 0, 27.46486001, -0.33711338)'
 const ESTE_OESTE_ORIGIN = '170.725px 140.696px'

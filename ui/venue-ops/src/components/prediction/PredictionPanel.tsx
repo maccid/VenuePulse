@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { OccupancyPrediction } from '../../shared/types'
+import type { OccupancyPrediction } from '@venue/core/domain'
+import { InlineError } from '@venue/core/components'
 import PredictionChart from './PredictionChart'
 
 interface Props {
@@ -71,9 +72,7 @@ export default function PredictionPanel({ eventId, eventStartsAtUtc }: Props) {
     return (
       <section className="card mb-6">
         <h2 className="mb-4">Predicción de ocupación</h2>
-        {error && (
-          <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{error}</p>
-        )}
+        <InlineError message={error} />
         {!error && <p className="m-0 text-sm text-text-muted">Cargando predicción…</p>}
       </section>
     )

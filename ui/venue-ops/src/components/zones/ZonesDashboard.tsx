@@ -1,4 +1,4 @@
-import type { ZoneOccupancy } from '../../shared/types'
+import type { ZoneOccupancy } from '@venue/core/domain'
 import ZoneGauge from './ZoneGauge'
 
 interface Props {

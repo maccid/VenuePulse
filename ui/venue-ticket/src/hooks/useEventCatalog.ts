@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { EventSummary, PricingChanged, TicketType, ZoneOccupancy } from '../shared/types'
-import { isAbortedHubStartError, createHubConnection } from '@venue/core'
+import type { EventSummary, PricingChanged, TicketType, ZoneOccupancy } from '@venue/core/domain'
+import { isAbortedHubStartError, createHubConnection } from '@venue/core/hub'
 
 interface EventCatalog {
   event: EventSummary | undefined

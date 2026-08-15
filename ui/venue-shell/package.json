@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
+    "@venue/core": "file:../venue-core",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

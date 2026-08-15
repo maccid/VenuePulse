@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
   BuyerData,
   CartLine,
@@ -6,38 +6,35 @@ import type {
   OrderLine,
   OrderStatus,
   OrderStatusUpdate,
-  OrderTicketStatus,
   PaymentMethod,
   TicketStatusUpdate,
   TicketType,
   ZoneOccupancy,
-} from '../shared/types'
-import { isAbortedHubStartError, createHubConnection } from '@venue/core'
+} from '@venue/core/domain'
+import { isResolvedOrderStatus } from '@venue/core/domain'
+import { ApiError, API_ROUTES, api } from '@venue/core/api'
+import { orderStore } from '@venue/core/state'
+import { sessionStorageService } from '@venue/core/storage'
+import { isAbortedHubStartError, createHubConnection } from '@venue/core/hub'
 
 const GENERIC_ORDER_REJECTION_REASON = 'OrderRequestFailed'
 const GENERIC_PAYMENT_REJECTION_REASON = 'PaymentRequestFailed'
-
-function isResolvedOrderStatus(status: OrderStatus | null): boolean {
-  return status === 'Completed' || status === 'Rejected'
-}
 
 function orderStorageKey(eventId: string): string {
   return `venuepulse.ticket-checkout.order.${eventId}`
 }
 
 function readStoredOrderId(eventId: string): string | null {
-  try {
-    return sessionStorage.getItem(orderStorageKey(eventId))
-  } catch {
-    return null
-  }
+  return sessionStorageService.get(orderStorageKey(eventId))
 }
 
 function writeStoredOrderId(eventId: string, orderId: string | null) {
-  try {
-    if (orderId) sessionStorage.setItem(orderStorageKey(eventId), orderId)
-    else sessionStorage.removeItem(orderStorageKey(eventId))
-  } catch {}
+  if (orderId) sessionStorageService.set(orderStorageKey(eventId), orderId)
+  else sessionStorageService.remove(orderStorageKey(eventId))
+}
+
+function orderErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError ? error.errorMessage() ?? fallback : fallback
 }
 
 interface CheckoutCart {
@@ -70,19 +67,13 @@ export function useCheckoutCart(
   const [isPaying, setIsPaying] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
 
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null)
-  const [orderRejectionReason, setOrderRejectionReason] = useState<string | null>(null)
-  const [orderTickets, setOrderTickets] = useState<OrderTicketStatus[]>([])
-
-  const orderRef = useRef<{ orderId: string | null; status: OrderStatus | null }>({ orderId: null, status: null })
-  useEffect(() => {
-    orderRef.current = { orderId, status: orderStatus }
-  }, [orderId, orderStatus])
-
-  function claimOrder(id: string | null, status: OrderStatus | null) {
-    orderRef.current = { orderId: id, status }
-  }
+  const orderId = orderStore.use((s) => s.orderId)
+  const orderStatus = orderStore.use((s) => s.status)
+  const orderRejectionReason = orderStore.use((s) => s.rejectionReason)
+  const orderTickets = orderStore.use((s) => s.tickets)
+  const setOrder = orderStore.use((s) => s.setOrder)
+  const updateTicketStatus = orderStore.use((s) => s.updateTicketStatus)
+  const resetOrder = orderStore.use((s) => s.reset)
 
   const cart = useMemo<CartLine[]>(
     () =>
@@ -104,49 +95,52 @@ export function useCheckoutCart(
     [orderTickets, zones, ticketTypes],
   )
 
-  function applyOrderStatusUpdate(update: OrderStatusUpdate) {
-    if (orderRef.current.orderId !== update.orderId) return
+  const applyOrderStatusUpdate = useCallback(
+    (update: OrderStatusUpdate) => {
+      if (orderStore.getState().orderId !== update.orderId) return
 
-    orderRef.current = { orderId: update.orderId, status: update.status }
-    setOrderId(update.orderId)
-    setOrderStatus(update.status)
-    setOrderRejectionReason(update.rejectionReason)
-    setOrderTickets(update.tickets)
+      setOrder({
+        orderId: update.orderId,
+        status: update.status,
+        rejectionReason: update.rejectionReason,
+        tickets: update.tickets,
+      })
 
-    if (isResolvedOrderStatus(update.status)) writeStoredOrderId(eventId, null)
-  }
+      if (isResolvedOrderStatus(update.status)) writeStoredOrderId(eventId, null)
+    },
+    [setOrder, eventId],
+  )
 
-  function applyTicketStatusUpdate(update: TicketStatusUpdate) {
-    setOrderTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.ticketId === update.ticketId
-          ? { ...ticket, status: update.status, rejectionReason: update.rejectionReason, expiresAtUtc: update.expiresAtUtc }
-          : ticket,
-      ),
-    )
-  }
+  const applyTicketStatusUpdate = useCallback(
+    (update: TicketStatusUpdate) => {
+      updateTicketStatus(update.ticketId, update.status, update.rejectionReason, update.expiresAtUtc)
+    },
+    [updateTicketStatus],
+  )
 
-  function rejectOrder(reason: string) {
-    setOrderStatus('Rejected')
-    setOrderRejectionReason(reason)
-  }
+  const rejectOrder = useCallback(
+    (reason: string) => {
+      setOrder({ status: 'Rejected', rejectionReason: reason })
+    },
+    [setOrder],
+  )
 
-  async function reconcileOrderStatus(id: string, attempts = 20): Promise<boolean> {
-    for (let attempt = 0; attempt < attempts; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      try {
-        const response = await fetch(`/api/checkin/api/orders/${id}/status`)
-        if (response.ok) {
-          const update = (await response.json()) as OrderStatusUpdate
+  const reconcileOrderStatus = useCallback(
+    async (id: string, attempts = 20): Promise<boolean> => {
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        try {
+          const update = await api.get<OrderStatusUpdate>(API_ROUTES.orderStatus(id))
           applyOrderStatusUpdate(update)
           if (isResolvedOrderStatus(update.status)) return true
+        } catch {
+          // red caída o similar: se reintenta en la siguiente vuelta
         }
-      } catch {
-        // red caída o similar: se reintenta en la siguiente vuelta
       }
-    }
-    return isResolvedOrderStatus(orderRef.current.status)
-  }
+      return isResolvedOrderStatus(orderStore.getState().status)
+    },
+    [applyOrderStatusUpdate],
+  )
 
   useEffect(() => {
     const storedOrderId = readStoredOrderId(eventId)
@@ -156,13 +150,7 @@ export function useCheckoutCart(
 
     async function restoreOrder(id: string) {
       try {
-        const response = await fetch(`/api/checkin/api/orders/${id}/status`)
-        if (!response.ok) {
-          writeStoredOrderId(eventId, null)
-          return
-        }
-
-        const status = (await response.json()) as OrderStatusUpdate
+        const status = await api.get<OrderStatusUpdate>(API_ROUTES.orderStatus(id))
         if (cancelled) return
 
         if (isResolvedOrderStatus(status.status)) {
@@ -170,9 +158,15 @@ export function useCheckoutCart(
           return
         }
 
-        claimOrder(status.orderId, status.status)
-        applyOrderStatusUpdate(status)
-      } catch {}
+        setOrder({
+          orderId: status.orderId,
+          status: status.status,
+          rejectionReason: status.rejectionReason,
+          tickets: status.tickets,
+        })
+      } catch {
+        writeStoredOrderId(eventId, null)
+      }
     }
 
     void restoreOrder(storedOrderId)
@@ -180,7 +174,7 @@ export function useCheckoutCart(
     return () => {
       cancelled = true
     }
-  }, [eventId])
+  }, [eventId, setOrder])
 
   useEffect(() => {
     const connection = createHubConnection('/hubs/tickets')
@@ -199,7 +193,7 @@ export function useCheckoutCart(
 
     connection.onreconnected(() => {
       void joinEvent()
-      const { orderId: currentOrderId, status } = orderRef.current
+      const { orderId: currentOrderId, status } = orderStore.getState()
       if (currentOrderId && !isResolvedOrderStatus(status)) void reconcileOrderStatus(currentOrderId)
     })
 
@@ -210,7 +204,7 @@ export function useCheckoutCart(
     return () => {
       connection.stop()
     }
-  }, [eventId])
+  }, [eventId, applyOrderStatusUpdate, applyTicketStatusUpdate, reconcileOrderStatus])
 
   useEffect(() => {
     if (!isResolvedOrderStatus(orderStatus)) return
@@ -242,12 +236,8 @@ export function useCheckoutCart(
   }
 
   function resetPurchase() {
-    claimOrder(null, null)
+    resetOrder()
     writeStoredOrderId(eventId, null)
-    setOrderId(null)
-    setOrderStatus(null)
-    setOrderRejectionReason(null)
-    setOrderTickets([])
     setDraft([])
     setBuyer({ nombre: '', apellidos: '', email: '' })
     setIsPaying(false)
@@ -269,38 +259,24 @@ export function useCheckoutCart(
         }
       })
 
-      const response = await fetch('/api/checkin/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          eventId,
-          holder: buyer.nombre.trim() || holder,
-          lines,
-        }),
+      const { orderId: newOrderId } = await api.post<{ orderId: string }>(API_ROUTES.orders, {
+        eventId,
+        holder: buyer.nombre.trim() || holder,
+        lines,
       })
 
-      if (!response.ok) {
-        const body = await response.json().catch(() => null)
-        rejectOrder(body?.error ?? GENERIC_ORDER_REJECTION_REASON)
-        setDraft([])
-        return
-      }
-
-      const { orderId: newOrderId } = (await response.json()) as { orderId: string }
-      claimOrder(newOrderId, null)
+      setOrder({ orderId: newOrderId })
       writeStoredOrderId(eventId, newOrderId)
-      setOrderId(newOrderId)
 
-      const statusResponse = await fetch(`/api/checkin/api/orders/${newOrderId}/status`)
-      if (statusResponse.ok) {
-        const status = (await statusResponse.json()) as OrderStatusUpdate
+      try {
+        const status = await api.get<OrderStatusUpdate>(API_ROUTES.orderStatus(newOrderId))
         applyOrderStatusUpdate(status)
-      } else {
-        setOrderStatus('Reserving')
+      } catch {
+        setOrder({ status: 'Reserving' })
       }
       setDraft([])
-    } catch {
-      rejectOrder(GENERIC_ORDER_REJECTION_REASON)
+    } catch (error) {
+      rejectOrder(orderErrorMessage(error, GENERIC_ORDER_REJECTION_REASON))
       setDraft([])
     } finally {
       setIsReserving(false)
@@ -313,20 +289,9 @@ export function useCheckoutCart(
     setIsPaying(true)
 
     try {
-      const response = await fetch(`/api/checkin/api/orders/${orderId}/pay`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method }),
-      })
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => null)
-        rejectOrder(body?.error ?? GENERIC_PAYMENT_REJECTION_REASON)
-        setIsPaying(false)
-        return
-      }
-    } catch {
-      rejectOrder(GENERIC_PAYMENT_REJECTION_REASON)
+      await api.post(API_ROUTES.orderPay(orderId), { method })
+    } catch (error) {
+      rejectOrder(orderErrorMessage(error, GENERIC_PAYMENT_REJECTION_REASON))
       setIsPaying(false)
       return
     }
@@ -342,11 +307,7 @@ export function useCheckoutCart(
     setIsCancelling(true)
 
     try {
-      const response = await fetch(`/api/checkin/api/orders/${orderId}/cancel`, { method: 'POST' })
-      if (!response.ok) {
-        setIsCancelling(false)
-        return
-      }
+      await api.post(API_ROUTES.orderCancel(orderId))
     } catch {
       setIsCancelling(false)
       return

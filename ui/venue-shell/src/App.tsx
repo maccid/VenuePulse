@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { EventSummary } from './types'
+import { api, API_ROUTES } from '@venue/core/api'
+import type { EventSummary } from '@venue/core/domain'
 import SiteHeader from './components/SiteHeader'
 import EventCatalog from './components/EventCatalog'
 import CheckoutPanel from './components/CheckoutPanel'
@@ -10,8 +11,8 @@ export default function App() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/ticketing/api/events')
-      .then((r) => r.json())
+    api
+      .get<EventSummary[]>(API_ROUTES.events)
       .then(setEvents)
       .catch(() => setEvents([]))
   }, [])

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CreateEventRequest, EventSummary } from '../shared/types'
+import type { CreateEventRequest, EventSummary } from '@venue/core/domain'
 
 export function useCreateEvent(onCreated: (event: EventSummary) => void) {
   const [error, setError] = useState<string | null>(null)

@@ -3,6 +3,7 @@ import CheckoutHeader from './components/CheckoutHeader'
 import { useEventCatalog } from './hooks/useEventCatalog'
 import { useCheckoutCart } from './hooks/useCheckoutCart'
 import './App.css'
+import '@venue/core/map/map.css'
 
 interface Props {
   eventId: string

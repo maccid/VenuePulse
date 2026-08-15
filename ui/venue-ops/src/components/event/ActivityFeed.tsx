@@ -7,9 +7,11 @@ interface Props {
 const STATUS_LABEL: Record<ActivityEntry['status'], string> = {
   Pending: 'iniciando compra',
   AwaitingPayment: 'reservada, esperando pago',
+  ProcessingPayment: 'procesando pago',
   Confirmed: 'entrada confirmada',
   Rejected: 'entrada rechazada',
   CheckedIn: 'check-in realizado',
+  Refunded: 'entrada reembolsada',
 }
 
 export default function ActivityFeed({ entries }: Props) {

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@source '../../venue-core/src';
 
 /* Alias de los tokens --vp-* existentes a los nombres que Tailwind espera en @theme, para que
    las utilidades nuevas (bg-accent, text-danger, rounded-md...) usen la misma paleta que el CSS

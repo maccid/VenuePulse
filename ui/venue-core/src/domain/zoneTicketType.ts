@@ -1,11 +1,15 @@
-import type { TicketType, ZoneOccupancy } from './types'
+import type { TicketType } from './ticketing'
+import type { ZoneOccupancy } from './zones'
 
 export function matchTicketType(zoneName: string, ticketTypes: TicketType[]): TicketType | undefined {
-  return (
-    ticketTypes.find((t) => t.name === zoneName) ??
-    ticketTypes.find((t) => t.name === 'General') ??
-    ticketTypes[0]
-  )
+  const exactMatch = ticketTypes.find((t) => t.name === zoneName)
+  if (exactMatch) return exactMatch
+
+  const containedMatches = ticketTypes.filter((t) => zoneName.includes(t.name))
+  const longestMatch = containedMatches.sort((a, b) => b.name.length - a.name.length)[0]
+  if (longestMatch) return longestMatch
+
+  return ticketTypes.find((t) => t.name === 'General') ?? ticketTypes[0]
 }
 
 export function pricingByZoneId(

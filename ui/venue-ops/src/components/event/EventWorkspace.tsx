@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import type { ActivityEntry, EventSummary, ScanResult, TicketType, ZoneOccupancy } from '../../shared/types'
-import { matchTicketType } from '../../shared/zoneTicketType'
+import type { ActivityEntry, ScanResult } from '../../shared/types'
+import type { EventSummary, TicketType, ZoneOccupancy } from '@venue/core/domain'
+import { matchTicketType } from '@venue/core/domain'
+import { InlineError } from '@venue/core/components'
 import { useEventRevenue } from '../../hooks/useEventRevenue'
 import { useTicketTypePrices } from '../../hooks/useTicketTypePrices'
 import PhaseIndicator from './PhaseIndicator'
@@ -119,9 +121,7 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
       {confirm && pendingAction !== null && (
         <Modal title={confirm.title} onClose={() => setPendingAction(null)}>
           <p className="m-0 mb-6">{confirm.message}</p>
-          {actionError && (
-            <p className="mt-4 flex items-center gap-2 text-sm text-danger before:content-['✖'] before:text-danger">{actionError}</p>
-          )}
+          <InlineError message={actionError} />
           <div className="mt-4 flex justify-end gap-3">
             <button
               type="button"
