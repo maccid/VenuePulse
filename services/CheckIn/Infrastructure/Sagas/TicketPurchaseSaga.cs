@@ -132,6 +132,7 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
 
         During(Confirming,
             Ignore(Cancelled),
+            Ignore(TimedOut),
             When(SlotConfirmed)
                 .Then(context => Logger.Information("Compra confirmada para la entrada {TicketId}", context.Saga.CorrelationId))
                 .Publish(context => new TicketPurchaseConfirmed(context.Saga.CorrelationId, context.Saga.GroupId))
