@@ -4,7 +4,7 @@ name: venuepulse
 # repo — mantiene infra/ separado de services/ (backend) y ui/ (frontend) (ver README de estructura).
 #
 # Nomenclatura de servicios (para que `docker ps` / Docker Desktop agrupe visualmente por tipo):
-#   sin prefijo -> infraestructura de terceros (postgres, mongo, rabbitmq, zookeeper, clickhouse, signoz)
+#   sin prefijo -> infraestructura de terceros (postgres, mongo, rabbitmq, jaeger)
 #   api-*       -> backends propios (.NET)
 #   web-*       -> frontends propios (React)
 #   gateway     -> único punto de entrada del navegador
@@ -59,156 +59,16 @@ services:
       timeout: 5s
       retries: 10
 
-  # Observabilidad unificada (trazas + logs en una sola UI) con SigNoz + ClickHouse — sustituye
-  # a Jaeger (ver ADR 0031). Los servicios exportan trazas Y logs por OTLP al collector
-  # (4317 gRPC / 4318 HTTP) y SigNoz correlaciona cada log con su trace por trace_id/span_id.
-  # Tras una compra, abrir http://localhost:3301 (SigNoz) para ver el trace completo y sus logs.
-  # Primer arranque: tarda ~1 min en inicializar (ClickHouse + migraciones + histogram-binary).
-  # Stack mínimo de SigNoz (sin keeper — ver ADR 0031): zookeeper (metadata de réplicas),
-  # clickhouse (almacenamiento), signoz (UI+API), signoz-otel-collector (ingesta OTLP) y 2 jobs
-  # one-shot (init-clickhouse, migraciones del telemetry store).
-  zookeeper-1:
-    image: signoz/zookeeper:3.7.1
-    container_name: venuepulse-signoz-zookeeper
-    user: root
-    restart: unless-stopped
-    volumes:
-      - zookeeper-data:/bitnami/zookeeper
+  # Trazas distribuidas end-to-end (ver ADR 0006 / sección "Observabilidad" del README):
+  # abrir http://localhost:16686 tras una compra para ver el trace completo cruzando los 3 servicios.
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: venuepulse-jaeger
     environment:
-      - ZOO_SERVER_ID=1
-      - ALLOW_ANONYMOUS_LOGIN=yes
-      - ZOO_AUTOPURGE_INTERVAL=1
-      - ZOO_ENABLE_PROMETHEUS_METRICS=yes
-      - ZOO_PROMETHEUS_METRICS_PORT_NUMBER=9141
-    healthcheck:
-      # ruok sobre el admin server HTTP de ZK (8080) devuelve {"command":"ruok","error":null,...}
-      test: ["CMD-SHELL", "curl -s -m 2 http://localhost:8080/commands/ruok | grep error | grep null"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  init-clickhouse:
-    # Job one-shot: descarga el UDF histogramQuantile que SigNoz usa para percentiles en métricas.
-    image: clickhouse/clickhouse-server:25.5.6
-    container_name: venuepulse-signoz-init-clickhouse
-    restart: on-failure
-    command:
-      - bash
-      - -c
-      - |
-        version="v0.0.1"
-        node_os=$$(uname -s | tr '[:upper:]' '[:lower:]')
-        node_arch=$$(uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)
-        echo "Fetching histogram-binary for $${node_os}/$${node_arch}"
-        cd /tmp
-        wget -O histogram-quantile.tar.gz "https://github.com/SigNoz/signoz/releases/download/histogram-quantile%2F$${version}/histogram-quantile_$${node_os}_$${node_arch}.tar.gz"
-        tar -xvzf histogram-quantile.tar.gz
-        mv histogram-quantile /var/lib/clickhouse/user_scripts/histogramQuantile
-    volumes:
-      - ./signoz/clickhouse/user_scripts:/var/lib/clickhouse/user_scripts/
-
-  clickhouse:
-    image: clickhouse/clickhouse-server:25.5.6
-    container_name: venuepulse-signoz-clickhouse
-    tty: true
-    restart: unless-stopped
-    depends_on:
-      init-clickhouse:
-        condition: service_completed_successfully
-      zookeeper-1:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "0.0.0.0:8123/ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 262144
-        hard: 262144
-    environment:
-      - CLICKHOUSE_SKIP_USER_SETUP=1
-    volumes:
-      - ./signoz/clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
-      - ./signoz/clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
-      - ./signoz/clickhouse/custom-function.xml:/etc/clickhouse-server/custom-function.xml:ro
-      - ./signoz/clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
-      - ./signoz/clickhouse/user_scripts:/var/lib/clickhouse/user_scripts/
-      - clickhouse-data:/var/lib/clickhouse/
-
-  signoz-telemetrystore-migrator:
-    # Job one-shot: crea/actualiza el esquema de ClickHouse (bootstrap + sync + async).
-    image: signoz/signoz-otel-collector:v0.144.2
-    container_name: venuepulse-signoz-migrator
-    restart: on-failure
-    depends_on:
-      clickhouse:
-        condition: service_healthy
-    environment:
-      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000
-      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster
-      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=true
-      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
-    entrypoint:
-      - /bin/sh
-    command:
-      - -c
-      - |
-        /signoz-otel-collector migrate bootstrap &&
-        /signoz-otel-collector migrate sync up &&
-        /signoz-otel-collector migrate async up
-
-  signoz:
-    image: signoz/signoz:v0.119.0
-    container_name: venuepulse-signoz
-    restart: unless-stopped
-    depends_on:
-      clickhouse:
-        condition: service_healthy
+      COLLECTOR_OTLP_ENABLED: "true"
     ports:
-      # Host 8080 lo usa el gateway (nginx): SigNoz queda en 3301, y su API vive en el mismo 8080 interno.
-      - "3301:8080"
-    volumes:
-      - signoz-data:/var/lib/signoz/
-    environment:
-      - SIGNOZ_ALERTMANAGER_PROVIDER=signoz
-      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://clickhouse:9000
-      - SIGNOZ_SQLSTORE_SQLITE_PATH=/var/lib/signoz/signoz.db
-      - SIGNOZ_TOKENIZER_JWT_SECRET=secret
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  signoz-otel-collector:
-    image: signoz/signoz-otel-collector:v0.144.2
-    container_name: venuepulse-signoz-collector
-    restart: unless-stopped
-    depends_on:
-      clickhouse:
-        condition: service_healthy
-    entrypoint:
-      - /bin/sh
-    command:
-      - -c
-      - |
-        /signoz-otel-collector migrate sync check &&
-        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml
-    volumes:
-      - ./signoz/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-      - ./signoz/otel-collector-opamp-config.yaml:/etc/manager-config.yaml:ro
-    environment:
-      - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux
-      - LOW_CARDINAL_EXCEPTION_GROUPING=false
-      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000
-      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster
-      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=true
-      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
-    ports:
-      - "4317:4317" # OTLP gRPC (traces + logs de los 3 servicios)
-      - "4318:4318" # OTLP HTTP
+      - "16686:16686"
+      - "4317:4317"
 
   # ---------------------------------------------------------------------------------------
   # Backends (.NET)
@@ -224,7 +84,7 @@ services:
       ConnectionStrings__TicketingDb: "Host=postgres;Port=5432;Database=venuepulse_ticketing;Username=venuepulse;Password=venuepulse"
       RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
       Cors__AllowedOrigins__0: "http://localhost:8080"
-      Observability__OtlpEndpoint: "http://signoz-otel-collector:4317"
+      Observability__OtlpEndpoint: "http://jaeger:4317"
     ports:
       - "5101:8080"
     depends_on:
@@ -256,7 +116,7 @@ services:
       ConnectionStrings__AccessControlDb: "Host=postgres;Port=5432;Database=venuepulse_accesscontrol;Username=venuepulse;Password=venuepulse"
       RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
       Cors__AllowedOrigins__0: "http://localhost:8080"
-      Observability__OtlpEndpoint: "http://signoz-otel-collector:4317"
+      Observability__OtlpEndpoint: "http://jaeger:4317"
     ports:
       - "5102:8080"
     depends_on:
@@ -287,7 +147,7 @@ services:
       # PlaceOrderCommand valida el precio de cada línea contra Ticketing antes de reservar nada.
       Ticketing__BaseUrl: "http://api-ticketing:8080"
       Cors__AllowedOrigins__0: "http://localhost:8080"
-      Observability__OtlpEndpoint: "http://signoz-otel-collector:4317"
+      Observability__OtlpEndpoint: "http://jaeger:4317"
     ports:
       - "5103:8080"
     depends_on:
@@ -360,6 +220,3 @@ services:
 volumes:
   postgres-data:
   mongo-data:
-  zookeeper-data:
-  clickhouse-data:
-  signoz-data:

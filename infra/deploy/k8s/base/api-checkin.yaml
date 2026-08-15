@@ -24,7 +24,7 @@ spec:
             - name: Mongo__ConnectionString
               valueFrom: { secretKeyRef: { name: venuepulse-broker-secrets, key: mongo-connection-string } }
             - name: Observability__OtlpEndpoint
-              value: "http://signoz-otel-collector.observability:4317"
+              value: "http://jaeger-collector.observability:4317"
           resources:
             requests: { cpu: "150m", memory: "192Mi" }
             limits: { cpu: "750m", memory: "384Mi" }

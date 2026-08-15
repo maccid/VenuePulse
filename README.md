@@ -24,8 +24,8 @@ No tiene relación con ninguna marca real: los nombres del dominio (`VenuePulse`
   RabbitMQ (mensajería).
 - **React con micro frontends real** (`shell` + `ticket-checkout` como Web Component) +
   panel de operaciones — ver [ADR 0004](docs/architecture/adr/0004-microfrontends-nginx-webcomponents.md).
-- **Trazas y logs en una sola UI** con OpenTelemetry + SigNoz (sustituye a Jaeger) —
-  [ADR 0031](docs/architecture/adr/0031-observabilidad-signoz-sustituye-jaeger.md).
+- **Trazas distribuidas** con OpenTelemetry + Jaeger, no solo logs —
+  [ADR 0006](docs/architecture/adr/0006-observabilidad-opentelemetry-jaeger.md).
 - **CI/CD y gobernanza real** en GitHub Actions, con manifiestos K8s/Jenkinsfile/Azure
   documentados honestamente como capacidad, no como algo desplegado (ver tabla más abajo).
 - **IA como acelerador de desarrollo**, con evidencia concreta incluyendo una sesión de
@@ -55,7 +55,7 @@ docker compose -f infra/docker-compose.yml up --build
   código cambió, el resto reutiliza la cache.
 - `http://localhost:8080` — app pública (catálogo + aforo en vivo + comprar entrada)
 - `http://localhost:8080/venue-ops/` — panel de operaciones (escanear entradas, aforo por zona)
-- `http://localhost:3301` — SigNoz (trazas + logs de los 3 servicios en una sola UI)
+- `http://localhost:16686` — Jaeger (trazas distribuidas)
 
 Guion completo de demo, incluyendo el camino de compensación y una tarea en vivo con Claude
 Code: [`docs/demo-script.md`](docs/demo-script.md).
@@ -67,7 +67,7 @@ No prometer de más es una decisión deliberada. Tabla honesta:
 | Capacidad | Estado |
 |---|---|
 | 3 microservicios con `docker-compose up`, migraciones reales, RabbitMQ, Saga con compensación real | **REAL**, corre local |
-| Trazas y logs end-to-end unificados (OpenTelemetry → SigNoz) | **REAL**, visible en SigNoz UI |
+| Trazas distribuidas end-to-end (OpenTelemetry → Jaeger) | **REAL**, visible en Jaeger UI |
 | GitHub Actions: build+test, lint, build/push de imágenes | **REAL**, corre en cada push |
 | Validación sintáctica de manifiestos K8s en CI | **REAL** (solo validación) |
 | Manifiestos K8s/Kustomize (`infra/deploy/k8s`) | Escritos y válidos, **no desplegados** a AKS real |
@@ -91,9 +91,8 @@ de integración con Testcontainers (Postgres+RabbitMQ+MongoDB reales).
 Fuera de alcance, documentado como roadmap con motivo: pasarela de pago real (el "pago" es un
 paso mockeado dentro de la Saga, por diseño), IdentityServer/Azure AD B2C, videovigilancia y
 analítica de datos avanzada (pilares del smart venue no cubiertos por decisión consciente de
-alcance), métricas de dominio con Prometheus/Grafana (SigNoz ya cubre trazas + logs y deriva
-métricas APM de los spans; emitir métricas de negocio por OTLP queda como roadmap — ADR 0031),
-Module Federation, autoscaling validado con carga real. El objetivo fue profundidad sobre amplitud.
+alcance), métricas agregadas con Prometheus/Grafana, Module Federation, autoscaling validado
+con carga real. El objetivo fue profundidad sobre amplitud.
 
 **Autenticación entre servicios (decisión de alcance):** los servicios no se llaman por HTTP
 entre sí para comandos/escrituras — se comunican por el bus de mensajes (RabbitMQ/MassTransit),

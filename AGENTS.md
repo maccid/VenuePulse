@@ -80,8 +80,7 @@ git branch -d fix/mi-cambio
 
 - No usar Blazor — todo el frontend es React (ver decisión de alcance en el README).
 - No añadir CQRS/MediatR fuera de `CheckIn` — es ceremonia sin beneficio en CRUD simple (ADR 0003).
-- No añadir Redis, Prometheus/Grafana ni Seq sin una necesidad real y documentada — la
-  observabilidad ya la cubre SigNoz (trazas + logs, ADR 0031) y el resto se evita como sobre-
-  ingeniería (ver el README, "qué NO se construyó").
+- No añadir Redis, Prometheus/Grafana ni Seq sin una necesidad real y documentada — ver ADR 0006
+  y el README ("qué NO se construyó"): la sobre-ingeniería es exactamente lo que se evita aquí.
 - No usar pasarela de pago real — siempre mockeado.
 - No hacer `COPY . .` en ningún Dockerfile.

@@ -22,7 +22,7 @@ spec:
             - name: RabbitMq__ConnectionString
               valueFrom: { secretKeyRef: { name: venuepulse-broker-secrets, key: rabbitmq-connection-string } }
             - name: Observability__OtlpEndpoint
-              value: "http://signoz-otel-collector.observability:4317"
+              value: "http://jaeger-collector.observability:4317"
           resources:
             requests: { cpu: "100m", memory: "128Mi" }
             limits: { cpu: "500m", memory: "256Mi" }

@@ -2,6 +2,10 @@
 
 **Supera a:** [ADR 0006](0006-observabilidad-opentelemetry-jaeger.md)
 
+> **Revertido por [ADR 0032](0032-revertir-signoz-volver-a-jaeger.md)** — se vuelve a Jaeger +
+> logs por consola. Este documento queda como histórico de por qué se adoptó SigNoz y qué llevó a
+> deshacerlo.
+
 ## Contexto
 
 El ADR 0006 fijó trazas distribuidas con OpenTelemetry → Jaeger y descartó un agregador de logs
