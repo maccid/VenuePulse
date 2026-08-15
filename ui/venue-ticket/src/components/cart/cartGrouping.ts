@@ -1,4 +1,4 @@
-import type { CartLine } from '../../shared/types'
+import type { CartLine } from '@venue/core/domain'
 
 export interface CartGroup {
   key: string

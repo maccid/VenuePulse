@@ -1,5 +1,5 @@
-import type { DraftLine, TicketType } from '../../shared/types'
-import { MAX_TICKETS_PER_PURCHASE } from '../../shared/types'
+import type { DraftLine, TicketType } from '@venue/core/domain'
+import { MAX_TICKETS_PER_PURCHASE } from '@venue/core/domain'
 import { TrashIcon } from '../../shared/icons'
 
 interface Props {

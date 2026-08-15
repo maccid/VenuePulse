@@ -3,21 +3,22 @@
    Por eso también todo el CSS de aquí sigue escopado bajo .ticket-checkout a mano. */
 @import 'tailwindcss/theme.css';
 @import 'tailwindcss/utilities.css';
+@source '../../venue-core/src';
 
 @theme {
-  --color-tc-text: var(--tc-text);
-  --color-tc-muted: var(--tc-muted);
-  --color-tc-border: var(--tc-border);
-  --color-tc-border-strong: var(--tc-border-strong);
-  --color-tc-surface: var(--tc-surface);
-  --color-tc-accent: var(--tc-accent);
-  --color-tc-accent-hover: var(--tc-accent-hover);
-  --color-tc-accent-bg: var(--tc-accent-bg);
-  --color-tc-danger: var(--tc-danger);
-  --color-tc-danger-bg: var(--tc-danger-bg);
-
-  --radius-tc-sm: var(--tc-radius-sm);
-  --radius-tc-md: var(--tc-radius-md);
+  /* Alias genéricos compartidos con @venue/core (misma convención que shell y ops) para que los
+     componentes del core (EventSummaryCard, InlineError) pinten con la paleta tc-* sin depender
+     de ella. */
+  --color-text: var(--tc-text);
+  --color-text-muted: var(--tc-muted);
+  --color-surface: var(--tc-surface);
+  --color-border: var(--tc-border);
+  --color-border-strong: var(--tc-border-strong);
+  --color-accent: var(--tc-accent);
+  --color-accent-hover: var(--tc-accent-hover);
+  --color-accent-bg: var(--tc-accent-bg);
+  --color-danger: var(--tc-danger);
+  --color-danger-bg: var(--tc-danger-bg);
 }
 
 /* El propio elemento host (light DOM, sin Shadow DOM — ADR 0004) hace de contenedor flex: cabecera
@@ -83,9 +84,10 @@ ticket-checkout-app {
   font-size: 14px;
 }
 
-/* Cabecera del checkout: info del evento (estilo EventCard de shell) a la izquierda + botón
-   volver al catálogo pegado a la derecha. El botón avisa al shell con un CustomEvent (ver
-   CheckoutHeader.tsx y ADR 0023). */
+/* Cabecera del checkout: la info del evento (badge de fecha + meta, componente compartido
+   EventSummaryCard del core) a la izquierda + botón volver al catálogo a la derecha. El botón
+   avisa al shell con un CustomEvent (ver CheckoutHeader.tsx y ADR 0023). Las cards (borde, fondo,
+   radio, sombra) las comparten .checkout-header, .purchase-flow__main y .cart-panel. */
 .checkout-header {
   display: flex;
   flex-direction: row;
@@ -96,58 +98,6 @@ ticket-checkout-app {
 
 .checkout-header__back {
   flex-shrink: 0;
-}
-
-.checkout-header__card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-
-.checkout-header__date {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 56px;
-  border-radius: var(--tc-radius-sm);
-  background: var(--tc-accent-bg);
-  color: var(--tc-accent);
-  padding: 6px 0;
-}
-
-.checkout-header__month {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.checkout-header__day {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.checkout-header__info {
-  min-width: 0;
-}
-
-.checkout-header__meta {
-  margin: 0 0 2px;
-  font-size: 12px;
-  color: var(--tc-muted);
-}
-
-.checkout-header__title {
-  margin: 0;
-  color: var(--tc-text);
-  font-size: 18px;
-}
-
-.checkout-header__venue {
-  margin: 0;
-  font-size: 13px;
-  color: var(--tc-muted);
 }
 
 .field-label {
@@ -191,187 +141,6 @@ ticket-checkout-app {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-}
-
-.stadium-map {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.stadium-map__svg {
-  width: 100%;
-  max-width: 460px;
-  height: auto;
-}
-
-/* Óvalo exterior del recinto, compartido por partido y concierto (ver ADR 0026) — campo verde con
-   líneas realistas solo en partido; concierto pinta su propio escenario (StadiumMap.tsx). */
-.stadium-map__exterior {
-  fill: #e4e7ec;
-  stroke: #d1d5db;
-}
-
-.stadium-map__field-fill {
-  fill: #2f9e56;
-  stroke: rgba(255, 255, 255, 0.6);
-}
-
-.stadium-map__field-line {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.85);
-  stroke-width: 1.5;
-}
-
-.stadium-map__field-dot {
-  fill: rgba(255, 255, 255, 0.85);
-}
-
-.stadium-map__zone rect {
-  stroke-width: 1;
-  transition: fill-opacity 0.15s ease;
-}
-
-.stadium-map__zone text {
-  font-size: 11px;
-  font-weight: 600;
-  fill: var(--tc-text);
-  pointer-events: none;
-}
-
-/* Todas las zonas (gradas curvas de partido/concierto, Pista/VIP rectas de concierto): azul fijo,
-   sin semáforo tiñendo el bloque — la ocupación se indica con la luz parpadeante
-   (stadium-map__zone-light-*) junto al nombre. Sin borde por defecto: solo aparece al pasar el
-   ratón o con foco de teclado, para no recargar el plano. */
-.stadium-map__zone--stand path,
-.stadium-map__zone--stand rect {
-  fill: #2563eb;
-  fill-opacity: 0.85;
-  stroke: none;
-  transition: stroke 0.15s ease;
-}
-
-.stadium-map__zone--stand.stadium-map__zone--interactive:hover path,
-.stadium-map__zone--stand.stadium-map__zone--interactive:hover rect,
-.stadium-map__zone--stand.stadium-map__zone--interactive:focus-visible path,
-.stadium-map__zone--stand.stadium-map__zone--interactive:focus-visible rect {
-  stroke: #1e40af;
-  stroke-width: 1.5;
-}
-
-.stadium-map__zone--stand text {
-  fill: #ffffff;
-}
-
-.stadium-map__zone--selected rect,
-.stadium-map__zone--selected path {
-  stroke-width: 2.5;
-  stroke: var(--tc-text);
-}
-
-.stadium-map__zone--interactive {
-  cursor: pointer;
-}
-
-/* El <g> de la zona es un botón (tabIndex 0), así que el navegador pinta su outline por defecto al
-   hacer clic — un rectángulo sobre el bloque que queda raro. El indicador de foco/selección ya lo
-   da el stroke de las reglas --interactive:hover/:focus-visible y --selected. */
-.stadium-map__zone:focus {
-  outline: none;
-}
-
-.stadium-map__zone-light {
-  pointer-events: none;
-}
-
-/* Precio como tooltip al pasar por la zona (el precio fijo pintado en el plano se solapaba con el
-   semáforo, feedback de usuario): píldora oscura centrada sobre la luz, visible solo en hover.
-   pointer-events: none para no robar eventos al bloque de la zona (el :hover se evalúa sobre la
-   geometría del propio bloque). */
-.stadium-map__zone-tooltip {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.12s ease;
-}
-
-.stadium-map__zone--interactive:hover .stadium-map__zone-tooltip {
-  opacity: 1;
-}
-
-.stadium-map__zone--stand .stadium-map__zone-tooltip rect {
-  fill: var(--tc-text);
-  fill-opacity: 1;
-}
-
-/* El pill del tooltip no debe heredar el borde de hover/selección que sí quieren el bloque de la
-   zona (reglas .stadium-map__zone--interactive:hover rect y --selected rect). */
-.stadium-map__zone--stand.stadium-map__zone--interactive:hover .stadium-map__zone-tooltip rect,
-.stadium-map__zone--stand.stadium-map__zone--selected .stadium-map__zone-tooltip rect {
-  stroke: none;
-}
-
-.stadium-map__zone--stand .stadium-map__zone-tooltip text {
-  fill: var(--tc-surface);
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.stadium-map__zone-light-halo {
-  opacity: 0.35;
-  animation: zone-light-glow 1.8s ease-in-out infinite;
-}
-
-.stadium-map__zone-light-core {
-  animation: pulse 1.8s ease-in-out infinite;
-}
-
-.stadium-map__zone-light--low {
-  fill: #22c55e;
-}
-
-.stadium-map__zone-light--mid {
-  fill: #f59e0b;
-}
-
-.stadium-map__zone-light--high {
-  fill: #ef4444;
-}
-
-@keyframes zone-light-glow {
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
-
-.stadium-map__hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--tc-muted);
-}
-
-.stadium-map__fallback {
-  list-style: none;
-  padding: 0;
-  margin: 8px 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.stadium-map__stage {
-  fill: var(--tc-text);
-  fill-opacity: 0.85;
-}
-
-.stadium-map__stage-label {
-  font-size: 10px;
-  font-weight: 700;
-  fill: var(--tc-surface);
-  letter-spacing: 0.04em;
 }
 
 /* Popup de zona */

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BuyerData, CartLine, OrderStatus, PaymentMethod } from '../../shared/types'
+import type { BuyerData, CartLine, OrderStatus, PaymentMethod } from '@venue/core/domain'
 import { SagaTimeline } from './SagaTimeline'
 import { ChevronDownIcon } from '../../shared/icons'
 import PaymentForm from '../PaymentForm'

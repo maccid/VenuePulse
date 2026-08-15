@@ -1,4 +1,4 @@
-import type { BuyerData, CartLine, DraftLine, OrderStatus, PaymentMethod, TicketType } from '../../shared/types'
+import type { BuyerData, CartLine, DraftLine, OrderStatus, PaymentMethod, TicketType } from '@venue/core/domain'
 import { formatCountdown, useCountdown } from '../../shared/useCountdown'
 import { CartIcon, ReloadIcon } from '../../shared/icons'
 import DraftCart from './DraftCart'

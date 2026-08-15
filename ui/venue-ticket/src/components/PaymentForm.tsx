@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BuyerData, PaymentMethod } from '../shared/types'
+import type { BuyerData, PaymentMethod } from '@venue/core/domain'
 import { CardIcon, BizumIcon } from '../shared/icons'
 
 interface Props {
