@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import * as signalR from '@microsoft/signalr'
 import type { EventSummary, PricingChanged, TicketType, ZoneOccupancy } from '../shared/types'
-import { isAbortedHubStartError } from '../shared/hubErrors'
+import { isAbortedHubStartError, createHubConnection } from 'venuepulse-core'
 
 interface EventCatalog {
   event: EventSummary | undefined
@@ -32,7 +31,7 @@ export function useEventCatalog(eventId: string): EventCatalog {
   }, [eventId])
 
   useEffect(() => {
-    const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/occupancy').withAutomaticReconnect().build()
+    const connection = createHubConnection('/hubs/occupancy')
 
     connection.on('occupancyChanged', (updated: ZoneOccupancy) => {
       setZones((prev) => prev.map((z) => (z.zoneId === updated.zoneId ? updated : z)))
@@ -53,7 +52,7 @@ export function useEventCatalog(eventId: string): EventCatalog {
   }, [eventId])
 
   useEffect(() => {
-    const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/pricing').withAutomaticReconnect().build()
+    const connection = createHubConnection('/hubs/pricing')
 
     connection.on('pricingChanged', (updated: PricingChanged) => {
       if (updated.eventId === eventId) setTicketTypes(updated.ticketTypes)

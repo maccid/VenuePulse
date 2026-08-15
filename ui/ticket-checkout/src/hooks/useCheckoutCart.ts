@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import * as signalR from '@microsoft/signalr'
 import type {
   BuyerData,
   CartLine,
@@ -13,7 +12,7 @@ import type {
   TicketType,
   ZoneOccupancy,
 } from '../shared/types'
-import { isAbortedHubStartError } from '../shared/hubErrors'
+import { isAbortedHubStartError, createHubConnection } from 'venuepulse-core'
 
 const GENERIC_ORDER_REJECTION_REASON = 'OrderRequestFailed'
 const GENERIC_PAYMENT_REJECTION_REASON = 'PaymentRequestFailed'
@@ -181,7 +180,7 @@ export function useCheckoutCart(
   }, [eventId])
 
   useEffect(() => {
-    const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/tickets').withAutomaticReconnect().build()
+    const connection = createHubConnection('/hubs/tickets')
 
     connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
       applyTicketStatusUpdate(update)

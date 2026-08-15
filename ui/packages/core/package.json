@@ -1,0 +1,27 @@
+{
+  "name": "venuepulse-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Utilidades compartidas entre los microfrontends de VenuePulse",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^8.0.7"
+  },
+  "peerDependencies": {
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2"
+  }
+}
