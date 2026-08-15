@@ -50,10 +50,6 @@ public sealed class PlaceOrderCommandHandler(
 
                 await ticketRepository.AddAsync(ticket, cancellationToken);
 
-                await publishEndpoint.Publish(
-                    new TicketPurchaseRequested(ticket.Id, line.ZoneId, order.Id),
-                    cancellationToken);
-
                 ticketRefs.Add(new PurchaseOrderTicketRef(ticket.Id, line.ZoneId));
             }
         }
@@ -61,6 +57,13 @@ public sealed class PlaceOrderCommandHandler(
         await publishEndpoint.Publish(
             new PurchaseOrderRequested(order.Id, request.EventId, ticketRefs),
             cancellationToken);
+
+        foreach (var ticketRef in ticketRefs)
+        {
+            await publishEndpoint.Publish(
+                new TicketPurchaseRequested(ticketRef.TicketId, ticketRef.ZoneId, order.Id),
+                cancellationToken);
+        }
 
         await ticketRepository.SaveChangesAsync(cancellationToken);
 
