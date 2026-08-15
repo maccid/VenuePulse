@@ -22,6 +22,25 @@ function isResolvedOrderStatus(status: OrderStatus | null): boolean {
   return status === 'Completed' || status === 'Rejected'
 }
 
+function orderStorageKey(eventId: string): string {
+  return `venuepulse.ticket-checkout.order.${eventId}`
+}
+
+function readStoredOrderId(eventId: string): string | null {
+  try {
+    return sessionStorage.getItem(orderStorageKey(eventId))
+  } catch {
+    return null
+  }
+}
+
+function writeStoredOrderId(eventId: string, orderId: string | null) {
+  try {
+    if (orderId) sessionStorage.setItem(orderStorageKey(eventId), orderId)
+    else sessionStorage.removeItem(orderStorageKey(eventId))
+  } catch {}
+}
+
 interface CheckoutCart {
   draft: DraftLine[]
   cart: CartLine[]
@@ -59,6 +78,10 @@ export function useCheckoutCart(
     orderRef.current = { orderId, status: orderStatus }
   }, [orderId, orderStatus])
 
+  function claimOrder(id: string | null, status: OrderStatus | null) {
+    orderRef.current = { orderId: id, status }
+  }
+
   const cart = useMemo<CartLine[]>(
     () =>
       orderTickets.map((ticket) => {
@@ -80,10 +103,15 @@ export function useCheckoutCart(
   )
 
   function applyOrderStatusUpdate(update: OrderStatusUpdate) {
+    if (orderRef.current.orderId !== update.orderId) return
+
+    orderRef.current = { orderId: update.orderId, status: update.status }
     setOrderId(update.orderId)
     setOrderStatus(update.status)
     setOrderRejectionReason(update.rejectionReason)
     setOrderTickets(update.tickets)
+
+    if (isResolvedOrderStatus(update.status)) writeStoredOrderId(eventId, null)
   }
 
   function applyTicketStatusUpdate(update: TicketStatusUpdate) {
@@ -117,6 +145,40 @@ export function useCheckoutCart(
     }
     return isResolvedOrderStatus(orderRef.current.status)
   }
+
+  useEffect(() => {
+    const storedOrderId = readStoredOrderId(eventId)
+    if (!storedOrderId) return
+
+    let cancelled = false
+
+    async function restoreOrder(id: string) {
+      try {
+        const response = await fetch(`/api/checkin/api/orders/${id}/status`)
+        if (!response.ok) {
+          writeStoredOrderId(eventId, null)
+          return
+        }
+
+        const status = (await response.json()) as OrderStatusUpdate
+        if (cancelled) return
+
+        if (isResolvedOrderStatus(status.status)) {
+          writeStoredOrderId(eventId, null)
+          return
+        }
+
+        claimOrder(status.orderId, status.status)
+        applyOrderStatusUpdate(status)
+      } catch {}
+    }
+
+    void restoreOrder(storedOrderId)
+
+    return () => {
+      cancelled = true
+    }
+  }, [eventId])
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/tickets').withAutomaticReconnect().build()
@@ -178,6 +240,8 @@ export function useCheckoutCart(
   }
 
   function resetPurchase() {
+    claimOrder(null, null)
+    writeStoredOrderId(eventId, null)
     setOrderId(null)
     setOrderStatus(null)
     setOrderRejectionReason(null)
@@ -220,6 +284,8 @@ export function useCheckoutCart(
       }
 
       const { orderId: newOrderId } = (await response.json()) as { orderId: string }
+      claimOrder(newOrderId, null)
+      writeStoredOrderId(eventId, newOrderId)
       setOrderId(newOrderId)
 
       const statusResponse = await fetch(`/api/checkin/api/orders/${newOrderId}/status`)
