@@ -10,7 +10,8 @@ public sealed class ReservationWatchdogConsumer(
     IConsumer<TicketPurchaseRequested>,
     IConsumer<ZoneSlotReserved>,
     IConsumer<ZoneSlotReservationFailed>,
-    IConsumer<TicketPaymentSubmitted>
+    IConsumer<TicketPaymentSubmitted>,
+    IConsumer<TicketPurchaseCancelled>
 {
     public Task Consume(ConsumeContext<TicketPurchaseRequested> context)
     {
@@ -31,6 +32,12 @@ public sealed class ReservationWatchdogConsumer(
     }
 
     public Task Consume(ConsumeContext<TicketPaymentSubmitted> context)
+    {
+        tracker.Untrack(context.Message.CorrelationId);
+        return Task.CompletedTask;
+    }
+
+    public Task Consume(ConsumeContext<TicketPurchaseCancelled> context)
     {
         tracker.Untrack(context.Message.CorrelationId);
         return Task.CompletedTask;
