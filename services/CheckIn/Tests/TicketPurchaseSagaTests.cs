@@ -134,6 +134,51 @@ public class TicketPurchaseSagaTests
     }
 
     [Fact]
+    public async Task Cancelacion_por_el_comprador_en_Reserving_rechaza_con_el_motivo_propio()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+
+        // Mismo mensaje que la cascada de EventCancelled, pero con un motivo propio (ver
+        // CancelOrderCommand) — el Reason debe viajar hasta el rechazo final en vez de quedar
+        // hardcodeado como "EventCancelled".
+        await harness.Bus.Publish(new TicketPurchaseCancelled(ticketId, "CancelledByCustomer"));
+        await harness.Consumed.Any<TicketPurchaseCancelled>();
+
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "CancelledByCustomer")).Should().BeTrue();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Cancelacion_por_el_comprador_en_AwaitingPayment_libera_el_aforo_ya_reservado()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReserved>();
+
+        await harness.Bus.Publish(new TicketPurchaseCancelled(ticketId, "CancelledByCustomer"));
+        await harness.Consumed.Any<TicketPurchaseCancelled>();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeTrue();
+
+        await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReleased>();
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "CancelledByCustomer")).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Camino_de_compensacion_por_bizum_libera_el_aforo_reservado()
     {
         var (provider, harness) = await StartHarnessAsync();

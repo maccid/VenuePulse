@@ -92,16 +92,18 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
                     Logger.Warning("Timeout de reserva para la entrada {TicketId}", context.Saga.CorrelationId);
                 })
                 .TransitionTo(AwaitingLateReservationOutcome),
-            // El evento se canceló (ver EventCancelledConsumer, ADR 0021) antes de que AccessControl
-            // respondiera. El aforo nunca llegó a reservarse en este punto — igual que TimedOut aquí,
-            // se rechaza sin publicar ReleaseZoneSlot.
+            // El evento se canceló (ver EventCancelledConsumer, ADR 0021) o el comprador canceló su
+            // pedido voluntariamente (ver CancelOrderCommand) antes de que AccessControl respondiera
+            // — el motivo real viaja en el propio mensaje (ver TicketPurchaseCancelled). El aforo
+            // nunca llegó a reservarse en este punto — igual que TimedOut aquí, se rechaza sin
+            // publicar ReleaseZoneSlot.
             When(Cancelled)
                 .Then(context =>
                 {
-                    context.Saga.RejectionReason = "EventCancelled";
-                    Logger.Warning("Evento cancelado antes de reservar aforo (entrada {TicketId})", context.Saga.CorrelationId);
+                    context.Saga.RejectionReason = context.Message.Reason;
+                    Logger.Warning("Entrada cancelada antes de reservar aforo (entrada {TicketId}): {Reason}", context.Saga.CorrelationId, context.Message.Reason);
                 })
-                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, "EventCancelled", context.Saga.GroupId))
+                .Publish(context => new TicketPurchaseRejected(context.Saga.CorrelationId, context.Message.Reason, context.Saga.GroupId))
                 .TransitionTo(Rejected)
                 .Finalize());
 
@@ -154,14 +156,15 @@ public sealed class TicketPurchaseSaga : MassTransitStateMachine<TicketPurchaseS
                 })
                 .Publish(context => new ReleaseZoneSlot(context.Saga.CorrelationId, context.Saga.ZoneId))
                 .TransitionTo(Confirming),
-            // El evento se canceló mientras el cliente todavía no había elegido método de pago —
-            // el aforo SÍ está reservado de verdad aquí, así que hace falta liberarlo (mismo camino
-            // que TimedOut: Confirming resuelve el rechazo final al ver SlotReleased).
+            // El evento se canceló, o el comprador canceló su pedido voluntariamente, mientras el
+            // cliente todavía no había elegido método de pago — el aforo SÍ está reservado de
+            // verdad aquí, así que hace falta liberarlo (mismo camino que TimedOut: Confirming
+            // resuelve el rechazo final al ver SlotReleased).
             When(Cancelled)
                 .Then(context =>
                 {
-                    context.Saga.RejectionReason = "EventCancelled";
-                    Logger.Warning("Evento cancelado con aforo ya reservado (entrada {TicketId})", context.Saga.CorrelationId);
+                    context.Saga.RejectionReason = context.Message.Reason;
+                    Logger.Warning("Entrada cancelada con aforo ya reservado (entrada {TicketId}): {Reason}", context.Saga.CorrelationId, context.Message.Reason);
                 })
                 .Publish(context => new ReleaseZoneSlot(context.Saga.CorrelationId, context.Saga.ZoneId))
                 .TransitionTo(Confirming));

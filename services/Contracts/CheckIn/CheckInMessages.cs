@@ -58,9 +58,13 @@ public sealed record TicketProcessingPayment(Guid CorrelationId) : IntegrationEv
 public sealed record TicketRefunded(Guid CorrelationId) : IntegrationEvent;
 
 /// <summary>
-/// Publicado por la cascada de <see cref="VenuePulse.Core.Messaging.Contracts.EventCancelled"/>
-/// (ADR 0021) para una entrada todavía <c>Pending</c>/<c>AwaitingPayment</c> cuando su evento se
-/// cancela — correlacionado por <c>CorrelationId</c> con la propia <c>TicketPurchaseSaga</c>, que
-/// lo consume como una compensación más (mismo patrón que <see cref="ReservationTimedOut"/>).
+/// Compensación genérica de una entrada todavía <c>Pending</c>/<c>AwaitingPayment</c> —
+/// correlacionado por <c>CorrelationId</c> con la propia <c>TicketPurchaseSaga</c>, que lo consume
+/// como una compensación más (mismo patrón que <see cref="ReservationTimedOut"/>). Dos orígenes
+/// distintos lo publican hoy: la cascada de
+/// <see cref="VenuePulse.Core.Messaging.Contracts.EventCancelled"/> (ADR 0021, <c>Reason</c> por
+/// defecto "EventCancelled") y la cancelación voluntaria de un pedido por el propio comprador
+/// (<c>CancelOrderCommand</c>, <c>Reason</c> "CancelledByCustomer") — <c>Reason</c> viaja hasta el
+/// <c>RejectionReason</c> final en vez de quedar hardcodeado en la Saga.
 /// </summary>
-public sealed record TicketPurchaseCancelled(Guid CorrelationId) : IntegrationEvent;
+public sealed record TicketPurchaseCancelled(Guid CorrelationId, string Reason = "EventCancelled") : IntegrationEvent;

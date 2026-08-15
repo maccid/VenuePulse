@@ -163,6 +163,42 @@ public sealed class PurchaseOrderFlowTests(Xunit.Abstractions.ITestOutputHelper 
     }
 
     [Fact]
+    public async Task Cancelar_un_pedido_esperando_pago_lo_rechaza_y_libera_el_aforo_reservado()
+    {
+        var ticketTypeId = Guid.NewGuid();
+        _fakeTicketingClient.SetPrice(ticketTypeId, 40.00m);
+
+        var orderId = await PlaceOrderAsync(
+            (ticketTypeId, Guid.NewGuid(), 1, 40.00m),
+            (ticketTypeId, Guid.NewGuid(), 1, 40.00m));
+
+        await PollUntilAsync(orderId, s => s.Status is "AwaitingPayment" or "Rejected", TimeSpan.FromSeconds(180));
+        await CancelOrderAsync(orderId);
+        var status = await PollUntilAsync(orderId, s => s.Status is "Rejected", TimeSpan.FromSeconds(180));
+
+        status.RejectionReason.Should().Be("CancelledByCustomer");
+        status.Tickets.Should().HaveCount(2);
+        status.Tickets.Should().OnlyContain(t => t.Status == "Rejected");
+    }
+
+    [Fact]
+    public async Task No_se_puede_cancelar_un_pedido_ya_completado()
+    {
+        var ticketTypeId = Guid.NewGuid();
+        _fakeTicketingClient.SetPrice(ticketTypeId, 40.00m);
+
+        var orderId = await PlaceOrderAsync((ticketTypeId, Guid.NewGuid(), 1, 40.00m));
+
+        await PollUntilAsync(orderId, s => s.Status is "AwaitingPayment" or "Rejected", TimeSpan.FromSeconds(180));
+        await PayOrderAsync(orderId, "Card");
+        await PollUntilAsync(orderId, s => s.Status is "Completed" or "Rejected", TimeSpan.FromSeconds(180));
+
+        var response = await _client.PostAsync($"/api/orders/{orderId}/cancel", null);
+
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Precio_desactualizado_rechaza_el_pedido_sin_crear_ninguna_entrada()
     {
         var ticketTypeId = Guid.NewGuid();
@@ -209,6 +245,24 @@ public sealed class PurchaseOrderFlowTests(Xunit.Abstractions.ITestOutputHelper 
         for (var attempt = 1; attempt <= 5; attempt++)
         {
             var response = await _client.PostAsJsonAsync($"/api/orders/{orderId}/pay", new { Method = method });
+            if (response.IsSuccessStatusCode)
+                return;
+
+            if (attempt == 5)
+                response.EnsureSuccessStatusCode();
+
+            await Task.Delay(300);
+        }
+    }
+
+    // Mismo motivo que PayOrderAsync: pequeña ventana entre que el pedido aparece en
+    // AwaitingPayment (Postgres) y la PurchaseOrderSaga (Mongo) ya está de verdad lista para
+    // aceptarlo en ese estado.
+    private async Task CancelOrderAsync(Guid orderId)
+    {
+        for (var attempt = 1; attempt <= 5; attempt++)
+        {
+            var response = await _client.PostAsync($"/api/orders/{orderId}/cancel", null);
             if (response.IsSuccessStatusCode)
                 return;
 

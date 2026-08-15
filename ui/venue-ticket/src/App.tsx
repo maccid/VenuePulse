@@ -17,6 +17,7 @@ export default function App({ eventId, holder }: Props) {
     buyer,
     isReserving,
     isPaying,
+    isCancelling,
     orderStatus,
     orderRejectionReason,
     setBuyer,
@@ -25,6 +26,7 @@ export default function App({ eventId, holder }: Props) {
     resetPurchase,
     reservar,
     submitPayment,
+    cancelOrder,
   } = useCheckoutCart(eventId, holder, ticketTypes, zones)
 
   return (
@@ -42,6 +44,7 @@ export default function App({ eventId, holder }: Props) {
           buyer={buyer}
           isReserving={isReserving}
           isPaying={isPaying}
+          isCancelling={isCancelling}
           orderStatus={orderStatus}
           orderRejectionReason={orderRejectionReason}
           onBuyerChange={setBuyer}
@@ -50,6 +53,7 @@ export default function App({ eventId, holder }: Props) {
           onResetPurchase={resetPurchase}
           onReservar={reservar}
           onSubmitPayment={submitPayment}
+          onCancelOrder={cancelOrder}
         />
       )}
     </div>

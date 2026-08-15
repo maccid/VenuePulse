@@ -46,6 +46,7 @@ interface CheckoutCart {
   buyer: BuyerData
   isReserving: boolean
   isPaying: boolean
+  isCancelling: boolean
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   setBuyer: (buyer: BuyerData) => void
@@ -54,6 +55,7 @@ interface CheckoutCart {
   resetPurchase: () => void
   reservar: () => Promise<void>
   submitPayment: (method: PaymentMethod) => Promise<void>
+  cancelOrder: () => Promise<void>
 }
 
 export function useCheckoutCart(
@@ -66,6 +68,7 @@ export function useCheckoutCart(
   const [buyer, setBuyer] = useState<BuyerData>({ nombre: '', apellidos: '', email: '' })
   const [isReserving, setIsReserving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   const [orderId, setOrderId] = useState<string | null>(null)
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null)
@@ -210,10 +213,10 @@ export function useCheckoutCart(
   }, [eventId])
 
   useEffect(() => {
-    if (isPaying && isResolvedOrderStatus(orderStatus)) {
-      setIsPaying(false)
-    }
-  }, [orderStatus, isPaying])
+    if (!isResolvedOrderStatus(orderStatus)) return
+    if (isPaying) setIsPaying(false)
+    if (isCancelling) setIsCancelling(false)
+  }, [orderStatus, isPaying, isCancelling])
 
   function addToDraft(zoneId: string, ticketTypeId: string, quantity: number) {
     const zone = zones.find((z) => z.zoneId === zoneId)
@@ -249,6 +252,7 @@ export function useCheckoutCart(
     setBuyer({ nombre: '', apellidos: '', email: '' })
     setIsPaying(false)
     setIsReserving(false)
+    setIsCancelling(false)
   }
 
   async function reservar() {
@@ -331,12 +335,34 @@ export function useCheckoutCart(
     if (!resolved) setIsPaying(false)
   }
 
+  async function cancelOrder() {
+    if (!orderId) return
+    if (orderStatus !== 'Reserving' && orderStatus !== 'AwaitingPayment') return
+
+    setIsCancelling(true)
+
+    try {
+      const response = await fetch(`/api/checkin/api/orders/${orderId}/cancel`, { method: 'POST' })
+      if (!response.ok) {
+        setIsCancelling(false)
+        return
+      }
+    } catch {
+      setIsCancelling(false)
+      return
+    }
+
+    const resolved = await reconcileOrderStatus(orderId)
+    if (!resolved) setIsCancelling(false)
+  }
+
   return {
     draft,
     cart,
     buyer,
     isReserving,
     isPaying,
+    isCancelling,
     orderStatus,
     orderRejectionReason,
     setBuyer,
@@ -345,5 +371,6 @@ export function useCheckoutCart(
     resetPurchase,
     reservar,
     submitPayment,
+    cancelOrder,
   }
 }

@@ -773,6 +773,26 @@ ticket-checkout-app {
   color: var(--tc-danger);
 }
 
+.cart-panel__cancel {
+  align-self: flex-start;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tc-danger);
+  background: none;
+  border: 1px solid var(--tc-border);
+  border-radius: 8px;
+}
+
+.cart-panel__cancel:hover:not(:disabled) {
+  background: rgba(179, 38, 30, 0.08);
+  border-color: var(--tc-danger);
+}
+
+.cart-panel__cancel:disabled {
+  opacity: 0.6;
+}
+
 /* Formulario de pago */
 .payment-form {
   display: flex;

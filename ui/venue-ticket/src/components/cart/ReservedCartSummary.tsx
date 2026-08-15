@@ -12,10 +12,12 @@ interface Props {
   reservationExpired: boolean
   buyer: BuyerData
   isPaying: boolean
+  isCancelling: boolean
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
   onSubmitPayment: (method: PaymentMethod) => void
+  onCancelOrder: () => void
 }
 
 export default function ReservedCartSummary({
@@ -24,10 +26,12 @@ export default function ReservedCartSummary({
   reservationExpired,
   buyer,
   isPaying,
+  isCancelling,
   orderStatus,
   orderRejectionReason,
   onBuyerChange,
   onSubmitPayment,
+  onCancelOrder,
 }: Props) {
   const [summaryOpen, setSummaryOpen] = useState(false)
   const activeLines = cart.filter((l) => l.status !== 'Rejected')
@@ -93,6 +97,12 @@ export default function ReservedCartSummary({
         <p className={`cart-panel__done${orderStatus === 'Rejected' ? ' cart-panel__done--error' : ''}`}>
           {orderStatus === 'Rejected' ? 'La compra no se pudo completar.' : '✔ Compra completada.'}
         </p>
+      )}
+
+      {!allResolved && !reservationExpired && (
+        <button type="button" className="cart-panel__cancel" disabled={isCancelling} onClick={onCancelOrder}>
+          {isCancelling ? 'Cancelando…' : 'Cancelar reserva'}
+        </button>
       )}
 
       <SagaTimeline rejectionReason={timelineReason} />
