@@ -119,17 +119,10 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         await snapshotRepository.ClearForEventAsync(eventId, cancellationToken);
     }
 
-    /// <summary>Reintenta una mutación de <see cref="Domain.Zone"/> ante un conflicto de
-    /// concurrencia optimista (shadow property "RowVersion" en <c>AccessControlDbContext</c>, ver
-    /// ADR 0027 — candidato a ADR propio, resuelto aquí). Cada intento relee la zona con datos
-    /// frescos, así que <paramref name="mutate"/> debe volver a evaluar cualquier invariante sobre
-    /// el estado recién leído. Las excepciones de negocio del dominio (zona llena, sin reserva
-    /// pendiente, etc.) las lanza <paramref name="mutate"/> antes de llegar al <c>SaveAsync</c> y
-    /// se propagan sin reintentar — solo <see cref="DbUpdateConcurrencyException"/> se reintenta.</summary>
     private async Task<T> ExecuteWithRetryAsync<T>(
         Guid zoneId, Func<Domain.Zone, (bool ShouldSave, T Result)> mutate, CancellationToken cancellationToken)
     {
-        const int maxAttempts = 3;
+        const int maxAttempts = 15;
         for (var attempt = 1; ; attempt++)
         {
             var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
@@ -147,16 +140,11 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
             }
             catch (DbUpdateConcurrencyException) when (attempt < maxAttempts)
             {
-                // Otro proceso modificó la misma zona entre la lectura y la escritura (RowVersion
-                // no coincide) — se reintenta desde el principio del bucle con datos frescos.
                 Logger.Warning("Conflicto de concurrencia en la zona {ZoneId} (intento {Attempt}/{MaxAttempts}) — reintentando", zoneId, attempt, maxAttempts);
             }
         }
     }
 
-    /// <summary>Variante de <see cref="ExecuteWithRetryAsync{T}"/> para mutaciones que no
-    /// necesitan decidir si guardar o no (siempre mutan y guardan) ni devolver un resultado propio
-    /// más allá de completar la operación.</summary>
     private Task ExecuteWithRetryAsync(Guid zoneId, Action<Domain.Zone> mutate, CancellationToken cancellationToken) =>
         ExecuteWithRetryAsync<bool>(zoneId, zone =>
         {
