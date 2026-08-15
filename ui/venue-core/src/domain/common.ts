@@ -1,0 +1,1 @@
+export const MAX_TICKETS_PER_PURCHASE = 10

@@ -1,0 +1,28 @@
+.vp-map-light-halo {
+  opacity: 0.35;
+  animation: vp-map-glow 1.8s ease-in-out infinite;
+}
+
+.vp-map-light-core {
+  animation: vp-map-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes vp-map-glow {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes vp-map-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
