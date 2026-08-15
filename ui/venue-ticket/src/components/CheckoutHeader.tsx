@@ -14,13 +14,14 @@ export default function CheckoutHeader({ event }: Props) {
 
   return (
     <header className="checkout-header">
-      <div className="checkout-header__card">
-        <EventSummaryCard event={event} />
-      </div>
-
-      <button type="button" className="checkout-header__back" onClick={handleBack}>
-        ← Volver al catálogo
-      </button>
+      <EventSummaryCard
+        event={event}
+        action={
+          <button type="button" className="checkout-header__back" onClick={handleBack}>
+            ← Volver al catálogo
+          </button>
+        }
+      />
     </header>
   )
 }
