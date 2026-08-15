@@ -6,9 +6,25 @@ import EventCatalog from './components/EventCatalog'
 import CheckoutPanel from './components/CheckoutPanel'
 import './App.css'
 
+const EVENT_PARAM = 'event'
+
+function eventFromUrl(): string | null {
+  return new URLSearchParams(window.location.search).get(EVENT_PARAM)
+}
+
+function updateUrl(eventId: string | null) {
+  const url = new URL(window.location.href)
+  if (eventId) {
+    url.searchParams.set(EVENT_PARAM, eventId)
+  } else {
+    url.searchParams.delete(EVENT_PARAM)
+  }
+  window.history.pushState({}, '', url)
+}
+
 export default function App() {
   const [events, setEvents] = useState<EventSummary[]>([])
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(() => eventFromUrl())
 
   useEffect(() => {
     api
@@ -17,14 +33,30 @@ export default function App() {
       .catch(() => setEvents([]))
   }, [])
 
+  useEffect(() => {
+    const handlePopState = () => setSelectedEventId(eventFromUrl())
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  function selectEvent(id: string) {
+    setSelectedEventId(id)
+    updateUrl(id)
+  }
+
+  function backToCatalog() {
+    setSelectedEventId(null)
+    updateUrl(null)
+  }
+
   return (
     <div className="shell">
       <SiteHeader />
 
       {selectedEventId === null ? (
-        <EventCatalog events={events} onSelectEvent={setSelectedEventId} />
+        <EventCatalog events={events} onSelectEvent={selectEvent} />
       ) : (
-        <CheckoutPanel eventId={selectedEventId} onBack={() => setSelectedEventId(null)} />
+        <CheckoutPanel eventId={selectedEventId} onBack={backToCatalog} />
       )}
     </div>
   )
