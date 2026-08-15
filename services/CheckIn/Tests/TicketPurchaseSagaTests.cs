@@ -108,6 +108,32 @@ public class TicketPurchaseSagaTests
     }
 
     [Fact]
+    public async Task Timeout_tardio_en_Confirming_se_ignora_sin_bloquear_la_resolucion()
+    {
+        var (provider, harness) = await StartHarnessAsync();
+        await using var _ = provider;
+
+        var ticketId = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        await harness.Bus.Publish(new TicketPurchaseRequested(ticketId, zoneId));
+        await harness.Consumed.Any<TicketPurchaseRequested>();
+        await harness.Bus.Publish(new ZoneSlotReserved(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReserved>();
+
+        await harness.Bus.Publish(new TicketPurchaseCancelled(ticketId, "CancelledByCustomer"));
+        await harness.Consumed.Any<TicketPurchaseCancelled>();
+        (await harness.Published.Any<ReleaseZoneSlot>()).Should().BeTrue();
+
+        await harness.Bus.Publish(new ReservationTimedOut(ticketId, zoneId));
+        await harness.Consumed.Any<ReservationTimedOut>();
+
+        await harness.Bus.Publish(new ZoneSlotReleased(ticketId, zoneId));
+        await harness.Consumed.Any<ZoneSlotReleased>();
+        (await harness.Published.Any<TicketPurchaseRejected>(m => m.Context.Message.Reason == "CancelledByCustomer")).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Cancelacion_por_el_comprador_en_Reserving_rechaza_con_el_motivo_propio()
     {
         var (provider, harness) = await StartHarnessAsync();
