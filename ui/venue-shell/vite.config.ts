@@ -7,6 +7,12 @@ import tailwindcss from '@tailwindcss/vite'
 // para poder trabajar en la app sin levantar todo docker-compose.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // @venue/core es un paquete `file:` con su propia copia de react como peer — sin dedupe, los
+  // .tsx del core importarían esa segunda copia y habría doble React en el bundle (hooks rotos
+  // en runtime). Dedupe fuerza una sola instancia, la de esta app.
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
   server: {
     port: 5173,
     proxy: {

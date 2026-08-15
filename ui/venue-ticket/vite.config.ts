@@ -8,6 +8,12 @@ import tailwindcss from '@tailwindcss/vite'
 // build time de un despliegue independiente (ver ADR 0004).
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // @venue/core es un paquete `file:` con su propia copia de react como peer — sin dedupe, los
+  // .tsx del core importarían esa segunda copia y habría doble React en el bundle (hooks rotos
+  // en runtime). Dedupe fuerza una sola instancia, la de esta app.
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
   base: '/ticket-checkout/',
   build: {
     cssCodeSplit: false,
