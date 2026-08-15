@@ -1,11 +1,13 @@
+import type { ReactNode } from 'react'
 import type { EventSummary } from '../domain'
 import { eventTypeLabel, formatEventDateTime } from '../domain'
 
 interface Props {
   event: EventSummary
+  action?: ReactNode
 }
 
-export default function EventSummaryCard({ event }: Props) {
+export default function EventSummaryCard({ event, action }: Props) {
   const { day, month, weekday, time } = formatEventDateTime(event.startsAtUtc)
 
   return (
@@ -21,6 +23,7 @@ export default function EventSummaryCard({ event }: Props) {
         <span className="block truncate font-semibold text-text">{event.name}</span>
         <span className="block truncate text-sm text-text-muted">{event.venueName}</span>
       </span>
+      {action}
     </>
   )
 }

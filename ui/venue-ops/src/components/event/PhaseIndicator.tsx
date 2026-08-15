@@ -13,7 +13,6 @@ export default function PhaseIndicator({ status }: Props) {
   if (status === 'Cancelled') {
     return (
       <div className="inline-flex items-center gap-3 rounded-md bg-accent-bg p-1" role="status" aria-label="Etapa del evento: cancelado">
-        <span className="pl-1 text-sm font-semibold text-text-muted">Etapa</span>
         <span className="rounded-sm bg-surface px-4 py-2 text-sm font-semibold text-danger shadow-sm">Cancelado</span>
       </div>
     )
@@ -21,7 +20,6 @@ export default function PhaseIndicator({ status }: Props) {
 
   return (
     <div className="inline-flex items-center gap-3 rounded-md bg-accent-bg p-1" role="status" aria-label="Etapa del evento">
-      <span className="pl-1 text-sm font-semibold text-text-muted">Etapa</span>
       <ol className="m-0 flex list-none gap-1 p-0">
         {STEPS.map((step) => (
           <li
