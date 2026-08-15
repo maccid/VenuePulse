@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { EventSummary } from '../types'
+import type { EventSummary } from '@venue/core/domain'
 import EventCard from './EventCard'
 
 interface Props {
