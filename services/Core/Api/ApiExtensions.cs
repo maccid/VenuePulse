@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace VenuePulse.Core.Api;
@@ -22,4 +23,11 @@ public static class ApiExtensions
         services
             .AddExceptionHandler<GlobalExceptionHandler>()
             .AddProblemDetails();
+
+    /// <summary>
+    /// Log de cada petición HTTP (ver <see cref="RequestLoggingMiddleware"/>). Colocar tras
+    /// <c>app.UseExceptionHandler()</c> para que el status final (incl. los 500) ya esté resuelto.
+    /// </summary>
+    public static IApplicationBuilder UseRequestLogging(this IApplicationBuilder app) =>
+        app.UseMiddleware<RequestLoggingMiddleware>();
 }
