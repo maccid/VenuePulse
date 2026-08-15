@@ -5,12 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-/// <summary>
-/// Red de seguridad para excepciones NO controladas (bug, fallo de infraestructura) — no sustituye
-/// a <c>Result</c> (fallos de negocio esperables, ver ADR 0011) ni introduce una jerarquía de
-/// excepciones de negocio paralela. Sin esto, una excepción sin capturar llega al cliente como la
-/// página de error por defecto de ASP.NET Core en vez de un <see cref="ProblemDetails"/> JSON.
-/// </summary>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(

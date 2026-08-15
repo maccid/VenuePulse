@@ -8,12 +8,6 @@ using Serilog.Enrichers.Span;
 
 namespace VenuePulse.Core.Observability;
 
-/// <summary>
-/// Logging estructurado (Serilog -> consola + Seq, con TraceId/SpanId de OpenTelemetry como
-/// campo de correlación) + trazas distribuidas (OpenTelemetry -> Seq vía OTLP/http/protobuf),
-/// compartido por los 3 servicios para que un mismo flujo de compra se pueda seguir de punta a
-/// punta en Seq, con logs y trazas correlacionadas en una sola UI (ver ADR 0033).
-/// </summary>
 public static class ObservabilityExtensions
 {
     public static IHostBuilder UseStructuredLogging(this IHostBuilder builder, string serviceName) =>

@@ -3,13 +3,6 @@ namespace VenuePulse.Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-/// <summary>
-/// Sustituye el `CreatedAtUtc = DateTimeOffset.UtcNow` copiado a mano en cada constructor de
-/// agregado (antes solo en `Ticket`) por un único punto de verdad en el momento de guardar — ver
-/// ADR 0011. Sin estado propio salvo el reloj: se puede instanciar directamente en `AddDbContext`,
-/// no hace falta registrarlo en el contenedor de DI. <see cref="TimeProvider"/> en vez de
-/// `DateTimeOffset.UtcNow` estático para poder fijar un reloj falso en tests.
-/// </summary>
 public sealed class AuditingSaveChangesInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
 {
     public AuditingSaveChangesInterceptor() : this(TimeProvider.System)
