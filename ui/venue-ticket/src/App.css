@@ -5,12 +5,13 @@
 @import 'tailwindcss/utilities.css';
 @source '../../venue-core/src';
 
-@theme {
+@theme inline {
   /* Alias genéricos compartidos con @venue/core (misma convención que shell y ops) para que los
      componentes del core (EventSummaryCard, InlineError) pinten con la paleta tc-* sin depender
      de ella. */
   --color-text: var(--tc-text);
   --color-text-muted: var(--tc-muted);
+  --color-text-on-accent: var(--tc-text-on-accent);
   --color-surface: var(--tc-surface);
   --color-border: var(--tc-border);
   --color-border-strong: var(--tc-border-strong);
@@ -36,6 +37,7 @@ ticket-checkout-app {
 .ticket-checkout {
   --tc-text: #1f2328;
   --tc-muted: #6b7280;
+  --tc-text-on-accent: #ffffff;
   --tc-border: #e5e7eb;
   --tc-border-strong: #d1d5db;
   --tc-surface: #ffffff;
@@ -746,3 +748,4 @@ ticket-checkout-app {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+

@@ -10,7 +10,7 @@ export default function EventSummaryCard({ event }: Props) {
 
   return (
     <>
-      <span className="flex w-14 shrink-0 flex-col items-center rounded-md bg-accent-bg py-1.5 text-accent">
+      <span className="flex w-14 shrink-0 flex-col items-center rounded-md bg-accent py-1.5 text-text-on-accent">
         <span className="text-xs font-bold uppercase">{month}</span>
         <span className="text-lg leading-none font-bold">{day}</span>
       </span>

@@ -66,7 +66,7 @@ export default function PurchaseFlow({
   const selectedTicketType = selectedZone && matchTicketType(selectedZone.name, ticketTypes)
   const pricing = pricingByZoneId(zones, ticketTypes)
 
-  const mapInteractableForNewSelection = cart.length === 0
+  const mapLocked = cart.length > 0
 
   return (
     <div className="purchase-flow">
@@ -78,8 +78,9 @@ export default function PurchaseFlow({
         <StadiumMap
           zones={zones}
           selectedZoneId={selectedZoneId ?? undefined}
-          onSelect={mapInteractableForNewSelection ? setSelectedZoneId : undefined}
-          pricingByZoneId={mapInteractableForNewSelection ? pricing : undefined}
+          onSelect={setSelectedZoneId}
+          locked={mapLocked}
+          pricingByZoneId={mapLocked ? undefined : pricing}
         />
 
         {selectedZoneWithDraftedSlotsHeld && selectedTicketType && (

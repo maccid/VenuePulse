@@ -35,7 +35,7 @@ export default function EventList({ events, activeId, onSelect, onCreate }: Prop
               <li key={ev.id}>
                 <button
                   type="button"
-                  className={`flex w-full items-center gap-3 rounded-md border p-3 text-left text-text ${active ? 'border-accent bg-surface shadow-sm' : 'border-border bg-transparent hover:bg-accent-bg'}`}
+                  className={`flex w-full items-center gap-3 rounded-md border p-3 text-left text-text ${active ? 'border-border-strong bg-surface shadow-sm' : 'border-border bg-bg hover:bg-accent-bg'}`}
                   onClick={() => onSelect(ev.id)}
                 >
                   <EventSummaryCard event={ev} />

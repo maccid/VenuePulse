@@ -9,6 +9,7 @@ interface Props {
   mode?: OccupancyMetric
   selectedZoneId?: string
   onSelect?: (zoneId: string) => void
+  locked?: boolean
   pricingByZoneId?: Record<string, ZonePricing>
 }
 
@@ -17,7 +18,7 @@ const LEGEND_LABEL: Record<OccupancyMetric, { low: string; mid: string; high: st
   checkin: { low: '< 70% dentro', mid: '70–90% dentro', high: '> 90% dentro' },
 }
 
-export default function StadiumMap({ zones, mode = 'sales', selectedZoneId, onSelect, pricingByZoneId }: Props) {
+export default function StadiumMap({ zones, mode = 'sales', selectedZoneId, onSelect, locked = false, pricingByZoneId }: Props) {
   const interactive = Boolean(onSelect)
   const isConcert = zones.some((z) => z.name === 'Pista')
   const stands = isConcert ? CONCERT_STANDS : MATCH_STANDS
@@ -43,6 +44,7 @@ export default function StadiumMap({ zones, mode = 'sales', selectedZoneId, onSe
             shape={stands[zone.name]}
             tier={occupancyTier(occupancyRatio(zone, mode))}
             interactive={interactive}
+            locked={locked}
             isSelected={zone.zoneId === selectedZoneId}
             pricing={pricingByZoneId?.[zone.zoneId]}
             onSelect={interactive ? () => onSelect?.(zone.zoneId) : undefined}
@@ -55,7 +57,7 @@ export default function StadiumMap({ zones, mode = 'sales', selectedZoneId, onSe
           {unmapped.map((zone) => (
             <li key={zone.zoneId}>
               {interactive ? (
-                <button type="button" onClick={() => onSelect?.(zone.zoneId)}>
+                <button type="button" disabled={locked} onClick={() => onSelect?.(zone.zoneId)}>
                   {zone.name} ({zone.availableToSell} libres)
                 </button>
               ) : (
