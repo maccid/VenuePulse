@@ -59,6 +59,7 @@ public static class DependencyInjection
                 x.AddConsumer<TicketPurchaseConfirmedConsumer>();
                 x.AddConsumer<TicketPurchaseRejectedConsumer>();
                 x.AddConsumer<PurchaseOrderReadyForPaymentConsumer>();
+                x.AddConsumer<PurchaseOrderConfirmingConsumer>();
                 x.AddConsumer<PurchaseOrderCompletedConsumer>();
                 x.AddConsumer<PurchaseOrderRejectedConsumer>();
                 x.AddConsumer<ReservationWatchdogConsumer>();
