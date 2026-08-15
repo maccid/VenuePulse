@@ -1,10 +1,15 @@
 namespace VenuePulse.AccessControl.Application;
 
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using VenuePulse.Core.Domain;
 
 public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
+    // Logger estático vía Serilog (no ILogger<T> por constructor): ZoneService se instancia a mano
+    // en 12 tests de AccessControl.Tests — inyectar ILogger<> los rompería todos sin aportar nada.
+    private static readonly Serilog.ILogger Logger = Log.ForContext<ZoneService>();
+
     // Set de zonas fijo por tipo de evento — igual para cualquier partido/concierto (sin
     // geometría real, ver ADR 0017). Los nombres de zona "especiales" coinciden a propósito con el
     // TicketType correspondiente en Ticketing, para que el frontend pueda fusionar zona+tipo de
@@ -144,6 +149,7 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
             {
                 // Otro proceso modificó la misma zona entre la lectura y la escritura (RowVersion
                 // no coincide) — se reintenta desde el principio del bucle con datos frescos.
+                Logger.Warning("Conflicto de concurrencia en la zona {ZoneId} (intento {Attempt}/{MaxAttempts}) — reintentando", zoneId, attempt, maxAttempts);
             }
         }
     }
