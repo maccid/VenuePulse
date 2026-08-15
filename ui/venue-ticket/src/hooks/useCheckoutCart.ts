@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { API_ROUTES, ApiError, api } from '@venue/core/api'
 import type {
   BuyerData,
   CartLine,
@@ -11,7 +11,7 @@ import type {
   ZoneOccupancy,
 } from '@venue/core/domain'
 import { isResolvedOrderStatus } from '@venue/core/domain'
-import { ApiError, API_ROUTES, api } from '@venue/core/api'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOrderStatus } from './useOrderStatus'
 
 const GENERIC_ORDER_REJECTION_REASON = 'OrderRequestFailed'
@@ -124,6 +124,21 @@ export function useCheckoutCart(
     setIsCancelling(false)
   }, [resetOrderStatus])
 
+  const waitUntilPayable = useCallback(
+    async (id: string) => {
+      for (let attempt = 0; attempt < 20; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        try {
+          const update = await api.get<OrderStatusUpdate>(API_ROUTES.orderStatus(id))
+          applyOrderStatus(update)
+          if (update.status !== 'Reserving') return
+        } catch {
+        }
+      }
+    },
+    [applyOrderStatus],
+  )
+
   const reservar = useCallback(async () => {
     setIsReserving(true)
 
@@ -144,22 +159,23 @@ export function useCheckoutCart(
         lines,
       })
 
-      claimOrder(newOrderId)
+      claimOrder(newOrderId, 'Reserving')
+      setDraft([])
 
       try {
         const status = await api.get<OrderStatusUpdate>(API_ROUTES.orderStatus(newOrderId))
         applyOrderStatus(status)
+        if (status.status === 'Reserving') await waitUntilPayable(newOrderId)
       } catch {
         claimOrder(newOrderId, 'Reserving')
       }
-      setDraft([])
     } catch (error) {
       rejectOrder(orderErrorMessage(error, GENERIC_ORDER_REJECTION_REASON))
       setDraft([])
     } finally {
       setIsReserving(false)
     }
-  }, [draft, ticketTypes, eventId, buyer.nombre, holder, claimOrder, applyOrderStatus, rejectOrder])
+  }, [draft, ticketTypes, eventId, buyer.nombre, holder, claimOrder, applyOrderStatus, rejectOrder, waitUntilPayable])
 
   const submitPayment = useCallback(
     async (method: PaymentMethod) => {
