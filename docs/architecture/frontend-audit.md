@@ -1,11 +1,11 @@
 # Auditoría frontend — Microfrontends y arquitectura compartida
 
 > Auditoría de los 3 microfrontends (`venue-shell`, `venue-ticket`, `venue-ops`) y del paquete
-> compartido existente (`venue-core`). Resultado: plan de extracción de un core compartido
-> estructurado en carpetas y decisión de arquitectura en ADR 0034.
+> compartido (`venue-core`). El plan (abajo) se ha implementado en la rama
+> `feature/frontend-shared-architecture` y está **mergeado en `develop` (commit `6954659`)**.
+> Este documento describe el estado resultante y lo que queda pendiente.
 >
-> Modo: `[ARCH]`/`[REVIEW]`. Esta rama (`feature/frontend-shared-architecture`) contiene la
-> auditoría, el ADR y la primera fase de implementación (paquetes compartidos).
+> Modo: `[ARCH]`/`[REVIEW]` (auditoría) + `[DEV]` (implementación).
 
 ## 1. Estado actual
 
@@ -14,146 +14,143 @@
 | `venue-shell` | `@venue/shell` | Catálogo de eventos + panel de compra (público) | app standalone, inyecta `ticket-checkout.js` como Web Component |
 | `venue-ticket` | `@venue/ticket` | Checkout/compra (remoto de shell) | Web Component light DOM, CSS escopado `.ticket-checkout` |
 | `venue-ops` | `@venue/ops` | Operaciones internas del recinto | app standalone independiente |
-| `venue-core` | `@venue/core` | Utilidades SignalR | consumido por `venue-ticket` y `venue-ops` |
+| `venue-core` | `@venue/core` | Core compartido (dominio, api, hub, storage, state, map, componentes) | consumido por las 3 apps |
 
-Stack: React 19, Vite 8, TypeScript ~6.0 strict, Tailwind v4 (en `venue-ops`), CSS BEM
-(`venue-shell`/`venue-ticket`), oxlint. Sin librería de estado global, sin librería de datos
-server-state, sin sistema de diseño compartido, sin lazy loading / Suspense / Error Boundaries.
+Stack: React 19, Vite 8, TypeScript ~6.0 strict, Tailwind v4 (en las 3 apps; `venue-core` lo
+consume vía `@source` sin build propio), oxlint. Estado global de pedido con Zustand
+(`@venue/core/state`). Sin librería de server-state, sin lazy loading / Suspense / Error Boundaries.
 
 Comunicación entre microfrontends hoy: `venue-shell` pasa `event-id` por atributo del Web
-Component y recibe `CustomEvent('back-to-catalog')`. Sin estado compartido entre bundles.
+Component y recibe `CustomEvent('back-to-catalog')`. Sin Module Federation (ADR 0004); un store
+compartido real entre bundles se apoya en un singleton en `globalThis` (ver §3).
 
-## 2. Duplicidades detectadas (dominio)
+## 2. Duplicidades detectadas (dominio) — estado
 
-### 2.1 Tipos duplicados verbatim en las 3 apps
+### 2.1 Tipos duplicados verbatim en las 3 apps → resueltos
 
-| Tipo | shell | ticket | ops | Notas |
-|---|---|---|---|---|
-| `EventType` | ✓ | ✓ | ✓ | idéntico (`'Match' | 'Concert'`) |
-| `EventStatus` | ✓ | ✓ | ✓ | idéntico (`'OnSale' | 'SalesClosed' | 'Cancelled'`) |
-| `EventSummary` | ✓ | ✓ | ✓ | idéntico |
-| `EventRelevance` | inline | — | ✓ | shell lo inlne en `EventSummary`, ops tiene tipo propio |
-| `TicketType` | — | ✓ | ✓ | **divergen**: ticket tiene `basePrice`, ops no |
-| `ZoneOccupancy` | — | ✓ | ✓ | idéntico |
-| `TicketStatus` | — | ✓ | ✓ | **divergen**: ticket tiene `ProcessingPayment`, ops no |
-| `TicketStatusUpdate` | — | ✓ | ✓ | **divergen**: ticket tiene `expiresAtUtc`, ops tiene `eventId`+`zoneId` |
+| Tipo | Estado | Destino |
+|---|---|---|
+| `EventType` / `EventStatus` / `EventRelevance` / `EventSummary` | **extraído** | `venue-core/src/domain/events.ts` |
+| `TicketType` (divergente) | **extraído** | `venue-core/src/domain/ticketing.ts` |
+| `ZoneOccupancy` | **extraído** | `venue-core/src/domain/zones.ts` |
+| `TicketStatus` / `TicketStatusUpdate` (divergentes) | **extraído** (unión con `ProcessingPayment`, `expiresAtUtc`) | `venue-core/src/domain/tickets.ts` |
 
-### 2.2 Tipos solo-en-una-app (a centralizar como vocabulario de dominio)
+### 2.2 Tipos solo-en-una-app → centralizados como vocabulario de dominio
 
-- `venue-ticket`: `OrderLine`, `OrderStatus`, `OrderTicketStatus`, `OrderStatusUpdate`, `CartLine`,
-  `DraftLine`, `PaymentMethod`, `BuyerData`, `MAX_TICKETS_PER_PURCHASE`.
+- `venue-ticket`: `OrderLine`, `OrderStatus`, `OrderTicketStatus`, `OrderStatusUpdate`,
+  `CartLine`, `DraftLine`, `PaymentMethod`, `BuyerData`, `MAX_TICKETS_PER_PURCHASE` →
+  `venue-core/src/domain/{orders,tickets,common}.ts`.
 - `venue-ops`: `CreateEventRequest`, `EventRevenueDto`, `SimulationRunStatus`,
-  `SimulationStartRequest`, `PredictionPoint`, `OccupancyPrediction`, `ScanResult`,
-  `SimulationMode`, `VenueOpsMode`.
+  `SimulationStartRequest`, `PredictionPoint`, `OccupancyPrediction` →
+  `venue-core/src/domain/{events,ticketing,simulation,prediction}.ts`. `ScanResult` se queda en
+  ops. `VenueOpsMode` se eliminó (solo lo usaba el mapa, ya migrado).
 
-### 2.3 Lógica duplicada
+### 2.3 Lógica duplicada → resuelta
 
-- `matchTicketType` (fusión zona↔tipo de entrada): **dos reglas distintas**
-  (`venue-ticket/src/shared/zoneTicketType.ts` igualdad exacta → `General` → primero;
-  `venue-ops/src/shared/zoneTicketType.ts` exacta → contiene (la más larga) → `General` → primero).
-  La regla de `venue-ops` es un superconjunto de la de `venue-ticket` (KNOWN-ISSUES: la alineación
-  de nombres en `DefaultTicketTypeCatalog` hace que la exacta funcione, pero la regla robusta las
-  cubre también). **Se unifica a la regla robusta.**
-- `pricingByZoneId`: solo en `venue-ticket`, vive junto a `matchTicketType`.
-- `occupancyRatio` + `occupancyTier`: duplicados en ambos `StadiumMap`.
-- Geometría SVG del plano (`standShapes.ts`, `StadiumBackground.tsx`): duplicada en `venue-ticket`
-  y `venue-ops` con coordenadas casi idénticas y ajustes de label específicos por app.
-- URLs de API: `/api/ticketing`, `/api/access-control`, `/api/checkin` hardcodeadas en todas las
-  apps y en los `vite.config.ts` de proxy.
+- `matchTicketType`: **unificado a la regla robusta** (exacta → contiene la más larga →
+  `General` → primero) en `venue-core/src/domain/zoneTicketType.ts`.
+- `pricingByZoneId`: movido junto a `matchTicketType`.
+- `occupancyRatio` + `occupancyTier`: extraídos a `venue-core/src/domain/zones.ts` (reutilizados
+  por el mapa y los hooks).
+- Geometría SVG del plano (`standShapes.ts`, `StadiumBackground.tsx`): **unificada en
+  `venue-core/src/map/`** (una sola geometría superset con luces; el mapa de ops se eliminó).
+- URLs de API: centralizadas en `venue-core/src/api/routes.ts` (pero ops aún no las consume, ver §4).
+- Formato de fecha de evento + `TYPE_LABEL`: extraídos a
+  `venue-core/src/domain/events.ts` (`formatEventDateTime`, `eventTypeLabel`).
+- Patrón de error `✖ {mensaje}` (6 copias en ops): extraído a `venue-core/src/components/InlineError.tsx`.
 
 ## 3. Estado global y comunicación
 
-- Todo el estado es `useState` local en cada `App` y hooks; **prop drilling alto** en
-  `venue-ticket`: `App → PurchaseFlow → CartPanel → DraftCart/ReservedCartSummary` (15+ props de
-  estado/acciones del pedido). Mismo patrón en `venue-ops App → EventWorkspace → ...`.
-- `useCheckoutCart` orquesta estado del pedido + SignalR + `sessionStorage` + polling de
-  reconciliación en un solo hook de ~350 líneas.
-- Comunicación cross-app solo por `CustomEvent`/atributos. Sin estado compartido.
-- Al no haber Module Federation (ADR 0004), cada bundle lleva su propia copia de las librerías; un
-  store compartido real entre microfrontends debe apoyarse en un singleton global (`globalThis`)
-  con sync por `BroadcastChannel`.
+- **`useCheckoutCart` (ticket) usa `orderStore`** (`@venue/core/state`): el estado del pedido
+  (orderId, status, rejectionReason, tickets) vive en un store Zustand compartido, con acciones
+  `setOrder` (por parche), `updateTicketStatus` y `reset`. Se eliminó el `useRef` espejo
+  (`orderRef`) que mantenía estado duplicado para los handlers de SignalR.
+- El hook se dividió en dos: **`useOrderStatus`** (estado del pedido + SignalR + `sessionStorage` +
+  reconciliación) y **`useCheckoutCart`** (draft, buyer, flags de UI y acciones de
+  reserva/pago/cancelación).
+- `createSharedStore` registra los stores en `globalThis.__venue_core_shared_stores__` (una
+  instancia por página, compartida entre bundles). **No se implementó sync por
+  `BroadcastChannel`** (multipestaña) — pendiente si se demuestra necesidad.
+- `eventSelectionStore` y `occupancyStore` están definidos en el core pero **aún no los consume
+  ninguna app** (candidatos para próximas fases).
+- El prop drilling del pedido en `venue-ticket` se redujo: `App → PurchaseFlow` ya no propaga
+  `orderId/orderStatus/orderRejectionReason` (vienen del store).
 
 ## 4. Gestión de datos (API)
 
-- `fetch` crudo en todas las apps, sin cliente tipado, sin manejo uniforme de errores (muchas
-  llamadas no comprueban `response.ok`), sin cancelación, sin retry, sin caché.
-- `venue-ops` hace polling con `setInterval`: ingresos (3s), precios (3s), simulación (500ms).
-- Realtime por SignalR vía `@venue/core` (`createHubConnection`, `useEventScopedConnection`).
+- Core: `venue-core/src/api/` con `HttpClient` tipado (`api.get/post`), `ApiError` con
+  `errorMessage()`, `queryKeys`/`mutationKeys` y `API_ROUTES` (rutas de ticketing, access-control
+  y checkin).
+- **`venue-ticket` usa el cliente del core** en `useCheckoutCart` (crear pedido, `GET /status`,
+  pagar y cancelar `orderCancel`) y en `useEventCatalog` (eventos). Se eliminó el `fetch` crudo
+  del hook de checkout.
+- `venue-ops` sigue con `fetch` crudo y polling (`setInterval`: ingresos 3s, precios 3s,
+  simulación 500ms) — **no migrado** (decisión: no tocar lo que funciona sin necesidad).
 
 ## 5. Persistencia
 
-- Solo `useCheckoutCart` persiste (el `orderId` en `sessionStorage`, a mano, con key
-  `venuepulse.ticket-checkout.order.{eventId}` y try/catch repetido). Sin capa de storage.
+- Core: `venue-core/src/storage/` con `StorageService` + `sessionStorageService`/
+  `localStorageService`/`memoryStorageService` y hooks (`usePersistedState`,
+  `useSessionStorage`, `useLocalStorage`).
+- `useCheckoutCart` persiste el `orderId` en `sessionStorage` vía `sessionStorageService` (mismo
+  flujo que antes, sin `try/catch` repetido).
 
 ## 6. Diseño/UI
 
-- Sin sistema de diseño. Cada app define sus tokens y CSS por separado (`.ticket-checkout` BEM,
-  `venue-ops` Tailwind). `Modal.tsx` existe solo en `venue-ops`. `SiteHeader` duplicado entre
-  `venue-shell` y `venue-ops`.
-- **Decisión de alcance del propietario: NO se construye librería de componentes atómica
-  (Button/Input/...) — la granularidad UI compartida se queda fuera; el core compartido es de
-  dominio/estado/datos/infra, no de presentación.**
+- **Decisión de alcance (mantenida): NO se construye librería de componentes atómica
+  (Button/Input/...).** El core compartido es de dominio/estado/datos/infra; solo se extraen
+  componentes cuando hay duplicación real.
+- Componentes compartidos en `venue-core/src/components/`: `EventSummaryCard` (badge de fecha +
+  meta + nombre + venue, usado en shell `EventCard`, ticket `CheckoutHeader` y ops `EventList`) e
+  `InlineError`.
+- Mapa compartido en `venue-core/src/map/`: `StadiumMap`/`ZoneShape` unificados (modo interactivo
+  para ticket con luces/tooltip/precio; modo estático con leyenda por ocupación para ops),
+  `StadiumBackground`, `standShapes` y CSS propio `map.css` (animaciones `vp-map-*`).
+- Tailwind v4 en las 3 apps con `@source '../../venue-core/src'` para generar las utilidades del
+  core; los componentes del core usan los tokens genéricos (`text-text`, `bg-accent-bg`,
+  `text-danger`…). ticket mapeó sus tokens `tc-*` a los genéricos en su `@theme`.
+- `SiteHeader` se mantiene duplicado por app (branding distinto: VP / VO) — decisión consciente.
+  `Modal.tsx` sigue siendo solo de ops.
 
-## 7. Plan de extracción (core compartido)
-
-**Decisión del propietario: no se crean paquetes nuevos — todo el core compartido vive en
-`venue-core` (`@venue/core`), ya existente, estructurado en carpetas por contexto y expuesto con
-subpaths de `exports`.** Cada área es un directorio con su propio barril:
+## 7. Estructura final del core (`venue-core`)
 
 ```
 ui/venue-core/
+  package.json          exports: ./domain, ./api, ./hub, ./storage, ./state, ./map,
+                        ./map/map.css, ./components  (sin "." raíz)
   src/
-    hubConnection.ts            (existente, SignalR)
-    hubErrors.ts                (existente)
-    useEventScopedConnection.ts (existente)
-    domain/                     @venue/core/domain   — modelo de dominio compartido
-      events/                   EventType, EventStatus, EventRelevance, EventSummary, CreateEventRequest
-      zones/                    ZoneOccupancy, occupancyRatio/occupancyTier, matchTicketType, pricingByZoneId
-      tickets/                  TicketStatus, TicketStatusUpdate, PaymentMethod, BuyerData, CartLine, DraftLine
-      orders/                   OrderLine, OrderStatus, OrderTicketStatus, OrderStatusUpdate, isResolvedOrderStatus
-      occupancy/                OccupancyStatus, SeatStatus, SeatAvailability (estados de aforo/asiento)
-      ticketing/                TicketType, PricingChanged, EventRevenueDto
-      simulation/               SimulationRunStatus, SimulationStartRequest, PredictionPoint, OccupancyPrediction
-      common/                   constantes (MAX_TICKETS_PER_PURCHASE) y guards
-      index.ts
-    api/                        @venue/core/api      — cliente HTTP tipado, errores, keys, rutas
-      http/                     HttpClient, ApiError, ApiResponse
-      keys/                     queryKeys, mutationKeys
-      routes/                   rutas de backend (/api/ticketing, /api/access-control, /api/checkin)
-      index.ts
-    storage/                    @venue/core/storage  — capa de persistencia + hooks
-      services/                 StorageService, SessionStorageService, LocalStorageService, MemoryStorageService
-      hooks/                    useLocalStorage, useSessionStorage, usePersistedState
-      index.ts
-    state/                      @venue/core/state    — Zustand: stores con singleton global
-      registry/                 createSharedStore (globalThis + BroadcastChannel)
-      stores/                   eventSelectionStore, occupancyStore, orderStore
-      index.ts
-    index.ts                    barril raíz: re-exporta SignalR (compatibilidad, sin breaking change)
+    domain/             eventos, ticketing, zones, tickets, orders, occupancy,
+                        simulation, prediction, common, zoneTicketType + index.ts
+    api/                client (HttpClient/api/withRetry), errors, routes, keys + index.ts
+    hub/                hubConnection, hubErrors, useEventScopedConnection + index.ts
+    storage/            services (StorageService + impl), hooks + index.ts
+    state/              createSharedStore (globalThis), eventSelectionStore,
+                        occupancyStore, orderStore + index.ts
+    map/                StadiumBackground, StadiumMap, ZoneShape, standShapes,
+                        map.css + index.ts
+    components/         EventSummaryCard, InlineError + index.ts
 ```
 
-`package.json` de `venue-core` gana los subpaths de export (`"."`, `"./domain"`, `"./api"`,
-`"./storage"`, `"./state"`) y la dependencia `zustand`. Las apps importan solo lo que necesitan
-(`@venue/core/domain`, etc.), así que Vite no incluye Zustand en apps que solo usan dominio.
+Cada área expone su barril (`index.ts`) con named exports; las apps importan solo lo que necesitan.
+El core se compila contra el tsconfig de cada app (`tsc -b`) y cumple `verbatimModuleSyntax` +
+`erasableSyntaxOnly`.
 
-Fases: (1) `domain` + migración de tipos en las 3 apps; (2) `api` + `storage` y adopción donde
-eliminan duplicación; (3) `state` (Zustand) para el estado de pedido (prop drilling de
-`venue-ticket`) y selección de evento; (4) siguiente ronda: geometría del plano y tokens de
-diseño si se demuestra necesidad.
+## 8. Implementado (commits en `develop`)
 
-## 8. Mapa de correcciones que esta rama introduce
+- `4a7d1d0` feat(core): `@venue/core` con domain, api, hub, storage, state, map y components.
+- `6159643` refactor(shell) · `ed66a3a` refactor(ticket) · `3a1f2e0` refactor(ops): consumo del core.
+- `25d1df6` docs(ui): este documento.
+- `6954659` merge en `develop`, con la lógica de cancelación de pedido (de
+  `feature/cancel-order-by-customer`) integrada en `useCheckoutCart` sobre `orderStore`.
 
-| Duplicidad | Acción | Fichero destino |
-|---|---|---|
-| `EventType/EventStatus/EventRelevance/EventSummary` ×3 | extraer + importar | `venue-core/src/domain/events` |
-| `TicketType` ×2 (divergente) | extraer unión, importar | `venue-core/src/domain/ticketing` |
-| `ZoneOccupancy` ×2 | extraer + importar | `venue-core/src/domain/zones` |
-| `TicketStatus`/`TicketStatusUpdate` ×2 (divergentes) | extraer unión, importar | `venue-core/src/domain/tickets` |
-| tipos de pedido (solo ticket) | mover a dominio compartido | `venue-core/src/domain/orders` |
-| DTOs de ops (revenue, simulación, predicción) | mover a dominio compartido | `venue-core/src/domain/ticketing`, `venue-core/src/domain/occupancy`, `venue-core/src/domain/simulation` |
-| `matchTicketType` ×2 (reglas distintas) | unificar a regla robusta | `venue-core/src/domain/zones/zoneTicketType.ts` |
-| `pricingByZoneId` (solo ticket) | mover | `venue-core/src/domain/zones/zoneTicketType.ts` |
-| `occupancyRatio`/`occupancyTier` ×2 | extraer | `venue-core/src/domain/zones/occupancy.ts` |
-| URLs de API | centralizar | `venue-core/src/api/routes` |
-| `sessionStorage` a mano | capa de storage | `venue-core/src/storage` |
-| Prop drilling de pedido (ticket) | Zustand | `venue-core/src/state/stores/orderStore.ts` |
+Limpiezas incluidas: `venue-shell/src/types.ts` (muerto), `venue-ticket/src/{types,shared/zoneTicketType}.ts`
+y `venue-ops/src/shared/zoneTicketType.ts` (duplicados), aliases `--color-tc-*` sin uso en ticket.
+
+## 9. Pendiente
+
+- **Verificación E2E** contra el stack real (`docker compose -f infra/docker-compose.yml up --build`):
+  mapa interactivo (luces/tooltip/precio), cabecera de checkout, lista de eventos, `InlineError`,
+  restauración de pedido tras recarga.
+- `eventSelectionStore` / `occupancyStore` sin consumidores (decidir si se adoptan o se borran).
+- Ops: migrar `fetch`/polling al cliente del core si se demuestra necesidad.
+- Sync multipestaña del store (`BroadcastChannel`) si se necesita.
