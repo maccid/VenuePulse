@@ -12,12 +12,6 @@ using VenuePulse.Ticketing.Infrastructure;
 using VenuePulse.Ticketing.Infrastructure.Consumers;
 using Event = VenuePulse.Ticketing.Domain.Event;
 
-/// <summary>
-/// ZoneOccupancyChangedConsumer con el harness in-memory de MassTransit (sin broker real, mismo
-/// patrón que InboxDeduplicationFilterTests en AccessControl): comprueba que actualiza la
-/// proyección de aforo y recalcula/empuja el precio, sin necesitar un Inbox real (ver el propio
-/// comentario del contrato en Core.Messaging.Contracts).
-/// </summary>
 public class ZoneOccupancyChangedConsumerTests
 {
     private sealed class CapturingPricingNotifier : IPricingNotifier
@@ -86,7 +80,6 @@ public class ZoneOccupancyChangedConsumerTests
         var @event = await SeedEventAsync(databaseName);
         var zoneId = Guid.NewGuid();
 
-        // Aforo total 100, disponible 5 => 95% ocupado => tramo "Últimas entradas".
         var message = new ZoneOccupancyChanged(zoneId, @event.Id, Capacity: 100, AvailableToSell: 5, ConfirmedSold: 95, CheckedIn: 0);
         await harness.Bus.Publish(message);
 
@@ -117,7 +110,7 @@ public class ZoneOccupancyChangedConsumerTests
         await harness.Bus.Publish(message);
         await harness.Bus.Publish(message);
 
-        await WaitUntilConsumedAsync(harness, expectedCount: 2); // sin Inbox, ambos se procesan.
+        await WaitUntilConsumedAsync(harness, expectedCount: 2);
 
         await using var dbContext = new TicketingDbContext(
             new DbContextOptionsBuilder<TicketingDbContext>().UseInMemoryDatabase(databaseName).Options);

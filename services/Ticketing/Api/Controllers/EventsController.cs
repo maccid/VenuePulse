@@ -7,6 +7,7 @@ using VenuePulse.Ticketing.Application;
 [Route("api/events")]
 public sealed class EventsController(ITicketingService ticketingService) : ControllerBase
 {
+    /// <summary>Lista todos los eventos del catálogo.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyCollection<EventSummaryDto>>> GetEvents(CancellationToken cancellationToken)
     {
@@ -14,6 +15,7 @@ public sealed class EventsController(ITicketingService ticketingService) : Contr
         return Ok(events);
     }
 
+    /// <summary>Devuelve los tipos de entrada disponibles para un evento.</summary>
     [HttpGet("{eventId:guid}/ticket-types")]
     public async Task<ActionResult<IReadOnlyCollection<TicketTypeDto>>> GetTicketTypes(
         Guid eventId, CancellationToken cancellationToken)
@@ -22,8 +24,7 @@ public sealed class EventsController(ITicketingService ticketingService) : Contr
         return ticketTypes is null ? NotFound() : Ok(ticketTypes);
     }
 
-    /// <summary>Alta de evento desde Operaciones (venue-ops) — hasta ahora los eventos solo
-    /// nacían de seed data (ver ADR 0019).</summary>
+    /// <summary>Crea un evento nuevo.</summary>
     [HttpPost]
     public async Task<ActionResult<EventSummaryDto>> CreateEvent(CreateEventRequest request, CancellationToken cancellationToken)
     {
@@ -31,6 +32,7 @@ public sealed class EventsController(ITicketingService ticketingService) : Contr
         return CreatedAtAction(nameof(GetTicketTypes), new { eventId = created.Id }, created);
     }
 
+    /// <summary>Cierra la venta de entradas de un evento.</summary>
     [HttpPost("{eventId:guid}/close-sales")]
     public async Task<IActionResult> CloseSales(Guid eventId, CancellationToken cancellationToken)
     {
@@ -38,6 +40,7 @@ public sealed class EventsController(ITicketingService ticketingService) : Contr
         return ToActionResult(result);
     }
 
+    /// <summary>Cancela un evento.</summary>
     [HttpPost("{eventId:guid}/cancel")]
     public async Task<IActionResult> Cancel(Guid eventId, CancellationToken cancellationToken)
     {

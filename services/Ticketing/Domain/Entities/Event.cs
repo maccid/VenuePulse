@@ -2,10 +2,6 @@ namespace VenuePulse.Ticketing.Domain;
 
 using VenuePulse.Core.Domain;
 
-/// <summary>
-/// Catálogo: un partido/concierto y sus tipos de entrada. Cambia poco (alta esporádica de
-/// eventos, consultas frecuentes) — por eso el servicio no necesita CQRS, ver ADR 0003.
-/// </summary>
 public sealed class Event : Entity<Guid>
 {
     public string Name { get; private set; } = string.Empty;
@@ -20,7 +16,6 @@ public sealed class Event : Entity<Guid>
 
     private Event()
     {
-        // EF Core
     }
 
     public Event(
@@ -48,8 +43,6 @@ public sealed class Event : Entity<Guid>
         return ticketType;
     }
 
-    /// <summary>Deja de admitir nuevas compras — no se sincroniza con el motor de simulación de
-    /// AccessControl (Sales/Arrivals), son conceptos deliberadamente distintos (ver ADR 0019).</summary>
     public void CloseSales()
     {
         if (Status != EventStatus.OnSale)
@@ -58,8 +51,6 @@ public sealed class Event : Entity<Guid>
         Status = EventStatus.SalesClosed;
     }
 
-    /// <summary>Solo válido mientras el evento sigue en venta — así ninguna entrada afectada
-    /// puede estar nunca en CheckedIn, y el reembolso (CheckIn) no necesita contemplar ese caso.</summary>
     public void Cancel()
     {
         if (Status != EventStatus.OnSale)

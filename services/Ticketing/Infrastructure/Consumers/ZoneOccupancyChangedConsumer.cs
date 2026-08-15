@@ -5,21 +5,14 @@ using Serilog;
 using VenuePulse.Core.Messaging.Contracts;
 using VenuePulse.Ticketing.Application;
 
-/// <summary>
-/// Actualiza la proyección local de aforo (<see cref="IZoneDemandRepository"/>) y, si el evento
-/// existe en el catálogo, recalcula y empuja en vivo el precio efectivo de sus tipos de entrada.
-/// Sin Inbox: <see cref="ZoneOccupancyChanged"/> es un snapshot que se sobrescribe, procesarlo dos
-/// veces no cambia el resultado (ver el propio contrato en Core.Messaging.Contracts).
-/// </summary>
+/// <summary>Consume ZoneOccupancyChanged: actualiza la proyección local de aforo y recalcula el
+/// precio efectivo de los tipos de entrada del evento.</summary>
 public sealed class ZoneOccupancyChangedConsumer(
     IZoneDemandRepository demandRepository,
     ITicketingService ticketingService,
     IPricingNotifier pricingNotifier)
     : IConsumer<ZoneOccupancyChanged>
 {
-    // Logger estático vía Serilog (no ILogger<T> por constructor): este consumer se resuelve en el
-    // harness in-memory de los tests a través de un ServiceCollection sin AddLogging, igual que las
-    // sagas — mismo patrón que en TicketPurchaseSaga/PurchaseOrderSaga.
     private static readonly Serilog.ILogger Logger = Log.ForContext<ZoneOccupancyChangedConsumer>();
 
     public async Task Consume(ConsumeContext<ZoneOccupancyChanged> context)

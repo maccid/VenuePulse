@@ -12,8 +12,6 @@ public sealed record EventSummaryDto(
     EventStatus Status,
     EventRelevance Relevance);
 
-/// <summary>Alta de evento desde Operaciones (venue-ops) — VenueName no se pide, el recinto es
-/// único en esta demo (Estadio Central, ver .ia/PRODUCT-VISION.md).</summary>
 public sealed record CreateEventRequest(
     string Name,
     DateTimeOffset StartsAtUtc,
