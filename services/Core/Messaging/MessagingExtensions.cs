@@ -7,11 +7,6 @@ using MongoDB.Bson.Serialization.Serializers;
 
 namespace VenuePulse.Core.Messaging;
 
-/// <summary>
-/// Wiring compartido de MassTransit + RabbitMQ + Outbox transaccional de EF Core.
-/// Cada servicio aporta su propio DbContext (dueño de sus tablas de Outbox/Inbox tras la
-/// migración) y sus propios consumidores; aquí solo vive la fontanería repetida.
-/// </summary>
 public static class MessagingExtensions
 {
     public static IServiceCollection AddMessaging<TDbContext>(
@@ -33,13 +28,6 @@ public static class MessagingExtensions
             x.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(new Uri(rabbitMqConnectionString));
-                // Sin esto, un conflicto de concurrencia optimista al guardar una Saga en Mongo
-                // (dos mensajes casi simultáneos para la misma instancia, p. ej. el rechazo de una
-                // línea de PurchaseOrderSaga disparando la cancelación de su hermana, que resuelve
-                // en milisegundos) hace que el mensaje que pierde la carrera se descarte a la
-                // primera sin reintentar — la Saga se queda esperando para siempre un evento que en
-                // realidad ya ocurrió. Reintentos cortos, no un backoff largo: es un conflicto de
-                // versión que se resuelve solo, no un fallo transitorio de infraestructura.
                 cfg.UseMessageRetry(r => r.Intervals(100, 300, 800));
                 cfg.ConfigureEndpoints(context);
             });
@@ -48,14 +36,6 @@ public static class MessagingExtensions
         return services;
     }
 
-    /// <summary>
-    /// Variante para AccessControl: no necesita EF Core Outbox propio para eventos salientes,
-    /// solo consumir comandos entrantes y actualizar su propio estado en Postgres.
-    /// <paramref name="configureBus"/> es el único punto de extensión del bus ya construido (p.ej.
-    /// AccessControl lo usa para enganchar su Inbox real vía <c>UseConsumeFilter</c>, ver ADR
-    /// 0015) — deliberadamente no genérico en <c>TDbContext</c> como el Outbox de arriba, para no
-    /// forzar esa forma a servicios que no la necesiten.
-    /// </summary>
     public static IServiceCollection AddMessaging(
         this IServiceCollection services,
         string rabbitMqConnectionString,
@@ -77,10 +57,6 @@ public static class MessagingExtensions
         return services;
     }
 
-    /// <summary>
-    /// Registra un state machine de Saga persistido en MongoDB en vez de EF Core — ver ADR
-    /// sobre por qué el estado de la Saga vive en un documento y no en una fila relacional.
-    /// </summary>
     public static IBusRegistrationConfigurator AddMongoSaga<TStateMachine, TState>(
         this IBusRegistrationConfigurator configurator,
         string mongoConnectionString,
@@ -100,12 +76,6 @@ public static class MessagingExtensions
         return configurator;
     }
 
-    /// <summary>
-    /// Variante con <typeparamref name="TDefinition"/> para sagas que necesitan configurar su
-    /// propio endpoint (p. ej. <c>PurchaseOrderSagaDefinition</c> particionando por pedido para
-    /// evitar colisiones de concurrencia optimista en Mongo con mensajes casi simultáneos de la
-    /// misma instancia — ver esa clase).
-    /// </summary>
     public static IBusRegistrationConfigurator AddMongoSaga<TStateMachine, TState, TDefinition>(
         this IBusRegistrationConfigurator configurator,
         string mongoConnectionString,
@@ -126,13 +96,6 @@ public static class MessagingExtensions
         return configurator;
     }
 
-    /// <summary>
-    /// MongoDB.Driver 2.19+ dejó de asumir una representación de Guid por defecto — sin este
-    /// registro, serializar CUALQUIER Guid (como TicketPurchaseSagaState.ZoneId) lanza
-    /// "GuidSerializer cannot serialize a Guid when GuidRepresentation is Unspecified" en el
-    /// primer intento de guardar la Saga. Idempotente: en tests que crean el host varias veces
-    /// en el mismo proceso, el segundo registro se ignora en vez de lanzar.
-    /// </summary>
     private static void EnsureGuidRepresentationRegistered()
     {
         try
