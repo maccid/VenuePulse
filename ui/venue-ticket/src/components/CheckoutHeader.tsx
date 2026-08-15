@@ -13,12 +13,12 @@ export default function CheckoutHeader({ event }: Props) {
   if (!event) return null
 
   return (
-    <header className="flex items-center justify-between gap-3.5">
-      <div className="flex min-w-0 items-center gap-3.5">
+    <header className="checkout-header">
+      <div className="checkout-header__card">
         <EventSummaryCard event={event} />
       </div>
 
-      <button type="button" className="shrink-0" onClick={handleBack}>
+      <button type="button" className="checkout-header__back" onClick={handleBack}>
         ← Volver al catálogo
       </button>
     </header>
