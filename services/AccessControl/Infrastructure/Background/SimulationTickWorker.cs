@@ -6,11 +6,6 @@ using Microsoft.Extensions.Logging;
 using VenuePulse.AccessControl.Application;
 using VenuePulse.AccessControl.Application.Simulation;
 
-/// <summary>
-/// Corazón del motor de simulación (Bloque 8): cada tick resuelve los servicios scoped desde un
-/// scope nuevo (el motor es singleton, las zonas y los snapshots no) y avanza los runs activos.
-/// Solo trabaja cuando hay al menos un run en marcha — parado no cuesta nada.
-/// </summary>
 public sealed class SimulationTickWorker(
     IServiceScopeFactory scopeFactory,
     ISimulationEngine engine,

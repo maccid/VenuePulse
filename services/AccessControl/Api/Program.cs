@@ -17,8 +17,6 @@ builder.Services.AddTracing(
 builder.Services.AddExceptionHandling();
 
 builder.Services.AddInfrastructure(builder.Configuration);
-// Scoped, no Singleton: ahora inyecta IPublishEndpoint (scoped en MassTransit) para publicar
-// ZoneOccupancyChanged además del push por SignalR.
 builder.Services.AddScoped<IZoneOccupancyNotifier, SignalRZoneOccupancyNotifier>();
 builder.Services.AddSignalR();
 

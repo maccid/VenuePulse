@@ -5,9 +5,7 @@ using Microsoft.Extensions.Logging;
 using VenuePulse.AccessControl.Application;
 using VenuePulse.Core.Messaging.Contracts;
 
-// Cancelación de evento (ADR 0020). Ambos quedan cubiertos gratis por el Inbox genérico
-// (InboxDeduplicationFilter<> registrado en el bus, ADR 0015): la redelivery de EventCancelled o
-// de un ReleaseConfirmedZoneSlot no re-aplica el efecto.
+/// <summary>Cancela todas las zonas de un evento al recibir <see cref="EventCancelled"/>.</summary>
 public sealed class EventCancelledConsumer(IZoneService zoneService, ILogger<EventCancelledConsumer> logger)
     : IConsumer<EventCancelled>
 {
@@ -18,6 +16,7 @@ public sealed class EventCancelledConsumer(IZoneService zoneService, ILogger<Eve
     }
 }
 
+/// <summary>Libera un slot ya confirmado de una zona al recibir <see cref="ReleaseConfirmedZoneSlot"/>.</summary>
 public sealed class ReleaseConfirmedZoneSlotConsumer(IZoneService zoneService, ILogger<ReleaseConfirmedZoneSlotConsumer> logger)
     : IConsumer<ReleaseConfirmedZoneSlot>
 {

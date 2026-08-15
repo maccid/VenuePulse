@@ -2,11 +2,6 @@ namespace VenuePulse.AccessControl.Application;
 
 using VenuePulse.Core.Domain;
 
-/// <summary>
-/// Application Service simple, sin CQRS (ver ADR 0003): reservar/confirmar/liberar/registrar
-/// check-in es CRUD con un par de invariantes, separar comandos y consultas aquí sería
-/// ceremonia sin beneficio real.
-/// </summary>
 public interface IZoneService
 {
     Task<IReadOnlyCollection<ZoneOccupancyDto>> GetAllOccupancyAsync(Guid? eventId, CancellationToken cancellationToken);
@@ -21,29 +16,15 @@ public interface IZoneService
 
     Task<int> RecordCheckInAsync(Guid zoneId, CancellationToken cancellationToken);
 
-    /// <summary>Cancela todas las zonas de un evento (evento cancelado, ADR 0020). Idempotente:
-    /// <see cref="Domain.Zone.Cancel"/> solo fija un flag, así que la redelivery de EventCancelled
-    /// (Inbox genérico) no cambia nada.</summary>
     Task CancelEventZonesAsync(Guid eventId, CancellationToken cancellationToken);
 
-    /// <summary>Libera una entrada YA confirmada de una zona (compensación por cancelación del
-    /// evento, ADR 0020): lo publica CheckIn ticket a ticket — decrementa ConfirmedSold, no
-    /// Reserved.</summary>
     Task ReleaseConfirmedSlotAsync(Guid zoneId, CancellationToken cancellationToken);
 
-    /// <summary>Aprovisiona las zonas fijas del recinto para un evento nuevo — el set depende
-    /// del tipo de evento (partido: 4 zonas, ver ADR 0025; concierto: 6 zonas, ver ADR 0026).
-    /// Idempotente: si el evento ya tiene zonas (redelivery de EventCreated) no hace nada.</summary>
     Task ProvisionZonesForEventAsync(Guid eventId, EventType eventType, CancellationToken cancellationToken);
 
-    /// <summary>Venta simulada (motor de demo, Bloque 8): confirma entradas sin pasar por la
-    /// Saga, respetando el aforo vendible.</summary>
     Task<ZoneOccupancyDto> ApplySimulatedSalesAsync(Guid zoneId, int quantity, CancellationToken cancellationToken);
 
-    /// <summary>Check-in simulado (motor de demo, Bloque 8): hace pasar por el torniquete sin
-    /// entrada real, nunca por encima de lo confirmado vendido.</summary>
     Task<ZoneOccupancyDto> ApplySimulatedCheckInsAsync(Guid zoneId, int quantity, CancellationToken cancellationToken);
 
-    /// <summary>Pone a cero los contadores de todas las zonas del evento (reiniciar el demo).</summary>
     Task ResetSimulationAsync(Guid eventId, CancellationToken cancellationToken);
 }

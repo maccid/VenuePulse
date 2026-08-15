@@ -12,12 +12,6 @@ using VenuePulse.AccessControl.Infrastructure.Consumers;
 using VenuePulse.AccessControl.Infrastructure.Inbox;
 using VenuePulse.Core.Messaging.Contracts;
 
-/// <summary>
-/// Inbox real de AccessControl (Bloque 3, ver ADR 0015) con el harness in-memory de MassTransit
-/// (sin broker real, igual que TicketPurchaseSagaTests en CheckIn): una redelivery del mismo
-/// mensaje (mismo EventId) no debe duplicar el efecto de negocio, solo la primera entrega debe
-/// procesarse — la segunda queda descartada por el filtro antes de llegar al consumer.
-/// </summary>
 public class InboxDeduplicationFilterTests
 {
     private sealed class NoopZoneOccupancyNotifier : IZoneOccupancyNotifier
@@ -84,7 +78,7 @@ public class InboxDeduplicationFilterTests
         var command = new ReserveZoneSlot(Guid.NewGuid(), zone.Id);
 
         await harness.Bus.Publish(command);
-        await harness.Bus.Publish(command); // misma instancia => mismo EventId => redelivery simulada
+        await harness.Bus.Publish(command);
 
         await WaitUntilConsumedAsync(harness, expectedCount: 2);
 
