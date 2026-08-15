@@ -42,9 +42,6 @@ builder.Property<uint>("xmin")
     .IsConcurrencyToken();
 ```
 
-El resto del mecanismo (`ExecuteWithRetryAsync` en `ZoneService.cs`) no cambia — ya estaba bien
-diseñado, solo le faltaba un token de concurrencia que de verdad cambiara entre escrituras.
-
 La migración generada por `dotnet ef migrations add` no se pudo usar tal cual: el scaffolder
 generó un `AddColumn<uint>(name: "xmin", ...)`, pero `xmin` es un nombre de columna reservado por
 Postgres (`ERROR: column name "xmin" conflicts with a system column name` — verificado a mano
@@ -75,3 +72,18 @@ ningún DDL para ella.
 - Candidato a revisar junto con `.ia/KNOWN-ISSUES.md` ("aforo fantasma tras timeout de reserva"):
   este bug es un candidato plausible a explicar (parte de) esa intermitencia bajo contención real,
   no confirmado como causa única.
+
+## Actualización — el límite de reintentos era insuficiente
+
+Con el conflicto de concurrencia ya detectado de verdad, `ExecuteWithRetryAsync` (`maxAttempts = 3`)
+resultó insuficiente bajo contención real: verificado contra el stack, un pedido de 6 entradas para
+una zona con 6 plazas libres generó 6 solicitudes de reserva casi simultáneas, de las cuales varias
+agotaron sus 3 intentos y la excepción se propagó sin capturar — el consumer completo
+(`ReserveZoneSlotConsumer`) falló, MassTransit lo reintentó con su propia política, y tras agotar
+también esos reintentos, 5 mensajes terminaron en la cola de error `ReserveZoneSlot_error` sin que
+esos tickets recibieran nunca `ZoneSlotReserved` ni `ZoneSlotReservationFailed` — se quedan en
+`Pending` hasta que el watchdog externo los rescata a los 60s.
+
+`maxAttempts` sube de 3 a 15: `PlaceOrderCommandHandler.MaxTicketsPerOrder` limita a 10 entradas por
+pedido, así que 10 solicitudes concurrentes contra la misma zona es el peor caso real posible — 15
+da margen sin ser un número arbitrario.
