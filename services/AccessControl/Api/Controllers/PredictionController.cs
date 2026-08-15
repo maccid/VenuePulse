@@ -9,9 +9,7 @@ using VenuePulse.AccessControl.Application.Prediction;
 public sealed class PredictionController(IOccupancyPredictionService predictionService) : ControllerBase
 {
     /// <summary>Predice la curva de llegada y los no-shows de un evento sobre la serie temporal
-    /// del simulador. 404 si el evento aún no tiene snapshots; <paramref name="eventStartsAtUtc"/>
-    /// define la ventana de llegada y lo trae venue-ops del catálogo de Ticketing (bounded
-    /// contexts — ver ADR 0013).</summary>
+    /// del simulador. 404 si el evento aún no tiene snapshots.</summary>
     [HttpGet("events/{eventId:guid}")]
     public async Task<ActionResult<OccupancyPredictionDto>> Get(
         Guid eventId,

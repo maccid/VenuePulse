@@ -2,23 +2,14 @@ namespace VenuePulse.AccessControl.Application.Simulation;
 
 using System.Collections.Concurrent;
 
-/// <summary>
-/// Motor de simulación de demo (Bloque 8). Singleton con estado en memoria: un run por evento,
-/// sin tocar Ticketing. Cada tick del worker avanza el reloj virtual y aplica las curvas a las
-/// zonas vía <see cref="IZoneService"/>, emitiendo <see cref="Domain.ZoneOccupancySnapshot"/>
-/// para el Bloque 11. Como es un singleton, los servicios scoped (zonas, snapshots) se pasan
-/// como parámetro desde el worker — ver Infrastructure.SimulationTickWorker.
-/// </summary>
 public interface ISimulationEngine
 {
-    /// <summary>Registra un run para el evento. Devuelve false si ya hay uno en curso.</summary>
     Task<bool> TryStartAsync(Guid eventId, SimulationStartRequest request, CancellationToken cancellationToken);
 
     bool Stop(Guid eventId);
 
     SimulationRunStatusDto? GetStatus(Guid eventId);
 
-    /// <summary>Avanza todos los runs activos un tick. Lo invoca el worker desde un scope.</summary>
     Task AdvanceAsync(
         DateTimeOffset nowUtc,
         IZoneService zoneService,
@@ -28,10 +19,8 @@ public interface ISimulationEngine
 
 public sealed class SimulationEngine : ISimulationEngine
 {
-    /// <summary>Ventana de venta: los 7 días previos al evento.</summary>
     private static readonly TimeSpan SalesWindow = TimeSpan.FromDays(7);
 
-    /// <summary>Ventana de llegada: las 3 horas previas al evento.</summary>
     private static readonly TimeSpan ArrivalsWindow = TimeSpan.FromHours(3);
 
     private readonly ConcurrentDictionary<Guid, SimulationRun> _runs = new();
@@ -104,9 +93,6 @@ public sealed class SimulationEngine : ISimulationEngine
                 }
             }
 
-            // El tick que completa el run aplica los últimos incrementos pero NO escribe snapshot:
-            // su reloj virtual sobrepasaría el evento (VirtualNowUtc no se clampa) y ese punto
-            // "post-evento" corrompe la predicción (Bloque 11) al quedar como el más reciente.
             if (!completed)
             {
                 var snapshots = new List<Domain.ZoneOccupancySnapshot>(zones.Count);
@@ -119,8 +105,6 @@ public sealed class SimulationEngine : ISimulationEngine
                             Guid.NewGuid(),
                             run.EventId,
                             zone.ZoneId,
-                            // El catálogo de Ticketing entrega EventStartsAtUtc con offset local
-                            // (p.ej. +02:00); Npgsql rechaza escribir offsets != 0 en timestamptz.
                             virtualNowUtc.ToUniversalTime(),
                             updated.ConfirmedSold,
                             updated.CheckedIn));

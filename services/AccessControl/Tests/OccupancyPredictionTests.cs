@@ -19,7 +19,6 @@ public class OccupancyPredictionTests
     [Fact]
     public void Ajusta_la_asintota_sobre_datos_sinteticos_limpios()
     {
-        // Datos perfectos de la propia curva F(p)=1-(1-p)³ con A=92 sobre 100 vendidas (8% no-shows).
         var observed = new[]
         {
             Arrival(0.2, 45),
@@ -44,7 +43,7 @@ public class OccupancyPredictionTests
         var result = ArrivalForecast.Fit([Arrival(0.5, 10)], confirmedSold: 100);
 
         result.FitFromData.Should().BeFalse();
-        result.PredictedTotalArrivals.Should().Be(92); // round(100 * 0.92)
+        result.PredictedTotalArrivals.Should().Be(92);
         result.NoShowRate.Should().Be(ArrivalForecast.DefaultNoShowRate);
         result.FitR2.Should().BeNull();
     }
@@ -62,7 +61,6 @@ public class OccupancyPredictionTests
     [Fact]
     public void La_asintota_nunca_supera_lo_vendido()
     {
-        // Puntos muy tempranos con poco avance: el ajuste dispararía A por encima de lo vendido.
         var observed = new[]
         {
             Arrival(0.05, 30),
@@ -73,7 +71,7 @@ public class OccupancyPredictionTests
 
         result.PredictedTotalArrivals.Should().BeLessThanOrEqualTo(100);
         result.NoShowRate.Should().BeGreaterThanOrEqualTo(0);
-        result.PredictedTotalArrivals.Should().BeGreaterThanOrEqualTo(70); // nunca por debajo de lo ya llegado
+        result.PredictedTotalArrivals.Should().BeGreaterThanOrEqualTo(70);
     }
 
     [Fact]
@@ -90,7 +88,6 @@ public class OccupancyPredictionTests
     public async Task En_fase_de_venta_aun_sin_llegadas_predice_con_no_show_asumido()
     {
         var repository = new FakeSnapshotRepository();
-        // La simulación de ventas escribe snapshots con CheckedIn=0.
         repository.Snapshots.Add(Snapshot(ZoneA, WindowStart, confirmedSold: 60, checkedIn: 0));
         repository.Snapshots.Add(Snapshot(ZoneB, WindowStart, confirmedSold: 40, checkedIn: 0));
         repository.Snapshots.Add(Snapshot(ZoneA, EventStart.AddMinutes(-1), confirmedSold: 60, checkedIn: 0));
@@ -126,11 +123,9 @@ public class OccupancyPredictionTests
         result.FitR2.Should().NotBeNull();
         result.FitR2!.Value.Should().BeGreaterThan(0.99);
 
-        // Serie histórica agregada: un punto por instante.
         result.Historical.Select(p => p.Arrivals).Should().BeEquivalentTo(new[] { 45, 72, 86, 91, 92, 92 });
         result.Historical.Should().BeInAscendingOrder(p => p.TimeUtc);
 
-        // Curva proyectada completa de la ventana: arranca en 0 y termina en la asíntota en el evento.
         result.Projected[0].Progress.Should().Be(0);
         result.Projected[0].Arrivals.Should().Be(0);
         result.Projected[^1].Progress.Should().Be(1);
@@ -145,11 +140,8 @@ public class OccupancyPredictionTests
         var repository = new FakeSnapshotRepository();
         AddArrivalsSeries(repository, 60, 40, 92);
 
-        // Basura post-evento: snapshots que el motor podía escribir tras el inicio del evento
-        // (overshoot del run) no deben corromper el "ahora" de la predicción.
         repository.Snapshots.Add(Snapshot(ZoneA, EventStart.AddHours(2), confirmedSold: 999, checkedIn: 0));
         repository.Snapshots.Add(Snapshot(ZoneB, EventStart.AddHours(2), confirmedSold: 999, checkedIn: 0));
-        // Basura previa a la ventana: otro run con otra ventana queda fuera del modelo de llegadas.
         repository.Snapshots.Add(Snapshot(ZoneA, WindowStart.AddDays(-1), confirmedSold: 50, checkedIn: 0));
 
         var service = new OccupancyPredictionService(repository);
@@ -166,7 +158,6 @@ public class OccupancyPredictionTests
     private static ZoneOccupancySnapshot Snapshot(Guid zoneId, DateTimeOffset timeUtc, int confirmedSold, int checkedIn) =>
         new(Guid.NewGuid(), EventId, zoneId, timeUtc, confirmedSold, checkedIn);
 
-    /// <summary>Serie de llegadas con A=92 sobre 100 vendidas, repartida en 2 zonas (60/40).</summary>
     private static void AddArrivalsSeries(FakeSnapshotRepository repository, int soldA, int soldB, int totalArrivals)
     {
         var series = new[]

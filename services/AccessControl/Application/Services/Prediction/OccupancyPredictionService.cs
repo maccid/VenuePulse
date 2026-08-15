@@ -1,17 +1,9 @@
 namespace VenuePulse.AccessControl.Application.Prediction;
 
-/// <summary>
-/// Encaje del modelo de predicción (Bloque 11) sobre la serie temporal del simulador. La
-/// simulación escribe un snapshot por zona y tick, así que primero se agrega por instante a nivel
-/// de evento (la métrica que opera un estadio es "cuántos pasan el torniquete", no la de cada
-/// puerta), y después se ajusta la asíntota con <see cref="ArrivalForecast"/>.
-/// </summary>
 public sealed class OccupancyPredictionService(IOccupancySnapshotRepository snapshotRepository) : IOccupancyPredictionService
 {
-    /// <summary>Ventana de llegada del demo (Bloque 8): las 3 horas previas al evento.</summary>
     private static readonly TimeSpan ArrivalsWindow = TimeSpan.FromHours(3);
 
-    /// <summary>Granularidad de la curva proyectada — suficiente para una gráfica sin ser ruido.</summary>
     private static readonly TimeSpan ProjectionStep = TimeSpan.FromMinutes(5);
 
     public async Task<OccupancyPredictionDto?> PredictAsync(
@@ -21,8 +13,6 @@ public sealed class OccupancyPredictionService(IOccupancySnapshotRepository snap
     {
         var windowStartUtc = eventStartsAtUtc - ArrivalsWindow;
 
-        // Solo cuenta lo que pasa dentro de la ventana de llegada: snapshots previos (de otro run o
-        // del overshoot del motor) quedan fuera del modelo y solo contaminarían el "ahora".
         var rows = (await snapshotRepository.GetForEventAsync(eventId, cancellationToken))
             .Where(snapshot => snapshot.RecordedAtUtc >= windowStartUtc && snapshot.RecordedAtUtc <= eventStartsAtUtc)
             .ToList();
@@ -77,8 +67,6 @@ public sealed class OccupancyPredictionService(IOccupancySnapshotRepository snap
             projected);
     }
 
-    /// <summary>Curva proyectada completa de la ventana de llegada: el modelo ajustado, no solo lo
-    /// que queda — la gráfica compara la curva contra los puntos observados.</summary>
     private static IReadOnlyList<OccupancyPredictionPointDto> BuildProjection(
         DateTimeOffset windowStartUtc,
         DateTimeOffset eventStartsAtUtc,

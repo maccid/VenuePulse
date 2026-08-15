@@ -32,9 +32,6 @@ public class ZoneServiceTests
 
         await service.ProvisionZonesForEventAsync(eventId, EventType.Match, CancellationToken.None);
 
-        // Sin esta notificación inicial, una zona virgen (100% libre) queda invisible para
-        // Ticketing hasta su primer cambio, e infla el % de ocupación agregado por evento
-        // (ver ADR 0016) al excluir su aforo del denominador.
         notifier.Notified.Should().HaveCount(4);
         notifier.Notified.Should().OnlyContain(z => z.EventId == eventId && z.AvailableToSell == z.Capacity && z.ConfirmedSold == 0);
         notifier.Notified.Select(z => z.Name).Should().Contain("Grada VIP Norte");
@@ -53,9 +50,6 @@ public class ZoneServiceTests
 
         await service.ProvisionZonesForEventAsync(eventId, EventType.Concert, CancellationToken.None);
 
-        // Los 6 nombres tienen que existir tal cual (ver ADR 0026): el frontend fusiona zona+tipo
-        // de entrada por coincidencia de nombre con el TicketType del concierto, sin relación real
-        // en el backend — si alguno cambia, esa fusión deja de funcionar en silencio.
         var names = notifier.Notified.Select(z => z.Name).ToList();
         names.Should().HaveCount(6);
         names.Should().Contain(["Grada 1", "Grada 2", "Grada 3", "Pista", "VIP 1", "VIP 2"]);
@@ -71,8 +65,6 @@ public class ZoneServiceTests
         var options = new DbContextOptionsBuilder<AccessControlDbContext>().UseInMemoryDatabase(databaseName).Options;
         var eventId = Guid.NewGuid();
 
-        // Contextos separados como en producción (scope por request): si reutilizamos el mismo
-        // DbContext, las zonas quedan trackeadas del AddRange y el Attach de SaveAsync da conflicto.
         await using (var provisioningContext = new AccessControlDbContext(options))
         {
             var service = new ZoneService(new ZoneRepository(provisioningContext), new OccupancySnapshotRepository(provisioningContext), new CapturingZoneOccupancyNotifier());
@@ -95,8 +87,6 @@ public class ZoneServiceTests
             await service.ResetSimulationAsync(eventId, CancellationToken.None);
         }
 
-        // La predicción (Bloque 11) lee la serie temporal: si el reset la conserva, acumula
-        // basura de corridas anteriores y degrada el ajuste (puntos fuera de la ventana a progress 0/1).
         await using var assertionContext = new AccessControlDbContext(options);
         var remaining = await new OccupancySnapshotRepository(assertionContext).GetForEventAsync(eventId, CancellationToken.None);
         remaining.Should().BeEmpty();
@@ -109,9 +99,6 @@ public class ZoneServiceTests
         var options = new DbContextOptionsBuilder<AccessControlDbContext>().UseInMemoryDatabase(databaseName).Options;
         var eventId = Guid.NewGuid();
 
-        // Contextos separados como en producción (scope por request): el AddRange deja las zonas
-        // trackeadas y el Attach de SaveAsync sobre una instancia nueva (AsNoTracking) con la misma
-        // clave chocaría — ver patrón del test de reset.
         await using (var provisioningContext = new AccessControlDbContext(options))
         {
             var service = new ZoneService(new ZoneRepository(provisioningContext), new OccupancySnapshotRepository(provisioningContext), new CapturingZoneOccupancyNotifier());
@@ -120,9 +107,6 @@ public class ZoneServiceTests
 
         var notifier = new CapturingZoneOccupancyNotifier();
 
-        // Idempotente en producción: la redelivery de EventCancelled llega como otro mensaje con su
-        // propio scope de request, así que cada "intento" usa un DbContext distinto — la segunda
-        // llamada no debe fallar ni cambiar nada.
         await using (var firstCancellationContext = new AccessControlDbContext(options))
         {
             var service = new ZoneService(new ZoneRepository(firstCancellationContext), new OccupancySnapshotRepository(firstCancellationContext), notifier);

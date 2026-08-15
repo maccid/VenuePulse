@@ -124,12 +124,12 @@ public class SimulationEngineTests
 
         for (var i = 0; i < 5; i++)
         {
-            var nowUtc = DateTimeOffset.UtcNow.AddSeconds(i * 21); // avanza el reloj virtual
+            var nowUtc = DateTimeOffset.UtcNow.AddSeconds(i * 21);
             await engine.AdvanceAsync(nowUtc, zoneService, snapshots, CancellationToken.None);
         }
 
         zoneService.AppliedSales.Should().BeGreaterThan(0);
-        zoneService.AppliedSales.Should().BeLessThanOrEqualTo(80); // TargetSoldPct=0.8 de capacity=100
+        zoneService.AppliedSales.Should().BeLessThanOrEqualTo(80);
         snapshots.Snapshots.Should().NotBeEmpty();
         snapshots.Snapshots.All(s => s.ConfirmedSold <= 80).Should().BeTrue();
     }
@@ -155,7 +155,6 @@ public class SimulationEngineTests
 
         await engine.TryStartAsync(EventId, SalesRequest(DateTimeOffset.UtcNow.AddDays(7)), CancellationToken.None);
 
-        // Avanza más allá de la ventana de 7 días simulados (DurationSeconds=100 => 7d/100s).
         await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(200), zoneService, snapshots, CancellationToken.None);
 
         engine.GetStatus(EventId).Should().BeNull();
@@ -192,8 +191,6 @@ public class SimulationEngineTests
             await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(i * 21), zoneService, snapshots, CancellationToken.None);
         await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(200), zoneService, snapshots, CancellationToken.None);
 
-        // Sin esto, el tick que completa el run escribe snapshots con reloj virtual post-evento
-        // (VirtualNowUtc no se clampa) y la predicción (Bloque 11) los toma como el punto "más reciente".
         snapshots.Snapshots.Should().NotBeEmpty();
         snapshots.Snapshots.Max(s => s.RecordedAtUtc).Should().BeBefore(eventStartsAtUtc);
         engine.GetStatus(EventId).Should().BeNull();
@@ -205,8 +202,6 @@ public class SimulationEngineTests
         var engine = new SimulationEngine();
         var zoneService = new FakeZoneService(CreateZone(capacity: 100));
         var snapshots = new FakeSnapshotRepository();
-        // El catálogo de Ticketing entrega el inicio del evento con offset local (p.ej. +02:00):
-        // Npgsql rechaza escribir DateTimeOffset con offset != 0 en columnas timestamptz.
         var eventStartsAtUtc = new DateTimeOffset(2026, 8, 15, 19, 0, 0, TimeSpan.FromHours(2));
 
         await engine.TryStartAsync(EventId, SalesRequest(eventStartsAtUtc), CancellationToken.None);
@@ -224,11 +219,9 @@ public class SimulationEngineTests
         var zoneService = new FakeZoneService(CreateZone(capacity: 100));
         var snapshots = new FakeSnapshotRepository();
 
-        // Venta completa primero: 80 confirmadas.
         await engine.TryStartAsync(EventId, SalesRequest(DateTimeOffset.UtcNow.AddDays(7)), CancellationToken.None);
         await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(200), zoneService, snapshots, CancellationToken.None);
 
-        // Arrivals: las 3 horas previas, no-show 8%.
         var arrivalsRequest = new SimulationStartRequest(
             SimulationMode.Arrivals,
             DateTimeOffset.UtcNow.AddDays(7),
@@ -239,7 +232,7 @@ public class SimulationEngineTests
         await engine.AdvanceAsync(DateTimeOffset.UtcNow.AddSeconds(200), zoneService, snapshots, CancellationToken.None);
 
         var final = (await zoneService.GetOccupancyAsync(ZoneId, CancellationToken.None))!;
-        final.CheckedIn.Should().Be(74); // round(80 * 0.92) = 74
-        (final.ConfirmedSold - final.CheckedIn).Should().Be(6); // 8 no-shows de 80 => 74 presentes
+        final.CheckedIn.Should().Be(74);
+        (final.ConfirmedSold - final.CheckedIn).Should().Be(6);
     }
 }

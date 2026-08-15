@@ -6,16 +6,8 @@ using VenuePulse.Core.Domain;
 
 public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
-    // Logger estático vía Serilog (no ILogger<T> por constructor): ZoneService se instancia a mano
-    // en 12 tests de AccessControl.Tests — inyectar ILogger<> los rompería todos sin aportar nada.
     private static readonly Serilog.ILogger Logger = Log.ForContext<ZoneService>();
 
-    // Set de zonas fijo por tipo de evento — igual para cualquier partido/concierto (sin
-    // geometría real, ver ADR 0017). Los nombres de zona "especiales" coinciden a propósito con el
-    // TicketType correspondiente en Ticketing, para que el frontend pueda fusionar zona+tipo de
-    // entrada por nombre sin inventar una relación cruzada. Partido tiene 4 zonas (las 2 gradas de
-    // fondo, Norte/Sur, son las VIP caras y con menos aforo; las 2 laterales, Este/Oeste, son las
-    // normales) — ver ADR 0025, que invierte qué par de gradas es VIP respecto a ADR 0024.
     private static readonly (string Name, int Capacity)[] MatchZones =
     [
         ("Grada VIP Norte", 8),
@@ -24,9 +16,6 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         ("Grada Oeste", 40),
     ];
 
-    // Concierto tiene 6 zonas (ver ADR 0026): 3 gradas al mismo precio alrededor del recinto,
-    // Pista de pie a precio medio, y 2 VIP junto al escenario al precio más alto de las tres —
-    // aforo total 100, igual que el set anterior de 3 zonas, por continuidad.
     private static readonly (string Name, int Capacity)[] ConcertZones =
     [
         ("Grada 1", 15),
@@ -58,11 +47,6 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
     public Task<bool> TryReserveSlotAsync(Guid zoneId, CancellationToken cancellationToken) =>
         ExecuteWithRetryAsync(zoneId, zone =>
         {
-            // Zona cancelada = evento cancelado (ADR 0020): la reserva se rechaza igual que si
-            // estuviera llena. El motivo "ZoneFull" en el fallo es un pelo impreciso, pero la Saga
-            // solo necesita saber "no se pudo reservar" para rechazar la compra — no merece un tipo
-            // de fallo nuevo. Se re-evalúa en cada intento sobre datos frescos: si la zona se llenó
-            // mientras reintentábamos por un conflicto de concurrencia, el resultado debe reflejarlo.
             if (zone.Cancelled || zone.AvailableToSell <= 0)
                 return (ShouldSave: false, Result: false);
 
@@ -113,9 +97,6 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         foreach (var zone in zones)
             await ExecuteWithRetryAsync(zone.Id, z => z.ResetCounters(), cancellationToken);
 
-        // Sin esto, la predicción (Bloque 11) acumula snapshots de corridas anteriores del mismo
-        // evento y se envenena: puntos fuera de la ventana quedan pegados a progress 0/1 y el R²
-        // se degrada. El reset debe dejar la serie temporal limpia para empezar de cero.
         await snapshotRepository.ClearForEventAsync(eventId, cancellationToken);
     }
 
@@ -163,9 +144,6 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
 
         await zoneRepository.AddRangeAsync(zones, cancellationToken);
 
-        // Notifica el estado inicial de cada zona: sin esto, Ticketing (Bloque 9) solo se entera
-        // de una zona la primera vez que cambia, y una zona virgen (100% libre) queda fuera de su
-        // agregado de ocupación por evento — infla el % de demanda calculado en vez de diluirlo.
         foreach (var zone in zones)
             await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
     }
