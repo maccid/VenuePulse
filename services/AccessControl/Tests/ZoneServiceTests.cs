@@ -201,12 +201,8 @@ public class ZoneServiceTests
     }
 
     [Fact]
-    public async Task Guardar_una_zona_con_RowVersion_obsoleto_lanza_conflicto_de_concurrencia()
+    public async Task Guardar_una_zona_con_xmin_obsoleto_lanza_conflicto_de_concurrencia()
     {
-        // Dos DbContext separados sobre la MISMA base InMemory, cargando la MISMA fila: simula dos
-        // requests concurrentes leyendo la zona antes de que ninguna de las dos haya escrito todavía
-        // (el escenario real detrás del fix: TryReserveSlotAsync/ConfirmSlotAsync/etc. concurrentes
-        // sobre la misma zona, ver ADR 0027).
         var databaseName = Guid.NewGuid().ToString();
         var options = new DbContextOptionsBuilder<AccessControlDbContext>().UseInMemoryDatabase(databaseName).Options;
         var eventId = Guid.NewGuid();
@@ -225,23 +221,10 @@ public class ZoneServiceTests
         var firstZone = await firstContext.Zones.SingleAsync(z => z.Id == zoneId);
         var secondZone = await secondContext.Zones.SingleAsync(z => z.Id == zoneId);
 
-        // Limitación documentada del proveedor InMemory de EF Core: SÍ aplica la comprobación de
-        // concurrencia (compara el "original value" capturado en la query contra el valor
-        // guardado en el momento del SaveChanges), pero, a diferencia de Npgsql, NUNCA genera un
-        // valor nuevo de "RowVersion" por sí mismo al guardar — sin esta línea, ambos contextos
-        // seguirían viendo el mismo valor (null) antes y después de firstContext.SaveChangesAsync(),
-        // y secondContext.SaveChangesAsync() NO lanzaría DbUpdateConcurrencyException aunque el
-        // shadow property esté bien configurado (verificado: sin esta línea el test falla porque no
-        // se lanza ninguna excepción). Se fija aquí a mano para simular lo que Npgsql haría solo de
-        // verdad contra Postgres — el comportamiento real en producción no depende de esta línea.
         firstZone.ReserveSlot();
-        firstContext.Entry(firstZone).Property("RowVersion").CurrentValue = Guid.NewGuid().ToByteArray();
+        firstContext.Entry(firstZone).Property<uint>("xmin").CurrentValue = 123u;
         await firstContext.SaveChangesAsync();
 
-        // secondZone conserva el valor de "RowVersion" (null) leído antes del SaveChanges de
-        // firstContext, que ya no coincide con el valor recién guardado — EF detecta el desajuste
-        // al intentar persistir secondContext y lanza DbUpdateConcurrencyException, el mismo tipo
-        // que ExecuteWithRetryAsync (ZoneService.cs) captura para reintentar con datos frescos.
         secondZone.ReserveSlot();
         var act = async () => await secondContext.SaveChangesAsync();
 
