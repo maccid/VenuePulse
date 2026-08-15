@@ -5,6 +5,11 @@
 > **Revertido por [ADR 0032](0032-revertir-signoz-volver-a-jaeger.md)** — se vuelve a Jaeger +
 > logs por consola. Este documento queda como histórico de por qué se adoptó SigNoz y qué llevó a
 > deshacerlo.
+>
+> **Nota 2026:** el hueco que motivó este ADR (trazas + logs en una sola UI) lo cubre finalmente
+> [ADR 0033](0033-observabilidad-seq-sustituye-jaeger.md) con **Seq**: desde la 2024.1 Seq ingesta
+> trazas OTLP nativamente, así que la objeción que este documento le hacía a Seq ("solo logs, no
+> unifica trazas") quedó obsoleta, sin necesidad de la pila completa de SigNoz.
 
 ## Contexto
 

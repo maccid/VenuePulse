@@ -12,7 +12,7 @@ builder.Host.UseStructuredLogging(ServiceName);
 
 builder.Services.AddTracing(
     ServiceName,
-    builder.Configuration["Observability:OtlpEndpoint"] ?? "http://localhost:4317");
+    builder.Configuration["Observability:OtlpEndpoint"] ?? "http://localhost:5341/ingest/otlp/v1/traces");
 
 builder.Services.AddExceptionHandling();
 
@@ -36,6 +36,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseRequestLogging();
 
 using (var scope = app.Services.CreateScope())
 {

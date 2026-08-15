@@ -20,7 +20,9 @@ spec:
             - name: ConnectionStrings__TicketingDb
               valueFrom: { secretKeyRef: { name: venuepulse-db-secrets, key: ticketing-connection-string } }
             - name: Observability__OtlpEndpoint
-              value: "http://jaeger-collector.observability:4317"
+              value: "http://seq.observability:80/ingest/otlp/v1/traces"
+            - name: Observability__SeqServerUrl
+              value: "http://seq.observability:80"
           resources:
             requests: { cpu: "100m", memory: "128Mi" }
             limits: { cpu: "500m", memory: "256Mi" }

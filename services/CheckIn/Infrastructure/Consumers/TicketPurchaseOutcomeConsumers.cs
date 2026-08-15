@@ -33,6 +33,7 @@ public sealed class TicketReadyForPaymentConsumer(
 
         ticket.MarkAwaitingPayment();
         await repository.SaveChangesAsync(context.CancellationToken);
+        logger.LogInformation("Entrada {TicketId} lista para elegir método de pago", ticket.Id);
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
@@ -63,6 +64,7 @@ public sealed class TicketProcessingPaymentConsumer(
 
         ticket.MarkProcessingPayment();
         await repository.SaveChangesAsync(context.CancellationToken);
+        logger.LogInformation("Entrada {TicketId} procesando pago", ticket.Id);
 
         // El watchdog ya des-trackeó al recibir TicketPaymentSubmitted (el cliente ya eligió
         // método de pago) — aquí siempre será null, es el mismo lookup que en el resto de
@@ -91,6 +93,7 @@ public sealed class TicketPurchaseConfirmedConsumer(
 
         ticket.Confirm();
         await repository.SaveChangesAsync(context.CancellationToken);
+        logger.LogInformation("Entrada {TicketId} confirmada", ticket.Id);
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
@@ -116,6 +119,7 @@ public sealed class TicketPurchaseRejectedConsumer(
 
         ticket.Reject(context.Message.Reason);
         await repository.SaveChangesAsync(context.CancellationToken);
+        logger.LogWarning("Entrada {TicketId} rechazada: {Reason}", ticket.Id, ticket.RejectionReason);
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
