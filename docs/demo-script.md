@@ -13,7 +13,7 @@ docker compose -f infra/docker-compose.yml up --build
 Abrir:
 - `http://localhost:8080` → `shell` (catálogo + aforo en vivo)
 - `http://localhost:8080/venue-ops/` → panel de operaciones
-- `http://localhost:16686` → Jaeger (trazas)
+- `http://localhost:5341` → Seq (logs + trazas)
 - `http://localhost:15672` (guest/guest o credenciales del compose) → RabbitMQ management
 
 ## 1. Camino feliz (2 minutos)
@@ -38,8 +38,8 @@ Abrir:
 
 ## 3. Trazas distribuidas (1 minuto)
 
-1. Abrir Jaeger, buscar el servicio `VenuePulse.AccessControl` (es donde más spans se agregan)
-   y localizar el trace largo (~25-30 spans) de la última compra.
+1. Abrir Seq, filtrar por `Service = 'VenuePulse.AccessControl'` (o abrir la vista de trazas) y
+   localizar el trace largo (~25-30 spans) de la última compra.
 2. Mostrar los spans cruzando `CheckIn` (HTTP + Outbox + Saga) y `AccessControl` (reserva y
    confirmación de zona) con sus duraciones — "esto es lo primero que miraría si algo fuera
    lento en producción". Señalar que `Ticketing` **no** aparece en este trace a propósito: solo
@@ -100,12 +100,13 @@ checklist más abajo).
 - [x] `docker compose -f infra/docker-compose.yml up --build` levanta los 11 contenedores sin
       errores (`api-ticketing`, `api-accesscontrol`, `api-checkin`, `web-shell`,
       `web-ticket-checkout`, `web-venue-ops`, `gateway`, `postgres`, `mongo`, `rabbitmq`,
-      `jaeger`).
+      `seq`).
 - [x] Camino feliz completo (compra → confirmación en <1s → check-in → aforo sube) verificado
       contra la API real: `confirmedSold`/`checkedIn` de la zona pasan de 0 a 1.
 - [x] Camino de compensación (simular fallo → rechazo `PaymentFailed` → aforo NO sube) verificado
       contra la API real: la zona se queda en `confirmedSold: 0`.
-- [x] Jaeger muestra el trace conectado de una compra completa (~28 spans, CheckIn +
-      AccessControl vía Outbox/Saga/RabbitMQ) y de la compensación.
+- [x] Seq muestra el trace conectado de una compra completa (~28 spans, CheckIn +
+      AccessControl vía Outbox/Saga/RabbitMQ) y de la compensación, con los logs del flujo
+      correlacionados por `TraceId`.
 - [ ] Repetir el camino feliz y el de compensación una vez más **desde el navegador** (no solo
       vía API) para confirmar el timeline visual de la Saga por SignalR antes de la demo.

@@ -1,8 +1,9 @@
 # ADR 0006 — Observabilidad real con OpenTelemetry + Jaeger (no solo logging)
 
-> Brevemente superado por [ADR 0031](0031-observabilidad-signoz-sustituye-jaeger.md) (SigNoz) y
-> revertido de vuelta a esta decisión por [ADR 0032](0032-revertir-signoz-volver-a-jaeger.md) —
-> vigente de nuevo.
+> Brevemente superado por [ADR 0031](0031-observabilidad-signoz-sustituye-jaeger.md) (SigNoz),
+> revertido de vuelta a esta decisión por [ADR 0032](0032-revertir-signoz-volver-a-jaeger.md), y
+> **sustituido definitivamente por [ADR 0033](0033-observabilidad-seq-sustituye-jaeger.md)** —
+> Seq sustituye a Jaeger como backend de trazas y añade la minería de logs en una sola UI.
 
 ## Contexto
 

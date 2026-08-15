@@ -3,6 +3,10 @@
 **Revierte a:** [ADR 0006](0006-observabilidad-opentelemetry-jaeger.md)
 **Revierte:** [ADR 0031](0031-observabilidad-signoz-sustituye-jaeger.md)
 
+> **Superado en el punto 3 por [ADR 0033](0033-observabilidad-seq-sustituye-jaeger.md):** la
+> "búsqueda centralizada de logs" que este documento deja fuera de su alcance se resuelve con
+> Seq, que además sustituye a Jaeger como backend de trazas (una sola UI para ambas cosas).
+
 ## Contexto
 
 El ADR 0031 sustituyó Jaeger por SigNoz para unificar trazas y logs en una sola UI, aceptando
