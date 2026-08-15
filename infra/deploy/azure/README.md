@@ -14,7 +14,7 @@ una cuenta de Azure para una demo.
 | RabbitMQ | **Azure Service Bus** | MassTransit abstrae el transporte — cambiar `UsingRabbitMq` por `UsingAzureServiceBus` es configuración, no código (ver ADR 0001) |
 | Postgres (3 bases) | **Azure Database for PostgreSQL Flexible Server** (una instancia, 3 bases, igual que en local) | Gestionado, sin operar parches/backups a mano |
 | MongoDB (estado de Saga) | **Azure Cosmos DB for MongoDB (vCore)** | Compatible con el driver de MongoDB tal cual, sin cambiar código de `MongoDbSagaRepository` |
-| Jaeger | **Azure Monitor / Application Insights** (vía el mismo exporter OTLP) | En producción no se opera un Jaeger propio; se cambia el endpoint OTLP, el código de instrumentación no cambia |
+| SigNoz (trazas + logs) | **Azure Monitor / Application Insights** (vía el mismo exporter OTLP) | En producción no se opera un SigNoz propio; se cambia el endpoint OTLP, el código de instrumentación no cambia |
 | Nginx gateway | **AKS Ingress Controller** (`ingress-nginx` o Application Gateway Ingress Controller) | Mismo esquema de rutas que `infra/nginx/nginx.conf`, ver `infra/deploy/k8s/base/ingress.yaml` |
 | Secretos (connection strings) | **Azure Key Vault** + CSI Secret Store driver en AKS | Nunca en ConfigMaps ni variables de entorno en claro |
 

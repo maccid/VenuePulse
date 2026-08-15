@@ -13,7 +13,7 @@ docker compose -f infra/docker-compose.yml up --build
 Abrir:
 - `http://localhost:8080` → `shell` (catálogo + aforo en vivo)
 - `http://localhost:8080/venue-ops/` → panel de operaciones
-- `http://localhost:16686` → Jaeger (trazas)
+- `http://localhost:3301` → SigNoz (trazas + logs)
 - `http://localhost:15672` (guest/guest o credenciales del compose) → RabbitMQ management
 
 ## 1. Camino feliz (2 minutos)
@@ -36,16 +36,19 @@ Abrir:
 4. Abrir `venue-ops` y mostrar que el aforo de esa zona **no subió** — la reserva se liberó de
    verdad, no fue una simulación de interfaz.
 
-## 3. Trazas distribuidas (1 minuto)
+## 3. Trazas y logs (1 minuto)
 
-1. Abrir Jaeger, buscar el servicio `VenuePulse.AccessControl` (es donde más spans se agregan)
+1. Abrir SigNoz, buscar el servicio `VenuePulse.AccessControl` (es donde más spans se agregan)
    y localizar el trace largo (~25-30 spans) de la última compra.
 2. Mostrar los spans cruzando `CheckIn` (HTTP + Outbox + Saga) y `AccessControl` (reserva y
    confirmación de zona) con sus duraciones — "esto es lo primero que miraría si algo fuera
    lento en producción". Señalar que `Ticketing` **no** aparece en este trace a propósito: solo
    interviene en la fase de catálogo (el fan ya trae el `eventId`/`ticketTypeId` elegidos), sin
-   llamada síncrona en el momento de comprar — ver ADR 0006. Es un buen ejemplo de no forzar
+   llamada síncrona en el momento de comprar — ver ADR 0031. Es un buen ejemplo de no forzar
    acoplamiento solo para que la traza "se vea mejor".
+3. **Bonus — el salto log → trace**: buscar un log por texto (p. ej. `"sin aforo"`) en SigNoz y
+   abrir el trace asociado: cada log de `ILogger` viaja por el mismo OTLP con su `traceId`, así
+   que trazas y logs se ven en la misma pantalla sin cruzar consola y Jaeger a mano.
 
 ## 4. Arquitectura y pruebas (2 minutos)
 
@@ -84,15 +87,17 @@ checklist más abajo).
 
 ## Checklist de verificación manual (verificado contra docker-compose real)
 
-- [x] `docker compose -f infra/docker-compose.yml up --build` levanta los 11 contenedores sin
+- [x] `docker compose -f infra/docker-compose.yml up --build` levanta los 17 contenedores sin
       errores (`api-ticketing`, `api-accesscontrol`, `api-checkin`, `web-shell`,
       `web-ticket-checkout`, `web-venue-ops`, `gateway`, `postgres`, `mongo`, `rabbitmq`,
-      `jaeger`).
+      `signoz`, `signoz-otel-collector`, `clickhouse`, `zookeeper-1`, `init-clickhouse`,
+      `signoz-telemetrystore-migrator`).
 - [x] Camino feliz completo (compra → confirmación en <1s → check-in → aforo sube) verificado
       contra la API real: `confirmedSold`/`checkedIn` de la zona pasan de 0 a 1.
 - [x] Camino de compensación (simular fallo → rechazo `PaymentFailed` → aforo NO sube) verificado
       contra la API real: la zona se queda en `confirmedSold: 0`.
-- [x] Jaeger muestra el trace conectado de una compra completa (~28 spans, CheckIn +
-      AccessControl vía Outbox/Saga/RabbitMQ) y de la compensación.
+- [x] SigNoz muestra el trace conectado de una compra completa (~28 spans, CheckIn +
+      AccessControl vía Outbox/Saga/RabbitMQ) y de la compensación, con los logs del flujo
+      correlacionados por `traceId`.
 - [ ] Repetir el camino feliz y el de compensación una vez más **desde el navegador** (no solo
       vía API) para confirmar el timeline visual de la Saga por SignalR antes de la demo.

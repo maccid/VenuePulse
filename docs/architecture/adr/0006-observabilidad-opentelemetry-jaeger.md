@@ -1,5 +1,9 @@
 # ADR 0006 — Observabilidad real con OpenTelemetry + Jaeger (no solo logging)
 
+> **Superado por [ADR 0031](0031-observabilidad-signoz-sustituye-jaeger.md)** — Jaeger se sustituye
+> por SigNoz (trazas + logs en una sola UI) y los 3 servicios exportan logs por OTLP además de
+> trazas. Este documento queda como histórico del estado anterior.
+
 ## Contexto
 
 La observabilidad no era un requisito explícito, pero detectar cuellos de botella en un
