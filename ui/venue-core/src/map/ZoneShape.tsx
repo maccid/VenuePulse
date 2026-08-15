@@ -13,6 +13,7 @@ interface Props {
   shape: StandShape
   tier: OccupancyTier
   interactive: boolean
+  locked?: boolean
   isSelected: boolean
   pricing?: ZonePricing
   onSelect?: () => void
@@ -30,8 +31,10 @@ const TIER_LIGHT: Record<OccupancyTier, string> = {
   high: 'fill-red-500',
 }
 
-export default function ZoneShape({ name, shape, tier, interactive, isSelected, pricing, onSelect }: Props) {
-  const handleKeyDown = interactive
+export default function ZoneShape({ name, shape, tier, interactive, locked = false, isSelected, pricing, onSelect }: Props) {
+  const actionable = interactive && !locked
+
+  const handleKeyDown = actionable
     ? (e: KeyboardEvent<SVGGElement>) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
@@ -47,10 +50,12 @@ export default function ZoneShape({ name, shape, tier, interactive, isSelected, 
   const outlineClassName = interactive
     ? [
         'fill-blue-600/85',
-        'group-hover:stroke-blue-800 group-hover:[stroke-width:1.5]',
-        'group-focus-visible:stroke-blue-800 group-focus-visible:[stroke-width:1.5]',
+        actionable ? 'group-hover:stroke-blue-800 group-hover:[stroke-width:1.5]' : '',
+        actionable ? 'group-focus-visible:stroke-blue-800 group-focus-visible:[stroke-width:1.5]' : '',
         isSelected ? 'stroke-slate-900 [stroke-width:2.5]' : 'stroke-none',
-      ].join(' ')
+      ]
+        .filter(Boolean)
+        .join(' ')
     : `${TIER_FILL[tier]} stroke-1`
 
   const outline = shape.rect ? (
@@ -61,12 +66,12 @@ export default function ZoneShape({ name, shape, tier, interactive, isSelected, 
 
   return (
     <g
-      className={['group', interactive ? 'cursor-pointer focus:outline-none' : ''].filter(Boolean).join(' ')}
-      onClick={interactive ? onSelect : undefined}
-      role={interactive ? 'button' : undefined}
-      aria-pressed={interactive ? isSelected : undefined}
+      className={['group', actionable ? 'cursor-pointer focus:outline-none' : ''].filter(Boolean).join(' ')}
+      onClick={actionable ? onSelect : undefined}
+      role={actionable ? 'button' : undefined}
+      aria-pressed={actionable ? isSelected : undefined}
       aria-label={name}
-      tabIndex={interactive ? 0 : undefined}
+      tabIndex={actionable ? 0 : undefined}
       onKeyDown={handleKeyDown}
     >
       {shape.transform ? (
@@ -89,7 +94,7 @@ export default function ZoneShape({ name, shape, tier, interactive, isSelected, 
           </tspan>
         ))}
       </text>
-      {interactive && pricing && (
+      {actionable && pricing && (
         <g className="vp-map-zone-tooltip pointer-events-none opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           <rect x={shape.labelX - tooltipWidth / 2} y={tooltipY} width={tooltipWidth} height={17} rx={8.5} className="fill-slate-900 stroke-none" />
           <text x={shape.labelX} y={tooltipY + 8.5} textAnchor="middle" dominantBaseline="middle" className="fill-white text-[10px] font-bold">
