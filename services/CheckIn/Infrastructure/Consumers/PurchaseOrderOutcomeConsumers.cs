@@ -64,6 +64,40 @@ public sealed class PurchaseOrderReadyForPaymentConsumer(
     }
 }
 
+/// <summary>
+/// El cliente ya envió el pago del pedido completo — refleja la transición en el
+/// <see cref="VenuePulse.CheckIn.Domain.PurchaseOrder"/> antes de que llegue su resolución
+/// final. Sin este consumer, <see cref="PurchaseOrderCompletedConsumer"/> nunca podía completar
+/// el pedido: <c>PurchaseOrder.Complete()</c> exige el estado <c>Confirming</c>, pero nada lo
+/// transicionaba ahí — <c>PurchaseOrderSaga</c> ya lo hace en su propio estado (Mongo), pero
+/// ningún consumer reflejaba ese mismo paso en Postgres. Mismo motivo que
+/// <see cref="PurchaseOrderReadyForPaymentConsumer"/>: escucha el evento que ya publica
+/// <c>SubmitOrderPaymentCommandHandler</c> al validar y aceptar el pago, no un evento en paralelo.
+/// </summary>
+public sealed class PurchaseOrderConfirmingConsumer(
+    IPurchaseOrderRepository orderRepository,
+    ITicketRepository ticketRepository,
+    IOrderStatusNotifier notifier,
+    ReservationTimeoutTracker timeoutTracker,
+    ILogger<PurchaseOrderConfirmingConsumer> logger) : IConsumer<PurchaseOrderPaymentSubmitted>
+{
+    public async Task Consume(ConsumeContext<PurchaseOrderPaymentSubmitted> context)
+    {
+        var order = await orderRepository.GetByIdAsync(context.Message.CorrelationId, context.CancellationToken);
+        if (order is null)
+        {
+            logger.LogWarning("PurchaseOrderPaymentSubmitted para un pedido inexistente {OrderId}", context.Message.CorrelationId);
+            return;
+        }
+
+        order.MarkConfirming();
+        await orderRepository.SaveChangesAsync(context.CancellationToken);
+
+        var status = await OrderStatusComposer.ComposeAsync(order, ticketRepository, timeoutTracker, context.CancellationToken);
+        await notifier.NotifyStatusChangedAsync(status, context.CancellationToken);
+    }
+}
+
 public sealed class PurchaseOrderCompletedConsumer(
     IPurchaseOrderRepository orderRepository,
     ITicketRepository ticketRepository,
