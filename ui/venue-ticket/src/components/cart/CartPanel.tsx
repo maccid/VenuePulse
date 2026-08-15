@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
 import type { BuyerData, CartLine, DraftLine, OrderStatus, PaymentMethod, TicketType } from '@venue/core/domain'
-import { CancelReservationIcon, CartIcon, ReloadIcon } from '../../shared/icons'
+import { CartIcon } from '../../shared/icons'
 import DraftCart from './DraftCart'
 import ReservedCartSummary from './ReservedCartSummary'
 
@@ -39,42 +38,13 @@ export default function CartPanel({
   onSubmitPayment,
   onCancelOrder,
 }: Props) {
-  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const hasReservation = orderStatus !== null
-  const allResolved = orderStatus === 'Completed' || orderStatus === 'Rejected'
-  const canRequestCancel = hasReservation && !allResolved && !isPaying && !confirmingCancel
-
-  useEffect(() => {
-    if (!hasReservation) setConfirmingCancel(false)
-  }, [hasReservation])
 
   return (
     <aside className="ticket-checkout cart-panel">
       <h3 className="cart-panel__title">
         <CartIcon />
         <span>{hasReservation ? 'Tu compra' : 'Tus Reservas'}</span>
-        {allResolved && (
-          <button
-            type="button"
-            className="cart-panel__title-action"
-            onClick={onResetPurchase}
-            aria-label="Reiniciar compra"
-            title="Reiniciar compra"
-          >
-            <ReloadIcon />
-          </button>
-        )}
-        {canRequestCancel && (
-          <button
-            type="button"
-            className="cart-panel__title-action"
-            onClick={() => setConfirmingCancel(true)}
-            aria-label="Cancelar reserva"
-            title="Cancelar reserva"
-          >
-            <CancelReservationIcon />
-          </button>
-        )}
       </h3>
 
       {!hasReservation && (
@@ -95,10 +65,9 @@ export default function CartPanel({
           isCancelling={isCancelling}
           orderStatus={orderStatus}
           orderRejectionReason={orderRejectionReason}
-          confirmingCancel={confirmingCancel}
-          onCloseCancelConfirm={() => setConfirmingCancel(false)}
           onBuyerChange={onBuyerChange}
           onSubmitPayment={onSubmitPayment}
+          onResetPurchase={onResetPurchase}
           onCancelOrder={onCancelOrder}
         />
       )}

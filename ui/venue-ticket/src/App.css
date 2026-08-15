@@ -304,6 +304,12 @@ ticket-checkout-app {
   color: var(--tc-muted);
 }
 
+.cancel-confirm__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 /* Carrito. La tarjeta visual (fondo, borde, radio, padding, sombra) la comparte con la cabecera y
    el plano (regla conjunta arriba) para que las tres cards se vean iguales. */
 .cart-panel {
@@ -325,31 +331,6 @@ ticket-checkout-app {
   font-size: 13px;
   font-weight: 600;
   color: var(--tc-muted);
-}
-
-.ticket-checkout .cart-panel__title-action {
-  margin-left: auto;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--tc-muted);
-  border: 1px solid var(--tc-border-strong);
-}
-
-.ticket-checkout .cart-panel__title-action:hover:not(:disabled) {
-  background: var(--tc-accent-bg);
-  color: var(--tc-accent);
-  border-color: var(--tc-accent);
-}
-
-.cart-panel__title-action-icon {
-  width: 15px;
-  height: 15px;
 }
 
 .cart-panel__icon {
@@ -576,32 +557,29 @@ ticket-checkout-app {
   color: var(--tc-muted);
 }
 
-.cart-panel__block-title {
-  margin: 0;
-  font-weight: 600;
-  color: var(--tc-text);
-}
-
-.cart-panel__block-hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--tc-muted);
-}
-
-.cart-panel__block-actions {
+.cart-panel__cancel-row {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
 }
 
-.ticket-checkout .cart-panel__block-actions button:first-child {
-  background: none;
-  color: var(--tc-muted);
-  border: 1px solid var(--tc-border);
+.cart-panel__result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  text-align: center;
 }
 
-.ticket-checkout .cart-panel__block-actions button:first-child:hover:not(:disabled) {
-  background: var(--tc-accent-bg);
+.cart-panel__result-icon {
+  width: 44px;
+  height: 44px;
+  color: var(--tc-accent);
+}
+
+.cart-panel__result--error .cart-panel__result-icon {
+  color: var(--tc-danger);
 }
 
 .cart-panel__countdown {

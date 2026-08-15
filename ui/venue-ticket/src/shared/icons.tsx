@@ -1,15 +1,7 @@
-import { ChevronDown, CreditCard, Map, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react'
+import { ChevronDown, CircleCheck, CircleX, CreditCard, Map, ShoppingCart, Trash2 } from 'lucide-react'
 
 export function CartIcon() {
   return <ShoppingCart className="cart-panel__icon" strokeWidth={1.8} aria-hidden="true" />
-}
-
-export function ReloadIcon() {
-  return <RefreshCw className="cart-panel__title-action-icon" aria-hidden="true" />
-}
-
-export function CancelReservationIcon() {
-  return <Trash2 className="cart-panel__title-action-icon" aria-hidden="true" />
 }
 
 export function ChevronDownIcon() {
@@ -18,6 +10,14 @@ export function ChevronDownIcon() {
 
 export function TrashIcon() {
   return <Trash2 className="cart-panel__remove-icon" aria-hidden="true" />
+}
+
+export function SuccessIcon() {
+  return <CircleCheck className="cart-panel__result-icon" aria-hidden="true" />
+}
+
+export function FailureIcon() {
+  return <CircleX className="cart-panel__result-icon" aria-hidden="true" />
 }
 
 export function MapIcon() {

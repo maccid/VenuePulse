@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import type { BuyerData, CartLine, OrderStatus, PaymentMethod } from '@venue/core/domain'
-import { SagaTimeline } from './SagaTimeline'
-import { ChevronDownIcon } from '../../shared/icons'
-import PaymentForm from '../PaymentForm'
-import { CartGroupRow } from './CartGroupRow'
+import { SagaTimeline } from './steps/SagaTimeline'
 import { groupCartLines } from './cartGrouping'
-import { CartBlock } from './CartBlock'
+import { CartBlock } from './steps/CartBlock'
+import BusyBlock from './steps/BusyBlock'
+import ResultBlock from './steps/ResultBlock'
+import CancelCountdownRow from './steps/CancelCountdownRow'
+import CartSummaryLines from './steps/CartSummaryLines'
+import PaymentForm from '../PaymentForm'
+import CancelConfirmDialog from './steps/CancelConfirmDialog'
 import { formatCountdown, useCountdown } from '../../shared/useCountdown'
 
 interface Props {
@@ -15,10 +18,9 @@ interface Props {
   isCancelling: boolean
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
-  confirmingCancel: boolean
-  onCloseCancelConfirm: () => void
   onBuyerChange: (buyer: BuyerData) => void
   onSubmitPayment: (method: PaymentMethod) => void
+  onResetPurchase: () => void
   onCancelOrder: () => void
 }
 
@@ -28,8 +30,6 @@ function earliestActiveExpiry(lines: CartLine[]): string | null {
   return deadlines.reduce((earliest, d) => (new Date(d) < new Date(earliest) ? d : earliest))
 }
 
-type Phase = 'confirming' | 'awaiting-payment' | 'cancel-confirm' | 'completed' | 'rejected' | 'expired'
-
 export default function ReservedCartSummary({
   cart,
   buyer,
@@ -37,13 +37,13 @@ export default function ReservedCartSummary({
   isCancelling,
   orderStatus,
   orderRejectionReason,
-  confirmingCancel,
-  onCloseCancelConfirm,
   onBuyerChange,
   onSubmitPayment,
+  onResetPurchase,
   onCancelOrder,
 }: Props) {
   const [summaryOpen, setSummaryOpen] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const countdown = useCountdown(earliestActiveExpiry(cart))
   const reservationExpired = countdown !== null && countdown <= 0
 
@@ -53,126 +53,82 @@ export default function ReservedCartSummary({
   const groups = groupCartLines(cart)
   const rejectedLine = cart.find((l) => l.status === 'Rejected')
   const timelineReason = orderRejectionReason ?? rejectedLine?.rejectionReason ?? null
-
-  // Un único bloque activo a la vez — la verdad del backend (Completed/Rejected) manda siempre
-  // sobre el heurístico local de expiración y sobre estar confirmando la cancelación.
-  const phase: Phase =
-    orderStatus === 'Completed'
-      ? 'completed'
-      : orderStatus === 'Rejected'
-        ? 'rejected'
-        : confirmingCancel
-          ? 'cancel-confirm'
-          : reservationExpired
-            ? 'expired'
-            : orderStatus === 'AwaitingPayment'
-              ? 'awaiting-payment'
-              : 'confirming'
+  const allResolved = orderStatus === 'Completed' || orderStatus === 'Rejected'
+  const paying = isPaying || orderStatus === 'Confirming'
+  const payable = orderStatus === 'AwaitingPayment'
+  const canCancel = payable && !isPaying
+  const completed = orderStatus === 'Completed'
+  const failed = orderStatus === 'Rejected' || reservationExpired
 
   return (
     <>
-      {summaryOpen && (
-        <ul className="cart-panel__lines">
-          {groups.map((group) => (
-            <CartGroupRow key={group.key} group={group} />
-          ))}
-        </ul>
+      {!allResolved && !reservationExpired && (payable || paying) && (
+        <CancelCountdownRow
+          countdown={countdown !== null && countdown > 0 ? formatCountdown(countdown) : null}
+          canCancel={canCancel}
+          onCancel={() => setConfirmingCancel(true)}
+        />
       )}
 
-      {activeLines.length > 0 && phase !== 'expired' && (
+      {orderStatus === 'Reserving' ? (
+        <BusyBlock label="Reservando" />
+      ) : completed ? (
         <>
-          <p className="cart-panel__total">
-            <span className="cart-panel__quota">
-              {activeLines.length} {phase === 'awaiting-payment' ? 'entradas reservadas' : 'entradas compradas'}
-            </span>
-            <span className="cart-panel__total-actions">
-              <strong>{cartTotal.toFixed(2)} €</strong>
-              <button
-                type="button"
-                className={`cart-panel__toggle${summaryOpen ? ' cart-panel__toggle--open' : ''}`}
-                onClick={() => setSummaryOpen((open) => !open)}
-                aria-expanded={summaryOpen}
-                aria-label={summaryOpen ? 'Ocultar resumen de entradas' : 'Ver resumen de entradas'}
-              >
-                <ChevronDownIcon />
-              </button>
-            </span>
-          </p>
+          <CartSummaryLines
+            groups={groups}
+            activeCount={activeLines.length}
+            cartTotal={cartTotal}
+            label="entradas compradas"
+            summaryOpen={summaryOpen}
+            onToggle={() => setSummaryOpen((open) => !open)}
+            confirmedTickets={confirmedTickets}
+          />
+          <ResultBlock kind="success" title="Tu compra ha sido completada." onResetPurchase={onResetPurchase} />
+        </>
+      ) : failed ? (
+        <ResultBlock kind="error" title="Tu compra ha sido rechazada." onResetPurchase={onResetPurchase}>
+          <SagaTimeline rejectionReason={timelineReason} />
+        </ResultBlock>
+      ) : (
+        <>
+          <CartSummaryLines
+            groups={groups}
+            activeCount={activeLines.length}
+            cartTotal={cartTotal}
+            label="entradas reservadas"
+            summaryOpen={summaryOpen}
+            onToggle={() => setSummaryOpen((open) => !open)}
+            confirmedTickets={confirmedTickets}
+          />
 
-          {confirmedTickets.length > 0 && (
-            <div className="ticket-id-hint">
-              <p>
-                ID (para escanear en <em>venue-ops</em>):
-              </p>
-              <ul>
-                {confirmedTickets.map((t) => (
-                  <li key={t.ticketId}>
-                    <code>{t.ticketId}</code>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {paying ? (
+            <BusyBlock label="Pagando" />
+          ) : (
+            <CartBlock>
+              <PaymentForm
+                total={cartTotal}
+                disabled={isPaying}
+                buyer={buyer}
+                onBuyerChange={onBuyerChange}
+                onSubmit={onSubmitPayment}
+              />
+            </CartBlock>
           )}
+
+          <SagaTimeline rejectionReason={timelineReason} />
         </>
       )}
 
-      {(phase === 'confirming' || phase === 'awaiting-payment') && countdown !== null && countdown > 0 && (
-        <p className="cart-panel__countdown">Reserva expira en {formatCountdown(countdown)}</p>
+      {confirmingCancel && !allResolved && !reservationExpired && (
+        <CancelConfirmDialog
+          isCancelling={isCancelling}
+          onDismiss={() => setConfirmingCancel(false)}
+          onConfirm={() => {
+            setConfirmingCancel(false)
+            onCancelOrder()
+          }}
+        />
       )}
-
-      {phase === 'confirming' && (
-        <CartBlock>
-          <p className="cart-panel__block-busy">
-            Confirmando disponibilidad
-            <span className="cart-panel__reserve-dots" aria-hidden="true">
-              <span>.</span>
-              <span>.</span>
-              <span>.</span>
-            </span>
-          </p>
-        </CartBlock>
-      )}
-
-      {phase === 'awaiting-payment' && (
-        <CartBlock>
-          <PaymentForm total={cartTotal} disabled={isPaying} buyer={buyer} onBuyerChange={onBuyerChange} onSubmit={onSubmitPayment} />
-        </CartBlock>
-      )}
-
-      {phase === 'cancel-confirm' && (
-        <CartBlock>
-          <p className="cart-panel__block-title">¿Cancelar la reserva?</p>
-          <p className="cart-panel__block-hint">Se liberará el aforo reservado y no podrás deshacerlo.</p>
-          <div className="cart-panel__block-actions">
-            <button type="button" disabled={isCancelling} onClick={onCloseCancelConfirm}>
-              Volver
-            </button>
-            <button type="button" className="cart-panel__cancel" disabled={isCancelling} onClick={onCancelOrder}>
-              {isCancelling ? 'Cancelando…' : 'Sí, cancelar'}
-            </button>
-          </div>
-        </CartBlock>
-      )}
-
-      {phase === 'completed' && (
-        <CartBlock>
-          <p className="cart-panel__done">✔ Compra completada.</p>
-        </CartBlock>
-      )}
-
-      {phase === 'rejected' && (
-        <CartBlock>
-          <p className="cart-panel__done cart-panel__done--error">La compra no se pudo completar.</p>
-        </CartBlock>
-      )}
-
-      {phase === 'expired' && (
-        <CartBlock>
-          <p className="cart-panel__done cart-panel__done--error">La reserva expiró.</p>
-        </CartBlock>
-      )}
-
-      <SagaTimeline rejectionReason={timelineReason} />
     </>
   )
 }
