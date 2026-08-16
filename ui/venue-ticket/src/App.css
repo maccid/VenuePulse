@@ -567,8 +567,10 @@ ticket-checkout-app {
 
 .cart-panel__result {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   margin: 0;
   text-align: center;

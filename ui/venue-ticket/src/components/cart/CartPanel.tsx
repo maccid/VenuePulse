@@ -53,7 +53,7 @@ export default function CartPanel({
   const reservationExpired = countdownSeconds !== null && countdownSeconds <= 0
   const payable = orderStatus === 'AwaitingPayment'
   const paying = isPaying || orderStatus === 'Confirming'
-  const canCancel = payable && !isPaying && !confirmingCancel
+  const canCancel = payable && !isPaying
   const showCancelRow = !allResolved && !reservationExpired && (payable || paying)
 
   useEffect(() => {
