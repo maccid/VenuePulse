@@ -22,6 +22,7 @@ public sealed class ZoneOccupancyChangedConsumer(
         await demandRepository.UpsertAsync(
             message.ZoneId,
             message.Id,
+            message.Name,
             message.Capacity,
             message.AvailableToSell,
             message.ConfirmedSold,

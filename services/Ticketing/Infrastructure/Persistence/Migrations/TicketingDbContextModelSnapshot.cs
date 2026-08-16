@@ -256,6 +256,10 @@ namespace VenuePulse.Ticketing.Infrastructure.Migrations
                     b.Property<Guid>("EventId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("ZoneId");
 
                     b.ToTable("zone_demand_snapshots", (string)null);

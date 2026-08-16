@@ -69,12 +69,56 @@ public class TicketingServiceTests
         var @event = await SeedEventAsync(databaseName);
 
         var demandRepository = new ZoneDemandRepository(OpenContext(databaseName));
-        await demandRepository.UpsertAsync(Guid.NewGuid(), @event.Id, capacity: 100, availableToSell: 5, confirmedSold: 95, checkedIn: 0, CancellationToken.None);
+        await demandRepository.UpsertAsync(Guid.NewGuid(), @event.Id, "General", capacity: 100, availableToSell: 5, confirmedSold: 95, checkedIn: 0, CancellationToken.None);
 
         var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
 
         ticketTypes.Should().ContainSingle().Which.Should().Match<TicketTypeDto>(
             t => t.Price == 100m && t.BasePrice == 100m && t.EffectivePrice == 130m && t.PriceTier == DynamicPricing.TierUltimas);
+    }
+
+    [Fact]
+    public async Task Cada_tipo_de_entrada_recibe_el_tier_de_su_propia_zona_no_el_agregado_del_evento()
+    {
+        var (provider, _, service, databaseName) = await StartAsync();
+        await using var _p = provider;
+
+        await using var dbContext = OpenContext(databaseName);
+        var @event = new Event(Guid.NewGuid(), "Final de Copa", "Estadio", DateTimeOffset.UtcNow.AddDays(1), EventType.Match, EventRelevance.Standard);
+        @event.AddTicketType(Guid.NewGuid(), "Grada VIP Norte", 90m, null);
+        @event.AddTicketType(Guid.NewGuid(), "General", 40m, null);
+        dbContext.Events.Add(@event);
+        await dbContext.SaveChangesAsync();
+
+        var demandRepository = new ZoneDemandRepository(OpenContext(databaseName));
+        await demandRepository.UpsertAsync(Guid.NewGuid(), @event.Id, "Grada VIP Norte", capacity: 8, availableToSell: 0, confirmedSold: 8, checkedIn: 0, CancellationToken.None);
+        await demandRepository.UpsertAsync(Guid.NewGuid(), @event.Id, "Grada Este", capacity: 40, availableToSell: 39, confirmedSold: 1, checkedIn: 0, CancellationToken.None);
+
+        var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
+
+        ticketTypes.Should().Contain(t => t.Name == "Grada VIP Norte" && t.PriceTier == DynamicPricing.TierUltimas);
+        ticketTypes.Should().Contain(t => t.Name == "General" && t.PriceTier == DynamicPricing.TierBaja);
+    }
+
+    [Fact]
+    public async Task Una_zona_sin_nombre_exacto_fusiona_por_contencion_con_el_tipo_de_entrada()
+    {
+        var (provider, _, service, databaseName) = await StartAsync();
+        await using var _p = provider;
+
+        await using var dbContext = OpenContext(databaseName);
+        var @event = new Event(Guid.NewGuid(), "Gira mundial", "Estadio", DateTimeOffset.UtcNow.AddDays(1), EventType.Concert, EventRelevance.Standard);
+        @event.AddTicketType(Guid.NewGuid(), "VIP", 90m, null);
+        dbContext.Events.Add(@event);
+        await dbContext.SaveChangesAsync();
+
+        var demandRepository = new ZoneDemandRepository(OpenContext(databaseName));
+        await demandRepository.UpsertAsync(Guid.NewGuid(), @event.Id, "Grada VIP Norte", capacity: 10, availableToSell: 1, confirmedSold: 9, checkedIn: 0, CancellationToken.None);
+
+        var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
+
+        ticketTypes.Should().ContainSingle().Which.Should().Match<TicketTypeDto>(
+            t => t.Name == "VIP" && t.PriceTier == DynamicPricing.TierUltimas);
     }
 
     [Fact]

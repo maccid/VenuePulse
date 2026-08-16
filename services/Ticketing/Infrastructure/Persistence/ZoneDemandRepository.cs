@@ -2,13 +2,13 @@ namespace VenuePulse.Ticketing.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
 using VenuePulse.Ticketing.Application;
-using VenuePulse.Ticketing.Domain;
 
 public sealed class ZoneDemandRepository(TicketingDbContext dbContext) : IZoneDemandRepository
 {
     public async Task UpsertAsync(
         Guid zoneId,
         Guid eventId,
+        string name,
         int capacity,
         int availableToSell,
         int confirmedSold,
@@ -23,6 +23,7 @@ public sealed class ZoneDemandRepository(TicketingDbContext dbContext) : IZoneDe
             {
                 ZoneId = zoneId,
                 EventId = eventId,
+                Name = name,
                 Capacity = capacity,
                 AvailableToSell = availableToSell,
                 ConfirmedSold = confirmedSold,
@@ -32,6 +33,7 @@ public sealed class ZoneDemandRepository(TicketingDbContext dbContext) : IZoneDe
         else
         {
             snapshot.EventId = eventId;
+            snapshot.Name = name;
             snapshot.Capacity = capacity;
             snapshot.AvailableToSell = availableToSell;
             snapshot.ConfirmedSold = confirmedSold;
@@ -41,17 +43,10 @@ public sealed class ZoneDemandRepository(TicketingDbContext dbContext) : IZoneDe
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<decimal?> GetOccupancyPercentageAsync(Guid eventId, CancellationToken cancellationToken)
-    {
-        var totals = await dbContext.ZoneDemandSnapshots
+    public async Task<IReadOnlyCollection<ZoneDemandDto>> GetAllAsync(Guid eventId, CancellationToken cancellationToken) =>
+        await dbContext.ZoneDemandSnapshots
             .AsNoTracking()
             .Where(s => s.EventId == eventId)
-            .GroupBy(_ => 1)
-            .Select(g => new { TotalCapacity = g.Sum(s => s.Capacity), TotalAvailableToSell = g.Sum(s => s.AvailableToSell) })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return totals is null
-            ? null
-            : DynamicPricing.CalculateOccupancyPercentage(totals.TotalCapacity, totals.TotalAvailableToSell);
-    }
+            .Select(s => new ZoneDemandDto(s.ZoneId, s.Name, s.Capacity, s.AvailableToSell))
+            .ToListAsync(cancellationToken);
 }
