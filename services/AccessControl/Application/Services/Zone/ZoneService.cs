@@ -1,5 +1,6 @@
 namespace VenuePulse.AccessControl.Application;
 
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using VenuePulse.Core.Domain;
@@ -7,6 +8,14 @@ using VenuePulse.Core.Domain;
 public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapshotRepository snapshotRepository, IZoneOccupancyNotifier notifier) : IZoneService
 {
     private static readonly Serilog.ILogger Logger = Log.ForContext<ZoneService>();
+
+    // AccessControl corre como una única instancia (sin réplicas, ver ADR 0029) — este lock en
+    // memoria del proceso serializa por completo las mutaciones concurrentes sobre la MISMA zona,
+    // cerrando de raíz la ventana de carrera que el reintento optimista (DbUpdateConcurrencyException)
+    // no cubre: bajo alta contención real (varias líneas de un mismo pedido confirmando/liberando casi
+    // a la vez), el guard de invariante del dominio (Reserved<=0) podía dispararse de forma transitoria
+    // y no se reintentaba (ver ADR 0040).
+    private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> ZoneLocks = new();
 
     private static readonly (string Name, int Capacity)[] MatchZones =
     [
@@ -103,26 +112,35 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
     private async Task<T> ExecuteWithRetryAsync<T>(
         Guid zoneId, Func<Domain.Zone, (bool ShouldSave, T Result)> mutate, CancellationToken cancellationToken)
     {
-        const int maxAttempts = 15;
-        for (var attempt = 1; ; attempt++)
+        var zoneLock = ZoneLocks.GetOrAdd(zoneId, static _ => new SemaphoreSlim(1, 1));
+        await zoneLock.WaitAsync(cancellationToken);
+        try
         {
-            var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
-                ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
-
-            var (shouldSave, result) = mutate(zone);
-            if (!shouldSave)
-                return result;
-
-            try
+            const int maxAttempts = 15;
+            for (var attempt = 1; ; attempt++)
             {
-                await zoneRepository.SaveAsync(zone, cancellationToken);
-                await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
-                return result;
+                var zone = await zoneRepository.GetByIdAsync(zoneId, cancellationToken)
+                    ?? throw new InvalidOperationException($"La zona {zoneId} no existe.");
+
+                var (shouldSave, result) = mutate(zone);
+                if (!shouldSave)
+                    return result;
+
+                try
+                {
+                    await zoneRepository.SaveAsync(zone, cancellationToken);
+                    await notifier.NotifyOccupancyChangedAsync(ToDto(zone), cancellationToken);
+                    return result;
+                }
+                catch (DbUpdateConcurrencyException) when (attempt < maxAttempts)
+                {
+                    Logger.Warning("Conflicto de concurrencia en la zona {ZoneId} (intento {Attempt}/{MaxAttempts}) — reintentando", zoneId, attempt, maxAttempts);
+                }
             }
-            catch (DbUpdateConcurrencyException) when (attempt < maxAttempts)
-            {
-                Logger.Warning("Conflicto de concurrencia en la zona {ZoneId} (intento {Attempt}/{MaxAttempts}) — reintentando", zoneId, attempt, maxAttempts);
-            }
+        }
+        finally
+        {
+            zoneLock.Release();
         }
     }
 
