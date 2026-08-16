@@ -13,6 +13,7 @@ interface Props {
   isReserving: boolean
   isPaying: boolean
   isCancelling: boolean
+  orderId: string | null
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
@@ -37,6 +38,7 @@ export default function CartPanel({
   isReserving,
   isPaying,
   isCancelling,
+  orderId,
   orderStatus,
   orderRejectionReason,
   onBuyerChange,
@@ -49,6 +51,7 @@ export default function CartPanel({
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const hasReservation = orderStatus !== null
   const allResolved = orderStatus === 'Completed' || orderStatus === 'Rejected'
+  const completed = orderStatus === 'Completed'
   const countdownSeconds = useCountdown(earliestActiveExpiry(cart))
   const reservationExpired = countdownSeconds !== null && countdownSeconds <= 0
   const payable = orderStatus === 'AwaitingPayment'
@@ -60,11 +63,13 @@ export default function CartPanel({
     if (!hasReservation) setConfirmingCancel(false)
   }, [hasReservation])
 
+  const title = completed ? 'Tus entradas' : hasReservation ? 'Tu compra' : 'Tu reserva'
+
   return (
     <aside className="ticket-checkout cart-panel">
       <h3 className="cart-panel__title">
         <TicketReservationIcon />
-        <span>{hasReservation ? 'Tu compra' : 'Tu reserva'}</span>
+        <span>{title}</span>
 
         {showCancelRow && (countdownSeconds !== null && countdownSeconds > 0 || canCancel) && (
           <span className="cart-panel__title-actions">
@@ -116,6 +121,7 @@ export default function CartPanel({
           buyer={buyer}
           isPaying={isPaying}
           isCancelling={isCancelling}
+          orderId={orderId}
           orderStatus={orderStatus}
           orderRejectionReason={orderRejectionReason}
           reservationExpired={reservationExpired}

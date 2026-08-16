@@ -738,32 +738,43 @@ ticket-checkout-app {
   font-size: 14px;
 }
 
-.ticket-id-hint {
+/* Entradas ya compradas ("Tus entradas"): filas siempre desplegadas, sin botón de
+   desplegar/plegar, con el GUID de cada entrada bajo su zona (ver feedback de usuario) y el
+   código de grupo para el escaneo conjunto en venue-ops. */
+.cart-panel__group-tickets {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 10px 0 0;
-  font-size: 13px;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
   color: var(--tc-muted);
 }
 
-.ticket-id-hint p {
-  margin: 0;
-}
-
-.ticket-id-hint ul {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ticket-id-hint code {
+.cart-panel__group-tickets code {
   background: var(--tc-accent-bg);
   padding: 2px 6px;
   border-radius: 4px;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.cart-panel__group-code {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--tc-accent-bg);
+  border-radius: var(--tc-radius-sm);
+  font-size: 13px;
+  color: var(--tc-text);
+}
+
+.cart-panel__group-code code {
+  font-weight: 600;
+  word-break: break-all;
 }
 
 @keyframes pulse {

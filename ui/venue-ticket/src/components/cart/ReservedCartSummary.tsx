@@ -6,6 +6,7 @@ import { CartBlock } from './steps/CartBlock'
 import BusyBlock from './steps/BusyBlock'
 import ResultBlock from './steps/ResultBlock'
 import CartSummaryLines from './steps/CartSummaryLines'
+import ConfirmedTicketsSummary from './steps/ConfirmedTicketsSummary'
 import PaymentForm from '../PaymentForm'
 import CancelConfirmDialog from './steps/CancelConfirmDialog'
 
@@ -14,6 +15,7 @@ interface Props {
   buyer: BuyerData
   isPaying: boolean
   isCancelling: boolean
+  orderId: string | null
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   reservationExpired: boolean
@@ -29,6 +31,7 @@ export default function ReservedCartSummary({
   buyer,
   isPaying,
   isCancelling,
+  orderId,
   orderStatus,
   orderRejectionReason,
   reservationExpired,
@@ -42,7 +45,6 @@ export default function ReservedCartSummary({
 
   const activeLines = cart.filter((l) => l.status !== 'Rejected')
   const cartTotal = activeLines.reduce((sum, l) => sum + l.unitPrice, 0)
-  const confirmedTickets = cart.filter((l) => l.status === 'Confirmed' || l.status === 'CheckedIn')
   const groups = groupCartLines(cart)
   const rejectedLine = cart.find((l) => l.status === 'Rejected')
   const timelineReason = orderRejectionReason ?? rejectedLine?.rejectionReason ?? null
@@ -56,22 +58,18 @@ export default function ReservedCartSummary({
       {orderStatus === 'Reserving' ? (
         <BusyBlock label="Reservando" />
       ) : completed ? (
-        <>
-          <CartSummaryLines
-            groups={groups}
-            activeCount={activeLines.length}
-            cartTotal={cartTotal}
-            label="entradas compradas"
-            summaryOpen={summaryOpen}
-            onToggle={() => setSummaryOpen((open) => !open)}
-            confirmedTickets={confirmedTickets}
-          />
-          <ResultBlock kind="success" title="Tu compra ha sido completada." />
-        </>
+        <ConfirmedTicketsSummary
+          groups={groups}
+          activeCount={activeLines.length}
+          cartTotal={cartTotal}
+          groupId={orderId}
+        />
       ) : failed ? (
         <ResultBlock kind="error" title="Tu compra ha sido rechazada.">
           <SagaTimeline rejectionReason={timelineReason} />
         </ResultBlock>
+      ) : paying ? (
+        <BusyBlock label="Pagando" />
       ) : (
         <>
           <CartSummaryLines
@@ -81,22 +79,17 @@ export default function ReservedCartSummary({
             label="entradas reservadas"
             summaryOpen={summaryOpen}
             onToggle={() => setSummaryOpen((open) => !open)}
-            confirmedTickets={confirmedTickets}
           />
 
-          {paying ? (
-            <BusyBlock label="Pagando" />
-          ) : (
-            <CartBlock>
-              <PaymentForm
-                total={cartTotal}
-                disabled={isPaying}
-                buyer={buyer}
-                onBuyerChange={onBuyerChange}
-                onSubmit={onSubmitPayment}
-              />
-            </CartBlock>
-          )}
+          <CartBlock>
+            <PaymentForm
+              total={cartTotal}
+              disabled={isPaying}
+              buyer={buyer}
+              onBuyerChange={onBuyerChange}
+              onSubmit={onSubmitPayment}
+            />
+          </CartBlock>
 
           <SagaTimeline rejectionReason={timelineReason} />
         </>
