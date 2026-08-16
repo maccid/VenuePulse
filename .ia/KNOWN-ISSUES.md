@@ -1,5 +1,35 @@
 # Incidencias conocidas — VenuePulse
 
+## Pedidos multi-entrada colgados en "reservando"/"pagando" por `Publish()` duplicado en reintento de Saga (RESUELTO)
+
+**Síntoma**: reportado por el usuario contra el stack real — un pedido de 6 entradas se quedaba
+colgado en "reservando" (una línea sin aforo dispara la cancelación de las 5 hermanas) y un
+pedido de 8 se quedaba colgado en "pagando" (2 de 8 líneas huérfanas en `ProcessingPayment`).
+
+**Causa raíz**: `PurchaseOrderSaga`/`TicketPurchaseSaga` publican comandos (`TicketPurchaseCancelled`,
+`ConfirmZoneSlot`/`ReleaseZoneSlot`, etc.) dentro de `.Then()/.ThenAsync()`. Si el guardado del
+documento de la Saga en MongoDB falla por concurrencia (`MongoDbConcurrencyException`) y
+MassTransit reintenta el mensaje (`cfg.UseMessageRetry`), el reintento re-ejecuta ese bloque
+completo — **republicando comandos que el intento anterior ya había enviado de verdad**. Cada
+duplicado, aguas abajo, viola un invariante de dominio distinto (`Ticket.Reject` sobre un ticket ya
+`Rejected`, `Zone.ConfirmSlot`/`ReleaseSlot` sobre una reserva ya resuelta) que no se reintenta y
+muere en la cola de error de RabbitMQ sin que nadie más resuelva esa línea — el pedido nunca cierra.
+Diagnóstico completo, con las trazas reales de ambos pedidos, en ADR 0039.
+
+**Fix aplicado** (`fix/saga-duplicate-publish-retry`, ver ADR 0039): in-memory outbox de
+MassTransit (`UseInMemoryOutbox`) en `PurchaseOrderSagaDefinition` y en la nueva
+`TicketPurchaseSagaDefinition` — los efectos de un intento fallido nunca llegan a salir al bus, así
+que un reintento no duplica nada.
+
+**Efecto secundario NO reparado por este fix (dato ya corrupto)**: la zona "Grada VIP Norte" del
+evento de pruebas quedó con su contador `Reserved` inflado por tickets huérfanos de incidentes
+anteriores a este fix (confirmado reconstruyendo la aritmética real contra Postgres) — eso seguirá
+haciendo que confirmaciones legítimas de pedidos nuevos sobre esa zona en concreto fallen por falta
+de margen hasta que se resetee el dato (`docker compose down -v` + `up --build`). No es un bug de
+código pendiente, es limpieza de datos de una demo ya usada para reproducir el bug.
+
+
+
 ## `PurchaseOrderFlowTests`: dos síntomas distintos bajo Testcontainers (uno mitigado, otro sin explicar)
 
 **Síntoma original**: los 3 tests de `services/CheckIn/IntegrationTests/PurchaseOrderFlowTests.cs`

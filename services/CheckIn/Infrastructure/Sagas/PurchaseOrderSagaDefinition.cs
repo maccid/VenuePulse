@@ -11,5 +11,6 @@ public sealed class PurchaseOrderSagaDefinition : SagaDefinition<PurchaseOrderSa
     {
         sagaConfigurator.UsePartitioner(8, (SagaConsumeContext<PurchaseOrderSagaState> sagaContext) => sagaContext.Saga.CorrelationId);
         endpointConfigurator.UseMessageRetry(r => r.Interval(15, TimeSpan.FromMilliseconds(200)));
+        endpointConfigurator.UseInMemoryOutbox(context);
     }
 }
