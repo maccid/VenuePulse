@@ -1,5 +1,5 @@
 import type { BuyerData, CartLine, DraftLine, OrderStatus, PaymentMethod, TicketType } from '@venue/core/domain'
-import { CartIcon } from '../../shared/icons'
+import { TicketReservationIcon } from '../../shared/icons'
 import DraftCart from './DraftCart'
 import ReservedCartSummary from './ReservedCartSummary'
 
@@ -43,8 +43,8 @@ export default function CartPanel({
   return (
     <aside className="ticket-checkout cart-panel">
       <h3 className="cart-panel__title">
-        <CartIcon />
-        <span>{hasReservation ? 'Tu compra' : 'Tus Reservas'}</span>
+        <TicketReservationIcon />
+        <span>{hasReservation ? 'Tu compra' : 'Tu reserva'}</span>
       </h3>
 
       {!hasReservation && (
