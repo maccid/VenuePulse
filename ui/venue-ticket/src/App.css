@@ -474,7 +474,7 @@ ticket-checkout-app {
 }
 
 .ticket-checkout .cart-panel__reserve {
-  margin-top: 5px;
+  margin-top: auto;
 }
 
 .cart-panel__reserve-dots {
