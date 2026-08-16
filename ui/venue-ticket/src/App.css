@@ -556,15 +556,6 @@ ticket-checkout-app {
   border-top: 1px solid var(--tc-border);
 }
 
-.cart-panel__block-busy {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  font-size: 14px;
-  color: var(--tc-muted);
-}
-
 .cart-panel__result {
   display: flex;
   flex: 1;
@@ -584,6 +575,16 @@ ticket-checkout-app {
 
 .cart-panel__result--error .cart-panel__result-icon {
   color: var(--tc-danger);
+}
+
+.cart-panel__spinner {
+  animation: cart-panel-spin 0.9s linear infinite;
+}
+
+@keyframes cart-panel-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .cart-panel__countdown {
