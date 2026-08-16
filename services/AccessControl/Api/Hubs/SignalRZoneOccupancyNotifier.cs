@@ -16,6 +16,7 @@ public sealed class SignalRZoneOccupancyNotifier(IHubContext<OccupancyHub> hubCo
             new ZoneOccupancyChanged(
                 occupancy.ZoneId,
                 Id: occupancy.EventId,
+                occupancy.Name,
                 occupancy.Capacity,
                 occupancy.AvailableToSell,
                 occupancy.ConfirmedSold,

@@ -27,17 +27,40 @@ public sealed class TicketingService(
         if (@event is null)
             return null;
 
-        var occupancyPercentage = await zoneDemandRepository.GetOccupancyPercentageAsync(eventId, cancellationToken);
+        var ticketTypes = @event.TicketTypes.ToList();
+        var zones = await zoneDemandRepository.GetAllAsync(eventId, cancellationToken);
+        var occupancyByTicketTypeId = OccupancyByTicketType(zones, ticketTypes);
         var relevanceMultiplier = @event.Relevance.Multiplier();
 
-        return @event.TicketTypes
+        return ticketTypes
             .Select(t =>
             {
                 var adjustedBasePrice = t.Price * relevanceMultiplier;
+                var occupancyPercentage = occupancyByTicketTypeId.GetValueOrDefault(t.Id);
                 var (effectivePrice, tier) = DynamicPricing.Apply(adjustedBasePrice, occupancyPercentage);
                 return new TicketTypeDto(t.Id, t.EventId, t.Name, t.Price, adjustedBasePrice, t.Description, effectivePrice, tier);
             })
             .ToList();
+    }
+
+    private static Dictionary<Guid, decimal?> OccupancyByTicketType(
+        IReadOnlyCollection<ZoneDemandDto> zones, IReadOnlyList<TicketType> ticketTypes)
+    {
+        var totalsByTicketTypeId = new Dictionary<Guid, (int Capacity, int AvailableToSell)>();
+
+        foreach (var zone in zones)
+        {
+            var matchedTicketType = ZoneTicketTypeMatcher.Match(zone.Name, ticketTypes);
+            if (matchedTicketType is null)
+                continue;
+
+            var (capacity, availableToSell) = totalsByTicketTypeId.GetValueOrDefault(matchedTicketType.Id);
+            totalsByTicketTypeId[matchedTicketType.Id] = (capacity + zone.Capacity, availableToSell + zone.AvailableToSell);
+        }
+
+        return totalsByTicketTypeId.ToDictionary(
+            kvp => kvp.Key,
+            kvp => DynamicPricing.CalculateOccupancyPercentage(kvp.Value.Capacity, kvp.Value.AvailableToSell));
     }
 
     public async Task<EventSummaryDto> CreateEventAsync(CreateEventRequest request, CancellationToken cancellationToken)

@@ -80,7 +80,7 @@ public class ZoneOccupancyChangedConsumerTests
         var @event = await SeedEventAsync(databaseName);
         var zoneId = Guid.NewGuid();
 
-        var message = new ZoneOccupancyChanged(zoneId, @event.Id, Capacity: 100, AvailableToSell: 5, ConfirmedSold: 95, CheckedIn: 0);
+        var message = new ZoneOccupancyChanged(zoneId, @event.Id, "General", Capacity: 100, AvailableToSell: 5, ConfirmedSold: 95, CheckedIn: 0);
         await harness.Bus.Publish(message);
 
         await WaitUntilConsumedAsync(harness, expectedCount: 1);
@@ -106,7 +106,7 @@ public class ZoneOccupancyChangedConsumerTests
         var @event = await SeedEventAsync(databaseName);
         var zoneId = Guid.NewGuid();
 
-        var message = new ZoneOccupancyChanged(zoneId, @event.Id, Capacity: 100, AvailableToSell: 40, ConfirmedSold: 60, CheckedIn: 0);
+        var message = new ZoneOccupancyChanged(zoneId, @event.Id, "General", Capacity: 100, AvailableToSell: 40, ConfirmedSold: 60, CheckedIn: 0);
         await harness.Bus.Publish(message);
         await harness.Bus.Publish(message);
 

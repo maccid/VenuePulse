@@ -21,4 +21,4 @@ public sealed record ZoneSlotReleased(Guid CorrelationId, Guid ZoneId) : Integra
 public sealed record ZoneCheckedIn(Guid CorrelationId, Guid ZoneId, Guid TicketId, int CurrentOccupancy) : IntegrationEvent;
 
 public sealed record ZoneOccupancyChanged(
-    Guid ZoneId, Guid Id, int Capacity, int AvailableToSell, int ConfirmedSold, int CheckedIn) : IntegrationEvent;
+    Guid ZoneId, Guid Id, string Name, int Capacity, int AvailableToSell, int ConfirmedSold, int CheckedIn) : IntegrationEvent;

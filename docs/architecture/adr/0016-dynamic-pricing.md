@@ -1,5 +1,11 @@
 # ADR 0016 — Precio dinámico en `Ticketing` por ocupación agregada del evento
 
+> **Superado parcialmente por [ADR 0041](0041-dynamic-pricing-por-zona.md):** la ocupación pasa a
+> calcularse por zona (emparejada por nombre con su `TicketType`), no agregada a nivel de evento —
+> probado en real, romper la intuición del usuario ("vendí toda la VIP y sigue en oferta") pesó más
+> que el motivo original de evitar acoplar `Zone` y `TicketType`. Las heurísticas de escalón y el
+> disparador reactivo de este documento siguen vigentes sin cambios.
+
 ## Contexto
 
 Bloque 9 del plan de mejoras: el precio de un `TicketType` debe reaccionar a la demanda con
