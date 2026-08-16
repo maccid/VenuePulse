@@ -1,7 +1,7 @@
-import { ChevronDown, CircleCheck, CircleX, CreditCard, Map, ShoppingCart, Trash2 } from 'lucide-react'
+import { ChevronDown, CircleCheck, CircleX, CreditCard, Map, Ticket, Trash2 } from 'lucide-react'
 
-export function CartIcon() {
-  return <ShoppingCart className="cart-panel__icon" strokeWidth={1.8} aria-hidden="true" />
+export function TicketReservationIcon() {
+  return <Ticket className="cart-panel__icon" strokeWidth={1.8} aria-hidden="true" />
 }
 
 export function ChevronDownIcon() {
