@@ -29,21 +29,22 @@ public sealed class TicketingService(
 
         var ticketTypes = @event.TicketTypes.ToList();
         var zones = await zoneDemandRepository.GetAllAsync(eventId, cancellationToken);
-        var occupancyByTicketTypeId = OccupancyByTicketType(zones, ticketTypes);
+        var totalsByTicketTypeId = TotalsByTicketType(zones, ticketTypes);
         var relevanceMultiplier = @event.Relevance.Multiplier();
 
         return ticketTypes
             .Select(t =>
             {
                 var adjustedBasePrice = t.Price * relevanceMultiplier;
-                var occupancyPercentage = occupancyByTicketTypeId.GetValueOrDefault(t.Id);
-                var (effectivePrice, tier) = DynamicPricing.Apply(adjustedBasePrice, occupancyPercentage);
+                var (capacity, availableToSell) = totalsByTicketTypeId.GetValueOrDefault(t.Id);
+                var occupancyPercentage = DynamicPricing.CalculateOccupancyPercentage(capacity, availableToSell);
+                var (effectivePrice, tier) = DynamicPricing.Apply(adjustedBasePrice, availableToSell, occupancyPercentage);
                 return new TicketTypeDto(t.Id, t.EventId, t.Name, t.Price, adjustedBasePrice, t.Description, effectivePrice, tier);
             })
             .ToList();
     }
 
-    private static Dictionary<Guid, decimal?> OccupancyByTicketType(
+    private static Dictionary<Guid, (int Capacity, int AvailableToSell)> TotalsByTicketType(
         IReadOnlyCollection<ZoneDemandDto> zones, IReadOnlyList<TicketType> ticketTypes)
     {
         var totalsByTicketTypeId = new Dictionary<Guid, (int Capacity, int AvailableToSell)>();
@@ -58,9 +59,7 @@ public sealed class TicketingService(
             totalsByTicketTypeId[matchedTicketType.Id] = (capacity + zone.Capacity, availableToSell + zone.AvailableToSell);
         }
 
-        return totalsByTicketTypeId.ToDictionary(
-            kvp => kvp.Key,
-            kvp => DynamicPricing.CalculateOccupancyPercentage(kvp.Value.Capacity, kvp.Value.AvailableToSell));
+        return totalsByTicketTypeId;
     }
 
     public async Task<EventSummaryDto> CreateEventAsync(CreateEventRequest request, CancellationToken cancellationToken)

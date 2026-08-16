@@ -7,13 +7,18 @@ public static class DynamicPricing
     public const string TierAlta = "Demanda alta";
     public const string TierUltimas = "Últimas entradas";
 
+    public const int LastUnitsThreshold = 2;
+
     public static decimal? CalculateOccupancyPercentage(int totalCapacity, int totalAvailableToSell) =>
         totalCapacity <= 0 ? null : 1m - (decimal)totalAvailableToSell / totalCapacity;
 
-    public static (decimal EffectivePrice, string Tier) Apply(decimal basePrice, decimal? occupancyPercentage)
+    public static (decimal EffectivePrice, string Tier) Apply(decimal basePrice, int availableToSell, decimal? occupancyPercentage)
     {
         if (occupancyPercentage is null)
             return (basePrice, TierNormal);
+
+        if (availableToSell <= LastUnitsThreshold)
+            return (Round(basePrice * 1.30m), TierUltimas);
 
         return occupancyPercentage switch
         {
