@@ -1,4 +1,4 @@
-import { ChevronDown, CircleCheck, CircleX, CreditCard, Map, RefreshCw, Ticket, Trash2 } from 'lucide-react'
+import { ChevronDown, CircleCheck, CircleX, CreditCard, Loader2, Map, RefreshCw, Ticket, Trash2 } from 'lucide-react'
 
 export function TicketReservationIcon() {
   return <Ticket className="cart-panel__icon" strokeWidth={1.8} aria-hidden="true" />
@@ -22,6 +22,10 @@ export function SuccessIcon() {
 
 export function FailureIcon() {
   return <CircleX className="cart-panel__result-icon" aria-hidden="true" />
+}
+
+export function SpinnerIcon() {
+  return <Loader2 className="cart-panel__result-icon cart-panel__spinner" aria-hidden="true" />
 }
 
 export function MapIcon() {

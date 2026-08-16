@@ -1,15 +1,12 @@
+import { SpinnerIcon } from '../../../shared/icons'
 import { CartBlock } from './CartBlock'
 
 export default function BusyBlock({ label }: { label: string }) {
   return (
     <CartBlock>
-      <p className="cart-panel__block-busy">
-        {label}
-        <span className="cart-panel__reserve-dots" aria-hidden="true">
-          <span>.</span>
-          <span>.</span>
-          <span>.</span>
-        </span>
+      <p className="cart-panel__result">
+        <SpinnerIcon />
+        <span className="cart-panel__done">{label}…</span>
       </p>
     </CartBlock>
   )
