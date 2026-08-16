@@ -30,6 +30,8 @@ export default function PaymentForm({ total, disabled, buyer, onBuyerChange, onS
           Nombre
           <input
             type="text"
+            name="given-name"
+            autoComplete="given-name"
             value={buyer.nombre}
             onChange={(e) => onBuyerChange({ ...buyer, nombre: e.target.value })}
             disabled={disabled}
@@ -40,6 +42,8 @@ export default function PaymentForm({ total, disabled, buyer, onBuyerChange, onS
           Apellidos
           <input
             type="text"
+            name="family-name"
+            autoComplete="family-name"
             value={buyer.apellidos}
             onChange={(e) => onBuyerChange({ ...buyer, apellidos: e.target.value })}
             disabled={disabled}
@@ -51,6 +55,8 @@ export default function PaymentForm({ total, disabled, buyer, onBuyerChange, onS
         Correo
         <input
           type="email"
+          name="email"
+          autoComplete="email"
           value={buyer.email}
           onChange={(e) => onBuyerChange({ ...buyer, email: e.target.value })}
           disabled={disabled}
