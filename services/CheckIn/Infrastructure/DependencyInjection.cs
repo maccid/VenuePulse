@@ -45,7 +45,7 @@ public static class DependencyInjection
             configuration["RabbitMq:ConnectionString"] ?? "amqp://guest:guest@localhost:5672",
             x =>
             {
-                x.AddMongoSaga<TicketPurchaseSaga, TicketPurchaseSagaState>(
+                x.AddMongoSaga<TicketPurchaseSaga, TicketPurchaseSagaState, TicketPurchaseSagaDefinition>(
                     configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017",
                     configuration["Mongo:SagaDatabase"] ?? "venuepulse_sagas");
                 x.AddMongoSaga<PurchaseOrderSaga, PurchaseOrderSagaState, PurchaseOrderSagaDefinition>(
