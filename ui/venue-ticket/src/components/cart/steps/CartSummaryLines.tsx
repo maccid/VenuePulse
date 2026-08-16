@@ -1,4 +1,3 @@
-import type { CartLine } from '@venue/core/domain'
 import { ChevronDownIcon } from '../../../shared/icons'
 import { CartGroupRow } from '../CartGroupRow'
 import { groupCartLines } from '../cartGrouping'
@@ -10,18 +9,9 @@ interface Props {
   label: string
   summaryOpen: boolean
   onToggle: () => void
-  confirmedTickets: CartLine[]
 }
 
-export default function CartSummaryLines({
-  groups,
-  activeCount,
-  cartTotal,
-  label,
-  summaryOpen,
-  onToggle,
-  confirmedTickets,
-}: Props) {
+export default function CartSummaryLines({ groups, activeCount, cartTotal, label, summaryOpen, onToggle }: Props) {
   return (
     <>
       {summaryOpen && (
@@ -49,21 +39,6 @@ export default function CartSummaryLines({
           </button>
         </span>
       </p>
-
-      {confirmedTickets.length > 0 && (
-        <div className="ticket-id-hint">
-          <p>
-            ID (para escanear en <em>venue-ops</em>):
-          </p>
-          <ul>
-            {confirmedTickets.map((t) => (
-              <li key={t.ticketId}>
-                <code>{t.ticketId}</code>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </>
   )
 }

@@ -28,6 +28,7 @@ interface CheckoutCart {
   isReserving: boolean
   isPaying: boolean
   isCancelling: boolean
+  orderId: string | null
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   setBuyer: (buyer: BuyerData) => void
@@ -226,6 +227,7 @@ export function useCheckoutCart(
     isReserving,
     isPaying,
     isCancelling,
+    orderId,
     orderStatus,
     orderRejectionReason,
     setBuyer,

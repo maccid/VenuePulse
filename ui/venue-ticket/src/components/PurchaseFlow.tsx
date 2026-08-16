@@ -15,6 +15,7 @@ interface Props {
   isReserving: boolean
   isPaying: boolean
   isCancelling: boolean
+  orderId: string | null
   orderStatus: OrderStatus | null
   orderRejectionReason: string | null
   onBuyerChange: (buyer: BuyerData) => void
@@ -35,6 +36,7 @@ export default function PurchaseFlow({
   isReserving,
   isPaying,
   isCancelling,
+  orderId,
   orderStatus,
   orderRejectionReason,
   onBuyerChange,
@@ -105,6 +107,7 @@ export default function PurchaseFlow({
         isReserving={isReserving}
         isPaying={isPaying}
         isCancelling={isCancelling}
+        orderId={orderId}
         orderStatus={orderStatus}
         orderRejectionReason={orderRejectionReason}
         onBuyerChange={onBuyerChange}

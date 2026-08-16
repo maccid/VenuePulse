@@ -19,6 +19,7 @@ export default function App({ eventId, holder }: Props) {
     isReserving,
     isPaying,
     isCancelling,
+    orderId,
     orderStatus,
     orderRejectionReason,
     setBuyer,
@@ -46,6 +47,7 @@ export default function App({ eventId, holder }: Props) {
           isReserving={isReserving}
           isPaying={isPaying}
           isCancelling={isCancelling}
+          orderId={orderId}
           orderStatus={orderStatus}
           orderRejectionReason={orderRejectionReason}
           onBuyerChange={setBuyer}
