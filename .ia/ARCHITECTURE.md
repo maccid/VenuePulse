@@ -9,7 +9,8 @@
   persistencia poliglota.
 - **MediatR** — CQRS, solo en `CheckIn` (único servicio con asimetría lectura/escritura real).
 - **React 19 + Vite + TypeScript**, Web Components en light DOM para el único micro frontend.
-- **OpenTelemetry + Seq** — trazas distribuidas y logs en una sola UI (ADR 0033).
+- **OpenTelemetry + Jaeger** — trazas distribuidas (waterfall de spans). **Seq** — minería de
+  logs centralizada de los 3 servicios (ADR 0038, revierte el punto de trazas del ADR 0033).
 - **Serilog** — logging estructurado con `TraceId`/`SpanId` como campos de correlación.
 
 ## Estructura de carpetas
@@ -50,8 +51,9 @@ docs/           ADRs, AI-USAGE.md, demo-script.md
 - CQRS solo donde hay asimetría real (`CheckIn`), no como ceremonia (ADR 0003).
 - Micro frontends con Web Component en light DOM, sin Module Federation (ADR 0004).
 - Saga persistida en MongoDB, no en la misma Postgres que el agregado `Ticket` (ADR 0005).
-- Observabilidad con OpenTelemetry + Seq: logs y trazas correlacionados en una sola UI; sin
-  Prometheus/Grafana por alcance (ADR 0033; Jaeger y SigNoz quedan como histórico en 0006/0031/0032).
+- Observabilidad con OpenTelemetry + Jaeger (trazas) + Seq (logs), sin Prometheus/Grafana por
+  alcance (ADR 0038, revierte el punto de trazas de ADR 0033; SigNoz queda como histórico en
+  0031/0032).
 - MediatR/FluentAssertions pese a su licencia comercial 2025 — uso de demo/portfolio (ADR 0008).
 - MassTransit fijado en 8.5.10 (no 9.2.0) tras depuración real (ADR 0009).
 

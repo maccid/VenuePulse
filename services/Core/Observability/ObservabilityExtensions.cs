@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
@@ -40,11 +39,7 @@ public static class ObservabilityExtensions
                 .AddHttpClientInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation()
                 .AddSource("MassTransit")
-                .AddOtlpExporter(otlp =>
-                {
-                    otlp.Endpoint = new Uri(otlpEndpoint);
-                    otlp.Protocol = OtlpExportProtocol.HttpProtobuf;
-                }));
+                .AddOtlpExporter(otlp => otlp.Endpoint = new Uri(otlpEndpoint)));
 
         return services;
     }

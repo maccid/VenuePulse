@@ -24,8 +24,9 @@ No tiene relación con ninguna marca real: los nombres del dominio (`VenuePulse`
   RabbitMQ (mensajería).
 - **React con micro frontends real** (`venue-shell` + `venue-ticket` como Web Component) +
   panel de operaciones — ver [ADR 0004](docs/architecture/adr/0004-microfrontends-nginx-webcomponents.md).
-- **Logs + trazas distribuidas en una sola UI** con OpenTelemetry + Seq, no solo logging —
-  [ADR 0033](docs/architecture/adr/0033-observabilidad-seq-sustituye-jaeger.md).
+- **Trazas distribuidas end-to-end con OpenTelemetry + Jaeger** (waterfall de spans cruzando los
+  3 servicios) y **minería de logs centralizada con Seq**, no solo logging por consola — ver
+  [ADR 0038](docs/architecture/adr/0038-jaeger-vuelve-para-trazas-seq-solo-logs.md).
 - **CI/CD y gobernanza real** en GitHub Actions, con manifiestos K8s/Jenkinsfile/Azure
   documentados honestamente como capacidad, no como algo desplegado (ver tabla más abajo).
 - **IA como acelerador de desarrollo**, con evidencia concreta incluyendo una sesión de
@@ -55,7 +56,8 @@ docker compose -f infra/docker-compose.yml up --build
   código cambió, el resto reutiliza la cache.
 - `http://localhost:8080` — app pública (catálogo + aforo en vivo + comprar entrada)
 - `http://localhost:8080/venue-ops/` — panel de operaciones (escanear entradas, aforo por zona)
-- `http://localhost:5341` — Seq (logs de los 3 servicios + trazas, correlacionadas por TraceId)
+- `http://localhost:5341` — Seq (logs de los 3 servicios, con `TraceId`/`SpanId` como campo)
+- `http://localhost:16686` — Jaeger (trazas distribuidas, waterfall de spans por trace)
 
 Guion completo de demo, incluyendo el camino de compensación y una tarea en vivo con Claude
 Code: [`docs/demo-script.md`](docs/demo-script.md).
@@ -67,7 +69,7 @@ No prometer de más es una decisión deliberada. Tabla honesta:
 | Capacidad | Estado |
 |---|---|
 | 3 microservicios con `docker-compose up`, migraciones reales, RabbitMQ, Saga con compensación real | **REAL**, corre local |
-| Logs + trazas distribuidas end-to-end (OpenTelemetry → Seq) | **REAL**, visible en la UI de Seq |
+| Trazas distribuidas end-to-end (OpenTelemetry → Jaeger) + logs centralizados (Seq) | **REAL**, visible en Jaeger/Seq |
 | GitHub Actions: build+test, lint, build/push de imágenes | **REAL**, corre en cada push |
 | Validación sintáctica de manifiestos K8s en CI | **REAL** (solo validación) |
 | Manifiestos K8s/Kustomize (`infra/deploy/k8s`) | Escritos y válidos, **no desplegados** a AKS real |

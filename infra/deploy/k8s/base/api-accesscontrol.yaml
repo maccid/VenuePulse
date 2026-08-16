@@ -22,7 +22,7 @@ spec:
             - name: RabbitMq__ConnectionString
               valueFrom: { secretKeyRef: { name: venuepulse-broker-secrets, key: rabbitmq-connection-string } }
             - name: Observability__OtlpEndpoint
-              value: "http://seq.observability:80/ingest/otlp/v1/traces"
+              value: "http://jaeger-collector.observability:4317"
             - name: Observability__SeqServerUrl
               value: "http://seq.observability:80"
           resources:

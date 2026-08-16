@@ -4,7 +4,7 @@ name: venuepulse
 # repo — mantiene infra/ separado de services/ (backend) y ui/ (frontend) (ver README de estructura).
 #
 # Nomenclatura de servicios (para que `docker ps` / Docker Desktop agrupe visualmente por tipo):
-#   sin prefijo -> infraestructura de terceros (postgres, mongo, rabbitmq, seq)
+#   sin prefijo -> infraestructura de terceros (postgres, mongo, rabbitmq, seq, jaeger)
 #   api-*       -> backends propios (.NET)
 #   web-*       -> frontends propios (React)
 #   gateway     -> único punto de entrada del navegador
@@ -59,10 +59,8 @@ services:
       timeout: 5s
       retries: 10
 
-  # Logs + trazas distribuidas en una sola UI (ver ADR 0033): abrir http://localhost:5341 tras
-  # una compra para ver el trace completo cruzando los 3 servicios, con sus logs correlacionados
-  # por TraceId. Secuencia: Serilog envia logs por HTTP y OpenTelemetry las trazas por OTLP a
-  # /ingest/otlp/v1/traces (misma API de Seq, puerto 5341).
+  # Minería de logs de los 3 servicios en un solo sitio (ver ADR 0038): abrir http://localhost:5341.
+  # Solo recibe logs (Serilog por HTTP) — las trazas OTLP van a Jaeger, no aquí (ver ADR 0033/0038).
   seq:
     image: datalust/seq:latest
     container_name: venuepulse-seq
@@ -73,6 +71,17 @@ services:
       - seq-data:/data
     ports:
       - "5341:80"
+
+  # Trazas distribuidas end-to-end (ver ADR 0006 / ADR 0038): abrir http://localhost:16686 tras
+  # una compra para ver el trace completo cruzando los 3 servicios, con el waterfall de spans.
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: venuepulse-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4317:4317"
 
   # ---------------------------------------------------------------------------------------
   # Backends (.NET)
@@ -88,7 +97,7 @@ services:
       ConnectionStrings__TicketingDb: "Host=postgres;Port=5432;Database=venuepulse_ticketing;Username=venuepulse;Password=venuepulse"
       RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
       Cors__AllowedOrigins__0: "http://localhost:8080"
-      Observability__OtlpEndpoint: "http://seq:5341/ingest/otlp/v1/traces"
+      Observability__OtlpEndpoint: "http://jaeger:4317"
       Observability__SeqServerUrl: "http://seq:5341"
     ports:
       - "5101:8080"
@@ -121,7 +130,7 @@ services:
       ConnectionStrings__AccessControlDb: "Host=postgres;Port=5432;Database=venuepulse_accesscontrol;Username=venuepulse;Password=venuepulse"
       RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
       Cors__AllowedOrigins__0: "http://localhost:8080"
-      Observability__OtlpEndpoint: "http://seq:5341/ingest/otlp/v1/traces"
+      Observability__OtlpEndpoint: "http://jaeger:4317"
       Observability__SeqServerUrl: "http://seq:5341"
     ports:
       - "5102:8080"
@@ -153,7 +162,7 @@ services:
       # PlaceOrderCommand valida el precio de cada línea contra Ticketing antes de reservar nada.
       Ticketing__BaseUrl: "http://api-ticketing:8080"
       Cors__AllowedOrigins__0: "http://localhost:8080"
-      Observability__OtlpEndpoint: "http://seq:5341/ingest/otlp/v1/traces"
+      Observability__OtlpEndpoint: "http://jaeger:4317"
       Observability__SeqServerUrl: "http://seq:5341"
     ports:
       - "5103:8080"
