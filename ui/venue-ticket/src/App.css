@@ -333,6 +333,13 @@ ticket-checkout-app {
   color: var(--tc-muted);
 }
 
+.cart-panel__title-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .cart-panel__icon {
   width: 18px;
   height: 18px;
@@ -540,6 +547,7 @@ ticket-checkout-app {
    botones no salten de sitio al cambiar de fase (ver feedback de usuario). */
 .cart-panel__block {
   display: flex;
+  flex: 1;
   flex-direction: column;
   justify-content: center;
   gap: 10px;
@@ -555,12 +563,6 @@ ticket-checkout-app {
   margin: 0;
   font-size: 14px;
   color: var(--tc-muted);
-}
-
-.cart-panel__cancel-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .cart-panel__result {
