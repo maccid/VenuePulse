@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react'
 import type { EventSummary } from '@venue/core/domain'
 
 const EVENT_PARAM = 'event'
-const ADD_PARAM = 'add'
+const CREATE_PARAM = 'create'
 
 function readUrl(): { eventId: string | null; adding: boolean } {
   const params = new URLSearchParams(window.location.search)
-  return { eventId: params.get(EVENT_PARAM), adding: params.has(ADD_PARAM) }
+  return { eventId: params.get(EVENT_PARAM), adding: params.has(CREATE_PARAM) }
 }
 
 function writeUrl(eventId: string | null, adding: boolean) {
   const url = new URL(window.location.href)
   if (eventId) url.searchParams.set(EVENT_PARAM, eventId)
   else url.searchParams.delete(EVENT_PARAM)
-  if (adding) url.searchParams.set(ADD_PARAM, '')
-  else url.searchParams.delete(ADD_PARAM)
+  if (adding) url.searchParams.set(CREATE_PARAM, '')
+  else url.searchParams.delete(CREATE_PARAM)
   window.history.pushState({}, '', url)
 }
 
@@ -30,8 +30,12 @@ export function useEventCatalog() {
         const sorted = [...evs].sort((a, b) => b.startsAtUtc.localeCompare(a.startsAtUtc))
         setEvents(sorted)
         if (readUrl().eventId || readUrl().adding) return
-        if (sorted[0]) setActiveId(sorted[0].id)
-        else setShowCreate(true)
+        if (sorted[0]) {
+          setActiveId(sorted[0].id)
+          writeUrl(sorted[0].id, false)
+        } else {
+          setShowCreate(true)
+        }
       })
       .catch(() => setEvents([]))
   }, [])
