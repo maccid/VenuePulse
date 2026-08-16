@@ -78,6 +78,27 @@ public class TicketingServiceTests
     }
 
     [Fact]
+    public async Task Una_zona_vip_pequena_llega_a_ultimas_entradas_por_unidades_aunque_el_porcentaje_no_llegue_al_90()
+    {
+        var (provider, _, service, databaseName) = await StartAsync();
+        await using var _p = provider;
+
+        await using var dbContext = OpenContext(databaseName);
+        var @event = new Event(Guid.NewGuid(), "Final de Copa", "Estadio", DateTimeOffset.UtcNow.AddDays(1), EventType.Match, EventRelevance.Standard);
+        @event.AddTicketType(Guid.NewGuid(), "Grada VIP Sur", 90m, null);
+        dbContext.Events.Add(@event);
+        await dbContext.SaveChangesAsync();
+
+        var demandRepository = new ZoneDemandRepository(OpenContext(databaseName));
+        await demandRepository.UpsertAsync(Guid.NewGuid(), @event.Id, "Grada VIP Sur", capacity: 7, availableToSell: 1, confirmedSold: 6, checkedIn: 0, CancellationToken.None);
+
+        var ticketTypes = await service.GetTicketTypesAsync(@event.Id, CancellationToken.None);
+
+        ticketTypes.Should().ContainSingle().Which.Should().Match<TicketTypeDto>(
+            t => t.Name == "Grada VIP Sur" && t.PriceTier == DynamicPricing.TierUltimas);
+    }
+
+    [Fact]
     public async Task Cada_tipo_de_entrada_recibe_el_tier_de_su_propia_zona_no_el_agregado_del_evento()
     {
         var (provider, _, service, databaseName) = await StartAsync();

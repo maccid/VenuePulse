@@ -8,7 +8,7 @@ public class DynamicPricingTests
     [Fact]
     public void Sin_datos_de_ocupacion_el_precio_es_el_base()
     {
-        var (effectivePrice, tier) = DynamicPricing.Apply(100m, occupancyPercentage: null);
+        var (effectivePrice, tier) = DynamicPricing.Apply(100m, availableToSell: 100, occupancyPercentage: null);
 
         effectivePrice.Should().Be(100m);
         tier.Should().Be(DynamicPricing.TierNormal);
@@ -19,7 +19,7 @@ public class DynamicPricingTests
     [InlineData(0.39, 90.00)]
     public void Ocupacion_baja_baja_el_precio_un_10_por_ciento(double occupancy, double expectedPrice)
     {
-        var (effectivePrice, tier) = DynamicPricing.Apply(100m, (decimal)occupancy);
+        var (effectivePrice, tier) = DynamicPricing.Apply(100m, availableToSell: 100, (decimal)occupancy);
 
         effectivePrice.Should().Be((decimal)expectedPrice);
         tier.Should().Be(DynamicPricing.TierBaja);
@@ -30,7 +30,7 @@ public class DynamicPricingTests
     [InlineData(0.69)]
     public void Ocupacion_media_deja_el_precio_igual(double occupancy)
     {
-        var (effectivePrice, tier) = DynamicPricing.Apply(100m, (decimal)occupancy);
+        var (effectivePrice, tier) = DynamicPricing.Apply(100m, availableToSell: 100, (decimal)occupancy);
 
         effectivePrice.Should().Be(100m);
         tier.Should().Be(DynamicPricing.TierNormal);
@@ -41,7 +41,7 @@ public class DynamicPricingTests
     [InlineData(0.89, 115.00)]
     public void Ocupacion_alta_sube_el_precio_un_15_por_ciento(double occupancy, double expectedPrice)
     {
-        var (effectivePrice, tier) = DynamicPricing.Apply(100m, (decimal)occupancy);
+        var (effectivePrice, tier) = DynamicPricing.Apply(100m, availableToSell: 100, (decimal)occupancy);
 
         effectivePrice.Should().Be((decimal)expectedPrice);
         tier.Should().Be(DynamicPricing.TierAlta);
@@ -52,10 +52,31 @@ public class DynamicPricingTests
     [InlineData(1.0, 130.00)]
     public void Casi_agotado_sube_el_precio_un_30_por_ciento(double occupancy, double expectedPrice)
     {
-        var (effectivePrice, tier) = DynamicPricing.Apply(100m, (decimal)occupancy);
+        var (effectivePrice, tier) = DynamicPricing.Apply(100m, availableToSell: 100, (decimal)occupancy);
 
         effectivePrice.Should().Be((decimal)expectedPrice);
         tier.Should().Be(DynamicPricing.TierUltimas);
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(1)]
+    [InlineData(0)]
+    public void Con_pocas_unidades_absolutas_es_ultimas_entradas_aunque_el_porcentaje_sea_bajo(int availableToSell)
+    {
+        var (effectivePrice, tier) = DynamicPricing.Apply(100m, availableToSell, occupancyPercentage: 0.10m);
+
+        effectivePrice.Should().Be(130.00m);
+        tier.Should().Be(DynamicPricing.TierUltimas);
+    }
+
+    [Fact]
+    public void Con_tres_unidades_disponibles_el_criterio_absoluto_no_se_dispara_todavia()
+    {
+        var (effectivePrice, tier) = DynamicPricing.Apply(100m, availableToSell: 3, occupancyPercentage: 0.10m);
+
+        effectivePrice.Should().Be(90.00m);
+        tier.Should().Be(DynamicPricing.TierBaja);
     }
 
     [Fact]
