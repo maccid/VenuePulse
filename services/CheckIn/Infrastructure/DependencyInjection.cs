@@ -63,6 +63,8 @@ public static class DependencyInjection
                 x.AddConsumer<ReservationWatchdogConsumer>();
                 x.AddConsumer<EventCancelledConsumer>()
                     .Endpoint(e => e.Name = "CheckIn.EventCancelled");
+                x.AddConsumer<SimulationResetConsumer>()
+                    .Endpoint(e => e.Name = "CheckIn.SimulationReset");
                 x.AddConsumer<TicketRefundedConsumer>();
             });
 
