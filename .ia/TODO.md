@@ -558,15 +558,14 @@ Próximo libre para nuevas ramas: `0019`.
   Contexto adicional: comparado con un gateway (YARP puro) — en VenuePulse
   nginx además compone los estáticos de los micro frontends (ADR 0004); revisar YARP vs nginx
   quedó apuntado en el TODO local del proyecto de referencia, no aquí.
-- [ ] Verificar manualmente desde el navegador (no solo API) el camino feliz y el de
+- [x] Verificar manualmente desde el navegador (no solo API) el camino feliz y el de
   compensación, con el timeline de la Saga por SignalR — único ítem sin marcar en el checklist
   de `docs/demo-script.md`. **Verificado el canal (SignalR vía gateway, camino feliz y
-  compensación, ver `.ia/KNOWN-ISSUES.md`): falta confirmar la visual del timeline en el
-  navegador.**
-- [ ] **Timeline de la Saga — ¿"en vivo" real o estado final?** (en revisión): por SignalR solo
-  llega `Confirmed`/`Rejected`; los pasos intermedios los deriva el frontend. Claude Code está en
-  una mejora relacionada — **revisar al mergear si ya se emiten las transiciones** y cerrar el
-  hallazgo (ver `.ia/KNOWN-ISSUES.md`).
+  compensación) y, el 2026-08-26, la visual del timeline en el navegador contra `develop` real
+  (ver `.ia/KNOWN-ISSUES.md`). Cerrado.**
+- [x] **Timeline de la Saga — ¿"en vivo" real o estado final?** (RESUELTO): la partición de la
+  Saga en `Reserving → AwaitingPayment → Confirming` (ADR 0018) añadió el paso intermedio real;
+  re-verificado en el navegador el 2026-08-26 que anima en vivo (ver `.ia/KNOWN-ISSUES.md`).
 
 **Verificado durante la revisión (sin acción):** MediatR excluido de `Ticketing`/`AccessControl`
 es la decisión correcta (ADR 0003, forzado por `Architecture.Tests`); FluentAssertions ya se usa en
@@ -578,10 +577,6 @@ los tests de los 3 servicios (ADR 0008 se cumple); el modelo `Zone` (`Capacity`/
 
 - [ ] **GUID de grupo para compras múltiples** — promovido a **Bloque 24** (ver "Reparto en oleadas
   ronda 4" más arriba), fuera de alcance del Bloque 22 a petición explícita del usuario.
-- [ ] Rellenar `.ia/` con más detalle si aparecen huecos durante el desarrollo en vivo de la
-  demo.
-- [ ] Definir mecanismo de exportación "código sin `.git/` ni `.ia/`" para la entrega real
-  (distinto de repartir solo el Docker, que era el plan inicial).
 - [ ] **Autenticación (decisión de alcance tomada, no tarea):** los servicios no se llaman por
   HTTP — se comunican por el bus de mensajes (RabbitMQ/MassTransit), así que no aplica OAuth
   client-credentials entre procesos; la auth del bus es la del broker (credenciales + vhost +

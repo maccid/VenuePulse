@@ -37,7 +37,7 @@ inflado por tickets huérfanos de rondas anteriores — se limpió con `docker c
 
 
 
-## `PurchaseOrderFlowTests`: dos síntomas distintos bajo Testcontainers (uno mitigado, otro sin explicar)
+## `PurchaseOrderFlowTests`: dos síntomas distintos bajo Testcontainers (RESUELTO, ver actualización)
 
 **Síntoma original**: los 3 tests de `services/CheckIn/IntegrationTests/PurchaseOrderFlowTests.cs`
 (ADR 0028) que dependen de que la Saga real reserve aforo (todos salvo el de precio
@@ -83,8 +83,19 @@ Mongo mostrando el comportamiento correcto paso a paso cuando sí progresa).
 abajo, "Test de integración de la Saga — camino de compensación intermitente en Testcontainers"):
 no se ha seguido persiguiendo un test 100% fiable en este entorno concreto tras aplicar la mitigación
 razonable disponible — coste/beneficio no lo justifica para una demo, y la corrección de la lógica
-de negocio ya está verificada por otras vías. Candidato a reconfirmar en un entorno más limpio (CI)
-antes de invertir más tiempo si se repite con evidencia nueva.
+de negocio ya está verificada por otras vías.
+
+**Actualización (2026-08-26)**: tras los fixes de producción documentados arriba en "Pedidos
+multi-entrada colgados..." (`fix/saga-duplicate-publish-retry`, ADR 0039, y
+`fix/zone-service-per-zone-lock`, ADR 0040) — que atacan exactamente el tipo de carrera de Mongo
+de la sub-causa 1 y una contención relacionada en `ZoneService` — se relanzaron los 6 tests de
+`PurchaseOrderFlowTests` (`dotnet test services/CheckIn/IntegrationTests/... --filter
+"FullyQualifiedName~PurchaseOrderFlowTests"`): **6/6 en verde**, incluidos los 3 que antes
+reproducían la intermitencia. **Riesgo residual**: es una sola ejecución, no una prueba estadística
+de que la intermitencia (por naturaleza no determinista) haya desaparecido del todo — pero al
+atacar la causa raíz identificada (no solo mitigarla con más reintentos), y no solo una mejora de
+márgenes de tiempo, se da por resuelto. Si volviera a reproducirse, reabrir esta entrada con
+evidencia nueva.
 
 ## Referencias a `olix` eliminadas del contexto de trabajo (RESUELTO)
 
@@ -178,7 +189,7 @@ El modo standalone de desarrollo de `ticket-checkout` buscaba `document.getEleme
 el mismo id que usa `shell`. Al cargarse como script remoto dentro de `shell`, vaciaba su DOM.
 Corregido con un id exclusivo (`ticket-checkout-standalone-root`).
 
-## Timeline de la Saga: por SignalR solo llega el estado final (EN REVISIÓN)
+## Timeline de la Saga: por SignalR solo llega el estado final (RESUELTO)
 
 **Síntoma**: `docs/demo-script.md` promete el timeline actualizándose en vivo paso a paso
 ("Reservando aforo → Procesando pago → Confirmando → Confirmada"), pero `ITicketStatusNotifier`
@@ -207,9 +218,11 @@ por la propia Saga) además de los ya existentes `TicketPurchaseConfirmedConsume
 TicketPurchaseOutcomeConsumers.cs`). El timeline del frontend (`SagaTimeline.tsx`) ahora tiene 5
 pasos y sí anima en vivo el salto "Reservando aforo → Esperando pago" por SignalR real (el salto
 "Esperando pago → Confirmando" lo sigue disparando la propia acción del usuario al pulsar pagar, no
-la Saga). **Sigue pendiente de re-verificar con el mismo procedimiento** (cliente SignalR real vía
-`/hubs/tickets`) antes de cerrar el ítem del todo — esta nota solo confirma que el código ya emite
-el paso intermedio, no que se haya vuelto a comprobar en vivo tras el merge.
+la Saga).
+
+**Re-verificado en real por el usuario (2026-08-26)**: contra el stack levantado con
+`docker compose up --build` en la copia principal (`develop`), el timeline anima en vivo en el
+navegador tal y como promete `docs/demo-script.md`. Ítem cerrado.
 
 ## Sin estrategia de reintento si falla el aprovisionamiento de zonas al crear un evento
 
