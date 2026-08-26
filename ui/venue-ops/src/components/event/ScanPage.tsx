@@ -1,4 +1,5 @@
 import type { ScanResult } from '../../shared/types'
+import SiteHeader from '../ui/SiteHeader'
 import ScanPanel from './ScanPanel'
 
 interface Props {
@@ -9,7 +10,11 @@ export default function ScanPage({ onScan }: Props) {
   return (
     <div className="mx-auto flex min-h-screen max-w-[420px] items-center px-4">
       <div className="w-full">
-        <h1 className="mb-6 text-center text-lg">VenuePulse · Control de acceso</h1>
+        <SiteHeader
+          badge="VT"
+          title="VenuePulse · Torniquete"
+          subtitle="Escanea la entrada para registrar el acceso"
+        />
         <ScanPanel onScan={onScan} />
       </div>
     </div>
