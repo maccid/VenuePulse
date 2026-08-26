@@ -77,6 +77,17 @@ No prometer de más es una decisión deliberada. Tabla honesta:
 | Topología Azure (`infra/deploy/azure/README.md`) | **Documentada**, no aprovisionada |
 | Test de integración de la Saga contra Testcontainers reales | Camino feliz **verificado**; camino de compensación con un problema de fiabilidad específico del arnés de test, documentado en [ADR 0009](docs/architecture/adr/0009-masstransit-mongo-debugging.md) — **verificado por separado contra `docker-compose` real**: ambos caminos funcionan correctamente, confirmando que no era un defecto de la Saga |
 
+### Mantenimiento de dependencias
+
+Dependabot (`.github/dependabot.yml`) revisa los 7 ecosistemas del repo (los 3 microservicios
+.NET vía `nuget`, los 4 paquetes npm de `ui/`, `github-actions` y `docker`) semanalmente.
+Actualizaciones `minor`/`patch` se agrupan en una única PR por ecosistema (`groups:
+minor-and-patch`) en vez de abrir una PR por paquete, con un límite de PRs simultáneas por
+ecosistema — evita el ruido de tener 10+ PRs sueltas a la vez. Los bumps `major` siguen llegando
+por separado, sin agrupar, porque suelen requerir revisión manual del *changelog*. Sin
+auto-merge: cada PR se revisa y se mergea o se cierra a mano: para una demo/portfolio sin tráfico
+real, no compensa la complejidad de un workflow de auto-merge condicionado a CI en verde.
+
 ## Tests
 
 ```bash
