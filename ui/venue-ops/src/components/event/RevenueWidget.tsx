@@ -20,14 +20,10 @@ export default function RevenueWidget({ revenue, error, estimatedRevenue, sold }
       {!error && revenue === null && <p className="m-0 text-sm text-text-muted">Cargando ingresos…</p>}
 
       {!error && revenue !== null && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
-            <span className="text-[24px] font-bold tracking-[-0.01em]">{sold}</span>
-            <span className="text-xs text-text-muted">entradas vendidas</span>
-          </div>
-          <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
-            <span className="text-[24px] font-bold tracking-[-0.01em]">{CURRENCY.format(revenue.confirmedRevenue)}</span>
-            <span className="text-xs text-text-muted">confirmados · {revenue.confirmedCount} entradas</span>
+            <span className="text-[24px] font-bold tracking-[-0.01em]">{CURRENCY.format(estimatedRevenue)}</span>
+            <span className="text-xs text-text-muted">vendidas · {sold} entradas</span>
           </div>
           <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg p-3">
             <span className="text-[24px] font-bold tracking-[-0.01em]">{CURRENCY.format(revenue.pendingRevenue)}</span>
@@ -35,13 +31,6 @@ export default function RevenueWidget({ revenue, error, estimatedRevenue, sold }
           </div>
         </div>
       )}
-
-      <div className="mt-4 flex items-baseline gap-2 border-t border-dashed border-border pt-4">
-        <span className="font-[650] text-text">{CURRENCY.format(estimatedRevenue)}</span>
-        <span className="text-xs text-text-muted">
-          estimado a precio de catálogo (incluye venta simulada)
-        </span>
-      </div>
     </section>
   )
 }
