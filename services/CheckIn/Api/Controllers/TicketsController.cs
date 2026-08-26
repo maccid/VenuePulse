@@ -2,7 +2,6 @@ namespace VenuePulse.CheckIn.Api.Controllers;
 
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using VenuePulse.CheckIn.Api.Contracts;
 using VenuePulse.CheckIn.Application;
 using VenuePulse.CheckIn.Application.Commands;
 using VenuePulse.CheckIn.Application.Queries;
@@ -11,24 +10,6 @@ using VenuePulse.CheckIn.Application.Queries;
 [Route("api/tickets")]
 public sealed class TicketsController(ISender sender) : ControllerBase
 {
-    [HttpPost]
-    public async Task<ActionResult<object>> Purchase(PurchaseTicketRequest request, CancellationToken cancellationToken)
-    {
-        var ticketId = await sender.Send(
-            new PurchaseTicketCommand(request.EventId, request.TicketTypeId, request.ZoneId, request.Holder, request.Price),
-            cancellationToken);
-
-        return Accepted(new { ticketId });
-    }
-
-    [HttpPost("{ticketId:guid}/pay")]
-    public async Task<IActionResult> Pay(Guid ticketId, SubmitPaymentRequest request, CancellationToken cancellationToken)
-    {
-        var simulateFailure = string.Equals(request.Method, "Bizum", StringComparison.OrdinalIgnoreCase);
-        var result = await sender.Send(new SubmitPaymentCommand(ticketId, simulateFailure), cancellationToken);
-        return result.IsSuccess ? Accepted() : BadRequest(new { error = result.Error });
-    }
-
     [HttpGet("{ticketId:guid}/status")]
     public async Task<ActionResult<TicketStatusDto>> GetStatus(Guid ticketId, CancellationToken cancellationToken)
     {
