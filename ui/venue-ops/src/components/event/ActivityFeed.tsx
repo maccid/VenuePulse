@@ -59,9 +59,9 @@ export default function ActivityFeed({ entries }: Props) {
                       <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
                         Pedido
                       </span>
-                      <span className="font-[650] text-text">{entry.zoneName}</span>
+                      <span className="font-[650] text-text">{entry.ticketTypeSummary ?? `${entry.ticketCount} entradas`}</span>
                       <span>
-                        {entry.ticketCount} entradas · {ORDER_STATUS_LABEL[entry.status] ?? entry.status}
+                        · {ORDER_STATUS_LABEL[entry.status] ?? entry.status}
                       </span>
                       <time className="ml-auto flex-shrink-0 text-xs text-text-muted">
                         {new Date(entry.atUtc).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import type { ScanResult } from './shared/types'
+import type { TicketType } from '@venue/core/domain'
 import { useEventCatalog } from './hooks/useEventCatalog'
 import { useZonesByEvent } from './hooks/useZonesByEvent'
 import { useTicketActivityFeed } from './hooks/useTicketActivityFeed'
@@ -12,7 +14,17 @@ export default function App() {
   const { events, activeId, selectEvent, showCreate, startCreate, cancelCreate, updateEvent, addEvent } =
     useEventCatalog()
   const { zonesByEvent, loadZones } = useZonesByEvent(activeId)
-  const activityByEvent = useTicketActivityFeed(activeId, zonesByEvent)
+
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
+  useEffect(() => {
+    if (!activeId) { setTicketTypes([]); return }
+    fetch(`/api/ticketing/api/events/${activeId}/ticket-types`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setTicketTypes(data as TicketType[]))
+      .catch(() => setTicketTypes([]))
+  }, [activeId])
+
+  const activityByEvent = useTicketActivityFeed(activeId, zonesByEvent, ticketTypes)
 
   async function scanTicket(ticketId: string): Promise<ScanResult> {
     const response = await fetch(`/api/checkin/api/tickets/${ticketId}/check-in`, { method: 'POST' })

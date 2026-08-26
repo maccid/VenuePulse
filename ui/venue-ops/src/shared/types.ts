@@ -6,6 +6,7 @@ export interface ActivityEntry {
   id: string
   orderId: string | null
   ticketCount: number
+  ticketTypeSummary: string | null
   zoneName: string
   status: TicketStatus
   rejectionReason: string | null
