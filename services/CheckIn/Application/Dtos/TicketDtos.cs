@@ -5,6 +5,7 @@ public sealed record TicketStatusDto(
     Guid EventId,
     Guid ZoneId,
     string Status,
+    decimal Price,
     string? RejectionReason,
     DateTimeOffset? ExpiresAtUtc);
 
