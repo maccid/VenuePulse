@@ -5,6 +5,7 @@ export type ScanResult = { kind: 'idle' } | { kind: 'ok' } | { kind: 'error'; me
 export interface ActivityEntry {
   id: string
   orderId: string | null
+  ticketId: string | null
   ticketCount: number
   ticketTypeSummary: string | null
   zoneName: string

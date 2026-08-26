@@ -14,12 +14,6 @@ const TICKET_STATUS_LABEL: Record<ActivityEntry['status'], string> = {
   Refunded: 'entrada reembolsada',
 }
 
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  AwaitingPayment: 'reservado, esperando pago',
-  Completed: 'pedido completado',
-  Rejected: 'pedido rechazado',
-}
-
 const ORDER_TIMELINE: Record<string, string[]> = {
   AwaitingPayment: ['Reservando', 'Esperando pago'],
   Completed: ['Reservando', 'Esperando pago', 'Confirmando', 'Completado'],
@@ -60,9 +54,6 @@ export default function ActivityFeed({ entries }: Props) {
                         Pedido
                       </span>
                       <span className="font-[650] text-text">{entry.ticketTypeSummary ?? `${entry.ticketCount} entradas`}</span>
-                      <span>
-                        · {ORDER_STATUS_LABEL[entry.status] ?? entry.status}
-                      </span>
                       <time className="ml-auto flex-shrink-0 text-xs text-text-muted">
                         {new Date(entry.atUtc).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </time>

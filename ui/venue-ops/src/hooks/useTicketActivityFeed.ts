@@ -6,6 +6,7 @@ import { useEventScopedConnection } from '@venue/core/hub'
 const MAX_ACTIVITY_ENTRIES = 20
 const STORAGE_PREFIX = 'venuepulse:activity:'
 const STORAGE_MAX_AGE_MS = 24 * 60 * 60 * 1000
+const INDIVIDUAL_DELAY_MS = 1500
 
 function loadFromStorage(eventId: string): ActivityEntry[] {
   try {
@@ -55,6 +56,7 @@ export function useTicketActivityFeed(
   })
   const zonesByEventRef = useRef(zonesByEvent)
   const ticketTypesRef = useRef(ticketTypes)
+  const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const orderTicketIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
@@ -65,17 +67,35 @@ export function useTicketActivityFeed(
     ticketTypesRef.current = ticketTypes
   }, [ticketTypes])
 
+  useEffect(() => {
+    return () => {
+      for (const timer of pendingTimersRef.current.values()) {
+        clearTimeout(timer)
+      }
+      pendingTimersRef.current.clear()
+    }
+  }, [])
+
+  function addEntry(eventId: string, entry: ActivityEntry) {
+    setActivityByEvent((prev) => {
+      const existing = prev[eventId] ?? []
+      const next = [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES)
+      saveToStorage(eventId, next)
+      return { ...prev, [eventId]: next }
+    })
+  }
+
   useEventScopedConnection('/hubs/tickets', activeId, (connection) => {
     connection.on('ticketStatusChanged', (update: TicketStatusUpdate) => {
       const shouldTrack =
         update.status === 'AwaitingPayment' || update.status === 'Confirmed' || update.status === 'Rejected'
       if (!shouldTrack) return
-      if (orderTicketIdsRef.current.has(update.ticketId)) return
 
       const zone = zonesByEventRef.current[update.eventId]?.find((z) => z.zoneId === update.zoneId)
       const entry: ActivityEntry = {
         id: `${update.ticketId}-${update.status}`,
         orderId: null,
+        ticketId: update.ticketId,
         ticketCount: 1,
         ticketTypeSummary: null,
         zoneName: zone?.name ?? 'Zona desconocida',
@@ -84,12 +104,17 @@ export function useTicketActivityFeed(
         atUtc: new Date().toISOString(),
       }
 
-      setActivityByEvent((prev) => {
-        const existing = prev[update.eventId] ?? []
-        const next = [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES)
-        saveToStorage(update.eventId, next)
-        return { ...prev, [update.eventId]: next }
-      })
+      const key = update.ticketId
+      const existingTimer = pendingTimersRef.current.get(key)
+      if (existingTimer) clearTimeout(existingTimer)
+
+      const timer = setTimeout(() => {
+        pendingTimersRef.current.delete(key)
+        if (!orderTicketIdsRef.current.has(key)) {
+          addEntry(update.eventId, entry)
+        }
+      }, INDIVIDUAL_DELAY_MS)
+      pendingTimersRef.current.set(key, timer)
     })
 
     connection.on('orderStatusChanged', (update: OrderStatusUpdate) => {
@@ -99,6 +124,11 @@ export function useTicketActivityFeed(
 
       for (const t of update.tickets) {
         orderTicketIdsRef.current.add(t.ticketId)
+        const timer = pendingTimersRef.current.get(t.ticketId)
+        if (timer) {
+          clearTimeout(timer)
+          pendingTimersRef.current.delete(t.ticketId)
+        }
       }
 
       const firstTicket = update.tickets[0]
@@ -111,6 +141,7 @@ export function useTicketActivityFeed(
       const entry: ActivityEntry = {
         id: `order-${update.orderId}-${update.status}`,
         orderId: update.orderId,
+        ticketId: null,
         ticketCount: update.tickets.length,
         ticketTypeSummary: buildTicketTypeSummary(update.tickets, ticketTypesRef.current),
         zoneName: zone?.name ?? 'Zona desconocida',
@@ -121,7 +152,9 @@ export function useTicketActivityFeed(
 
       setActivityByEvent((prev) => {
         const existing = prev[update.eventId] ?? []
-        const next = [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES)
+        const orderIds = new Set(update.tickets.map((t) => t.ticketId))
+        const filtered = existing.filter((e) => e.ticketId === null || !orderIds.has(e.ticketId))
+        const next = [entry, ...filtered].slice(0, MAX_ACTIVITY_ENTRIES)
         saveToStorage(update.eventId, next)
         return { ...prev, [update.eventId]: next }
       })
