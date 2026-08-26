@@ -24,8 +24,10 @@ Abrir:
 3. Señalar el **timeline de la Saga** actualizándose en vivo vía SignalR: Reservando aforo →
    Procesando pago → Confirmando → Confirmada.
 4. Copiar el ID de la entrada mostrado.
-5. En `venue-ops`, ir a "Escanear entrada" (`/venue-ops/scan`, ruta propia — el escaneo no depende
-   de qué evento tengas seleccionado ni de su estado, ver [ADR 0043](architecture/adr/0043-escanear-entrada-ruta-propia-independiente-del-evento.md)),
+5. Abrir `http://localhost:8080/venue-ops/scan` en otra pestaña (ruta propia, sin enlace desde el
+   dashboard de operaciones a propósito — es el dispositivo del personal de puerta, no algo a lo
+   que navegue el responsable del evento; no depende de qué evento tengas seleccionado ni de su
+   estado, ver [ADR 0043](architecture/adr/0043-escanear-entrada-ruta-propia-independiente-del-evento.md)),
    pegar el ID y pulsar "Escanear" → el aforo de la zona sube en vivo, en `venue-ops` **y** en el
    widget de `shell` (dos pestañas distintas, misma actualización).
 

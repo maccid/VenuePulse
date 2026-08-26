@@ -29,6 +29,12 @@ Extraer el escaneo a su propia ruta de cliente, **`/venue-ops/scan`**, fuera del
   app ya tiene `try_files $uri $uri/ /index.html` — la navegación directa o el refresco en
   `/venue-ops/scan` ya funcionaban sin tocar nada de infraestructura.
 - `ScanPage` reutiliza el mismo `scanTicket` que ya vivía en `App.tsx`, sin duplicar lógica.
+- **Sin enlace de navegación entre las dos vistas**, ni en un sentido ni en otro. No son dos
+  pantallas de la misma persona — son dos perfiles de personal distintos, en dispositivos
+  distintos: el responsable del evento mirando el dashboard desde su portátil, y el personal de
+  la puerta escaneando desde una tablet en el torniquete. Cada uno entra directamente a su URL
+  (`/venue-ops/` o `/venue-ops/scan`); un enlace cruzado asumiría que es la misma persona
+  navegando entre dos tareas, que no es el caso real.
 
 ## Alternativas descartadas
 

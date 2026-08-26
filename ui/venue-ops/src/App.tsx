@@ -53,12 +53,6 @@ export default function App() {
     <div className="mx-auto max-w-[1440px] px-6 py-16">
       <SiteHeader />
 
-      <p className="mb-6">
-        <a href="/venue-ops/scan" className="text-sm text-accent hover:underline">
-          Escanear entrada →
-        </a>
-      </p>
-
       <div className="grid grid-cols-[minmax(280px,25%)_1fr] items-start gap-6">
         <EventList
           events={events}
