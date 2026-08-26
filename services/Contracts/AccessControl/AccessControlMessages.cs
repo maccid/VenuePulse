@@ -22,3 +22,5 @@ public sealed record ZoneCheckedIn(Guid CorrelationId, Guid ZoneId, Guid TicketI
 
 public sealed record ZoneOccupancyChanged(
     Guid ZoneId, Guid Id, string Name, int Capacity, int AvailableToSell, int ConfirmedSold, int CheckedIn) : IntegrationEvent;
+
+public sealed record SimulationReset(Guid Id) : IntegrationEvent;
