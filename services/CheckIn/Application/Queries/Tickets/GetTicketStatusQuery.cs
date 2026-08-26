@@ -13,6 +13,6 @@ public sealed class GetTicketStatusQueryHandler(ITicketRepository repository, IR
         if (ticket is null) return null;
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
-        return new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.RejectionReason, expiresAtUtc);
+        return new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.Price, ticket.RejectionReason, expiresAtUtc);
     }
 }

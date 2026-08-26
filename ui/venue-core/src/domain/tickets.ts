@@ -14,6 +14,7 @@ export interface TicketStatusUpdate {
   eventId: string
   zoneId: string
   status: TicketStatus
+  price: number
   rejectionReason: string | null
   expiresAtUtc: string | null
 }

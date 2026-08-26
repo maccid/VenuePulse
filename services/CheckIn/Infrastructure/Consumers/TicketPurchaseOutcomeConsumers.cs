@@ -28,7 +28,7 @@ public sealed class TicketReadyForPaymentConsumer(
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, expiresAtUtc),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.Price, null, expiresAtUtc),
             context.CancellationToken);
     }
 }
@@ -55,7 +55,7 @@ public sealed class TicketProcessingPaymentConsumer(
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, expiresAtUtc),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.Price, null, expiresAtUtc),
             context.CancellationToken);
     }
 }
@@ -82,7 +82,7 @@ public sealed class TicketPurchaseConfirmedConsumer(
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, expiresAtUtc),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.Price, null, expiresAtUtc),
             context.CancellationToken);
     }
 }
@@ -109,7 +109,7 @@ public sealed class TicketPurchaseRejectedConsumer(
 
         var expiresAtUtc = timeoutTracker.TryGetDeadline(ticket.Id, out var deadline) ? deadline : (DateTimeOffset?)null;
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.RejectionReason, expiresAtUtc),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.Price, ticket.RejectionReason, expiresAtUtc),
             context.CancellationToken);
     }
 }

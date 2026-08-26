@@ -8,9 +8,9 @@ interface Props {
   onCreate: () => void
 }
 
-const STATUS_BADGE: Partial<Record<EventSummary['status'], string>> = {
-  SalesClosed: 'Venta cerrada',
-  Cancelled: 'Cancelado',
+const STATUS_BADGE: Partial<Record<EventSummary['status'], { label: string; variant: 'default' | 'danger' }>> = {
+  SalesClosed: { label: 'Venta cerrada', variant: 'default' },
+  Cancelled: { label: 'Cancelado', variant: 'danger' },
 }
 
 export default function EventList({ events, activeId, onSelect, onCreate }: Props) {
@@ -38,14 +38,7 @@ export default function EventList({ events, activeId, onSelect, onCreate }: Prop
                   className={`flex w-full items-center gap-3 rounded-md border p-3 text-left text-text ${active ? 'border-border-strong bg-surface shadow-sm' : 'border-border bg-bg hover:bg-accent-bg'}`}
                   onClick={() => onSelect(ev.id)}
                 >
-                  <EventSummaryCard event={ev} />
-                  {badge && (
-                    <span
-                      className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs ${ev.status === 'Cancelled' ? 'bg-danger text-text-on-accent' : 'bg-border-strong text-text'}`}
-                    >
-                      {badge}
-                    </span>
-                  )}
+                  <EventSummaryCard event={ev} badge={badge} />
                 </button>
               </li>
             )

@@ -57,7 +57,7 @@ public sealed class TicketRefundedConsumer(
         await repository.SaveChangesAsync(context.CancellationToken);
 
         await notifier.NotifyStatusChangedAsync(
-            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), null, null),
+            new TicketStatusDto(ticket.Id, ticket.EventId, ticket.ZoneId, ticket.Status.ToString(), ticket.Price, null, null),
             context.CancellationToken);
     }
 }
