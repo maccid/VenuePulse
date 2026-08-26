@@ -4,6 +4,8 @@ export type ScanResult = { kind: 'idle' } | { kind: 'ok' } | { kind: 'error'; me
 
 export interface ActivityEntry {
   id: string
+  orderId: string | null
+  ticketCount: number
   zoneName: string
   status: TicketStatus
   rejectionReason: string | null
