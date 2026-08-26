@@ -8,13 +8,13 @@ interface Props {
 
 export default function ScanPage({ onScan }: Props) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-[420px] items-center px-4">
-      <div className="w-full">
-        <SiteHeader
-          badge="VT"
-          title="VenuePulse · Torniquete"
-          subtitle="Escanea la entrada para registrar el acceso"
-        />
+    <div className="mx-auto max-w-[1440px] px-6 py-16">
+      <SiteHeader
+        badge="VT"
+        title="VenuePulse · Torniquete"
+        subtitle="Escanea la entrada para registrar el acceso"
+      />
+      <div className="mx-auto max-w-[420px]">
         <ScanPanel onScan={onScan} />
       </div>
     </div>
