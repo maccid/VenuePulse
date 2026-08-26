@@ -24,7 +24,7 @@ export default function App() {
       .catch(() => setTicketTypes([]))
   }, [activeId])
 
-  const activityByEvent = useTicketActivityFeed(activeId, zonesByEvent, ticketTypes)
+  const { activityByEvent, clearEvent: clearActivity } = useTicketActivityFeed(activeId, zonesByEvent, ticketTypes)
 
   async function scanTicket(ticketId: string): Promise<ScanResult> {
     const response = await fetch(`/api/checkin/api/tickets/${ticketId}/check-in`, { method: 'POST' })
@@ -66,6 +66,10 @@ export default function App() {
             zones={zonesByEvent[activeEvent.id] ?? []}
             activity={activityByEvent[activeEvent.id] ?? []}
             onZonesReload={() => loadZones(activeEvent.id)}
+            onSimulationReset={() => {
+              loadZones(activeEvent.id)
+              clearActivity(activeEvent.id)
+            }}
             scanTicket={scanTicket}
             onEventUpdated={updateEvent}
           />

@@ -15,6 +15,7 @@ interface Props {
   zones: ZoneOccupancy[]
   activity: ActivityEntry[]
   onZonesReload: () => void
+  onSimulationReset: () => void
   scanTicket: (ticketId: string) => Promise<ScanResult>
   onEventUpdated: (event: EventSummary) => void
 }
@@ -39,7 +40,7 @@ function estimateRevenueFromZoneSales(zones: ZoneOccupancy[], ticketTypes: Ticke
   }, 0)
 }
 
-export default function EventWorkspace({ event, zones, activity, onZonesReload, scanTicket, onEventUpdated }: Props) {
+export default function EventWorkspace({ event, zones, activity, onZonesReload, onSimulationReset, scanTicket, onEventUpdated }: Props) {
   const { revenue, error: revenueError } = useEventRevenue(event.id)
   const { ticketTypes } = useTicketTypePrices(event.id)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -114,7 +115,7 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
           revenueError={revenueError}
           estimatedRevenue={estimatedRevenue}
           activity={activity}
-          onSimulationEnded={onZonesReload}
+          onSimulationEnded={onSimulationReset}
         />
       )}
 

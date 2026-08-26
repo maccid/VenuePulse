@@ -28,6 +28,14 @@ function saveToStorage(eventId: string, entries: ActivityEntry[]) {
   }
 }
 
+function clearStorage(eventId: string) {
+  try {
+    localStorage.removeItem(STORAGE_PREFIX + eventId)
+  } catch {
+    // storage unavailable — silently ignore
+  }
+}
+
 function buildTicketTypeSummary(
   tickets: { ticketTypeId: string }[],
   ticketTypes: TicketType[],
@@ -83,6 +91,11 @@ export function useTicketActivityFeed(
       saveToStorage(eventId, next)
       return { ...prev, [eventId]: next }
     })
+  }
+
+  function clearEvent(eventId: string) {
+    clearStorage(eventId)
+    setActivityByEvent((prev) => ({ ...prev, [eventId]: [] }))
   }
 
   useEventScopedConnection('/hubs/tickets', activeId, (connection) => {
@@ -161,5 +174,5 @@ export function useTicketActivityFeed(
     })
   })
 
-  return activityByEvent
+  return { activityByEvent, clearEvent }
 }
