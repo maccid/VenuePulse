@@ -13,7 +13,24 @@ import './App.css'
 
 const isScanRoute = window.location.pathname.replace(/\/+$/, '') === '/venue-ops/scan'
 
+async function scanTicket(ticketId: string): Promise<ScanResult> {
+  const response = await fetch(`/api/checkin/api/tickets/${ticketId}/check-in`, { method: 'POST' })
+
+  if (response.ok) return { kind: 'ok' }
+
+  const body = await response.json().catch(() => ({ error: 'Entrada no válida' }))
+  return { kind: 'error', message: body.error ?? 'No se pudo hacer el check-in' }
+}
+
 export default function App() {
+  return isScanRoute ? <ScanApp /> : <OpsApp />
+}
+
+function ScanApp() {
+  return <ScanPage onScan={scanTicket} />
+}
+
+function OpsApp() {
   const { events, activeId, selectEvent, showCreate, startCreate, cancelCreate, updateEvent, addEvent } =
     useEventCatalog()
   const { zonesByEvent, loadZones } = useZonesByEvent(activeId)
@@ -29,25 +46,7 @@ export default function App() {
 
   const { activityByEvent, clearEvent: clearActivity } = useTicketActivityFeed(activeId, zonesByEvent, ticketTypes)
 
-  async function scanTicket(ticketId: string): Promise<ScanResult> {
-    const response = await fetch(`/api/checkin/api/tickets/${ticketId}/check-in`, { method: 'POST' })
-
-    if (response.ok) return { kind: 'ok' }
-
-    const body = await response.json().catch(() => ({ error: 'Entrada no válida' }))
-    return { kind: 'error', message: body.error ?? 'No se pudo hacer el check-in' }
-  }
-
   const activeEvent = activeId === null ? undefined : events.find((ev) => ev.id === activeId)
-
-  if (isScanRoute) {
-    return (
-      <div className="mx-auto max-w-[1440px] px-6 py-16">
-        <SiteHeader />
-        <ScanPage onScan={scanTicket} />
-      </div>
-    )
-  }
 
   return (
     <div className="mx-auto max-w-[1440px] px-6 py-16">
