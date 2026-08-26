@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ActivityEntry, ScanResult } from '../../shared/types'
+import type { ActivityEntry } from '../../shared/types'
 import type { EventSummary, TicketType, ZoneOccupancy } from '@venue/core/domain'
 import { matchTicketType } from '@venue/core/domain'
 import { InlineError } from '@venue/core/components'
@@ -16,7 +16,6 @@ interface Props {
   activity: ActivityEntry[]
   onZonesReload: () => void
   onSimulationReset: () => void
-  scanTicket: (ticketId: string) => Promise<ScanResult>
   onEventUpdated: (event: EventSummary) => void
 }
 
@@ -40,7 +39,7 @@ function estimateRevenueFromZoneSales(zones: ZoneOccupancy[], ticketTypes: Ticke
   }, 0)
 }
 
-export default function EventWorkspace({ event, zones, activity, onZonesReload, onSimulationReset, scanTicket, onEventUpdated }: Props) {
+export default function EventWorkspace({ event, zones, activity, onZonesReload, onSimulationReset, onEventUpdated }: Props) {
   const { revenue, error: revenueError } = useEventRevenue(event.id)
   const { ticketTypes } = useTicketTypePrices(event.id)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -105,7 +104,7 @@ export default function EventWorkspace({ event, zones, activity, onZonesReload, 
       </div>
 
       {isOccupancy ? (
-        <OccupancyGrid event={event} zones={zones} scanTicket={scanTicket} onZonesReload={onZonesReload} />
+        <OccupancyGrid event={event} zones={zones} onZonesReload={onZonesReload} />
       ) : (
         <SalesLayout
           event={event}
