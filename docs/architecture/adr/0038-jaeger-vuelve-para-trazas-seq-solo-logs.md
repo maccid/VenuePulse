@@ -14,9 +14,9 @@ contenedor en vez de dos. Funcionalmente correcto (Seq ingesta OTLP nativamente 
 representa las trazas como una lista más de eventos dentro del mismo stream cronológico que los
 logs — hay que expandir cada evento para ver el árbol de spans, y no hay una vista dedicada de
 waterfall (barras apiladas por duración) como la de Jaeger. Para el caso de uso real de este
-proyecto — explicar en una entrevista técnica cómo la Saga orquesta la compra cruzando
+proyecto — explicar a alguien que no conoce el código cómo la Saga orquesta la compra cruzando
 `CheckIn` → `AccessControl` vía RabbitMQ — la vista de Jaeger comunica el flujo pub/sub entre
-microservicios de forma mucho más directa a un interlocutor que no conoce el código.
+microservicios de forma mucho más directa que la de Seq.
 
 La minería de logs centralizada que motivó la mitad del ADR 0033 (buscar en los 3 servicios desde
 un solo sitio) sigue siendo necesaria y Seq la resuelve bien — no hay motivo para revertir esa
@@ -44,7 +44,8 @@ Separar las dos responsabilidades en dos herramientas, cada una donde se ve mejo
 
 - **Mantener solo Seq** (statu quo del ADR 0033): descartada — el motivo de este ADR es
   explícitamente que la vista de Seq no comunica bien el flujo pub/sub de la Saga para el caso de
-  uso real (explicarlo en una entrevista), no un problema de correlación técnica.
+  uso real (explicarlo a un interlocutor que no conoce el código), no un problema de correlación
+  técnica.
 - **Volver también a "logs solo por consola"** (deshacer el ADR 0033 por completo, como hizo el
   ADR 0032 con SigNoz): descartada — la minería de logs centralizada de Seq sigue aportando valor
   real y no tiene nada que ver con el motivo de este cambio (la vista de trazas).
