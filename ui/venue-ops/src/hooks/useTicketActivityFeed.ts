@@ -4,9 +4,34 @@ import type { OrderStatusUpdate, TicketStatusUpdate, ZoneOccupancy } from '@venu
 import { useEventScopedConnection } from '@venue/core/hub'
 
 const MAX_ACTIVITY_ENTRIES = 20
+const STORAGE_PREFIX = 'venuepulse:activity:'
+const STORAGE_MAX_AGE_MS = 24 * 60 * 60 * 1000
+
+function loadFromStorage(eventId: string): ActivityEntry[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX + eventId)
+    if (!raw) return []
+    const entries: ActivityEntry[] = JSON.parse(raw)
+    const cutoff = Date.now() - STORAGE_MAX_AGE_MS
+    return entries.filter((e) => new Date(e.atUtc).getTime() > cutoff)
+  } catch {
+    return []
+  }
+}
+
+function saveToStorage(eventId: string, entries: ActivityEntry[]) {
+  try {
+    localStorage.setItem(STORAGE_PREFIX + eventId, JSON.stringify(entries.slice(0, MAX_ACTIVITY_ENTRIES)))
+  } catch {
+    // storage full or unavailable — silently ignore
+  }
+}
 
 export function useTicketActivityFeed(activeId: string | null, zonesByEvent: Record<string, ZoneOccupancy[]>) {
-  const [activityByEvent, setActivityByEvent] = useState<Record<string, ActivityEntry[]>>({})
+  const [activityByEvent, setActivityByEvent] = useState<Record<string, ActivityEntry[]>>(() => {
+    if (!activeId) return {}
+    return { [activeId]: loadFromStorage(activeId) }
+  })
   const zonesByEventRef = useRef(zonesByEvent)
 
   useEffect(() => {
@@ -32,7 +57,9 @@ export function useTicketActivityFeed(activeId: string | null, zonesByEvent: Rec
 
       setActivityByEvent((prev) => {
         const existing = prev[update.eventId] ?? []
-        return { ...prev, [update.eventId]: [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES) }
+        const next = [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES)
+        saveToStorage(update.eventId, next)
+        return { ...prev, [update.eventId]: next }
       })
     })
 
@@ -60,7 +87,9 @@ export function useTicketActivityFeed(activeId: string | null, zonesByEvent: Rec
 
       setActivityByEvent((prev) => {
         const existing = prev[update.eventId] ?? []
-        return { ...prev, [update.eventId]: [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES) }
+        const next = [entry, ...existing].slice(0, MAX_ACTIVITY_ENTRIES)
+        saveToStorage(update.eventId, next)
+        return { ...prev, [update.eventId]: next }
       })
     })
   })
