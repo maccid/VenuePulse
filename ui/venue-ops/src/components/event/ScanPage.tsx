@@ -14,9 +14,7 @@ export default function ScanPage({ onScan }: Props) {
         title="VenuePulse · Torniquete"
         subtitle="Escanea la entrada para registrar el acceso"
       />
-      <div className="mx-auto max-w-[420px]">
-        <ScanPanel onScan={onScan} />
-      </div>
+      <ScanPanel onScan={onScan} />
     </div>
   )
 }
