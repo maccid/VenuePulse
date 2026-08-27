@@ -8,6 +8,7 @@ export interface ActivityEntry {
   ticketId: string | null
   ticketCount: number
   ticketTypeSummary: string | null
+  ticketIds: string[]
   zoneName: string
   status: TicketStatus
   rejectionReason: string | null
