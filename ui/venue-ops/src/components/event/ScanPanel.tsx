@@ -32,7 +32,7 @@ export default function ScanPanel({ onScan }: Props) {
       </form>
       {scanResult.kind === 'ok' && (
         <p className="mt-4 flex items-center gap-2 text-sm text-success before:content-['✔'] before:text-success">
-          Check-in registrado, aforo actualizado.
+          {scanResult.message ?? 'Check-in registrado, aforo actualizado.'}
         </p>
       )}
       <InlineError message={scanResult.kind === 'error' ? scanResult.message : null} />

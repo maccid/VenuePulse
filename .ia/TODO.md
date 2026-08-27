@@ -58,10 +58,15 @@ Reserva de ADR (próximo libre tras `0027`): `0028` → Bloque 24 (GUID de grupo
   9) y sin validar que el precio siga siendo el aceptado. El `GroupId` que resuelve esto nace como
   parte de la `PurchaseOrderSaga` nueva (ADR 0028), que orquesta la reserva/pago/confirmación
   atómica de las N entradas de un pedido — el mismo `GroupId` es el código de grupo que este
-  bloque quería para el escaneo conjunto. **Alcance NO completado en esta ronda** (queda de
-  seguimiento, ver ADR 0028 "Consecuencias"): el endpoint de *validación/check-in* que acepte el
-  código grupal en `venue-ops` — `Ticket.GroupId` queda listo y poblado, pero escanear
-  `group-<GUID>` en la puerta no se construye todavía.
+  bloque quería para el escaneo conjunto. **Alcance completado (2026-08-26)**: `POST
+  /api/orders/{orderId}/check-in` (`CheckInOrderCommand`, reutiliza `GetByGroupIdAsync` ya
+  existente) hace check-in de todas las entradas `Confirmed` del pedido, saltando sin más las que
+  ya tuvieran check-in (idempotencia por precondición de estado, no por tabla de mensajes
+  procesados — mismo tipo de garantía que el Inbox pero sin necesitarlo). `venue-ops` enruta de
+  forma transparente en `/venue-ops/scan`: prefijo `group-` → este endpoint, GUID suelto →
+  check-in individual de siempre. Verificado en real contra el stack: ambas rutas funcionan.
+  Sin ADR propio — no es una decisión de arquitectura nueva, solo cierra el hueco que ya
+  documentaba ADR 0028.
 
 - [x] **Bloque 25 — `feature/signalr-event-groups`** (los 3 hubs — `CheckIn` `/hubs/tickets`,
   `AccessControl` `/hubs/occupancy`, `Ticketing` `/hubs/pricing` —, **implementado en rama por

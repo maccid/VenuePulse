@@ -13,10 +13,21 @@ import './App.css'
 
 const isScanRoute = window.location.pathname.replace(/\/+$/, '') === '/venue-ops/scan'
 
-async function scanTicket(ticketId: string): Promise<ScanResult> {
-  const response = await fetch(`/api/checkin/api/tickets/${ticketId}/check-in`, { method: 'POST' })
+const GROUP_PREFIX = 'group-'
 
-  if (response.ok) return { kind: 'ok' }
+async function scanTicket(code: string): Promise<ScanResult> {
+  const isGroup = code.startsWith(GROUP_PREFIX)
+  const url = isGroup
+    ? `/api/checkin/api/orders/${code.slice(GROUP_PREFIX.length)}/check-in`
+    : `/api/checkin/api/tickets/${code}/check-in`
+
+  const response = await fetch(url, { method: 'POST' })
+
+  if (response.ok) {
+    if (!isGroup) return { kind: 'ok' }
+    const body = await response.json().catch(() => ({ checkedInCount: 0 }))
+    return { kind: 'ok', message: `${body.checkedInCount} entradas registradas.` }
+  }
 
   const body = await response.json().catch(() => ({ error: 'Entrada no válida' }))
   return { kind: 'error', message: body.error ?? 'No se pudo hacer el check-in' }

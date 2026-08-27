@@ -1,6 +1,6 @@
 import type { TicketStatus } from '@venue/core/domain'
 
-export type ScanResult = { kind: 'idle' } | { kind: 'ok' } | { kind: 'error'; message: string }
+export type ScanResult = { kind: 'idle' } | { kind: 'ok'; message?: string } | { kind: 'error'; message: string }
 
 export interface ActivityEntry {
   id: string

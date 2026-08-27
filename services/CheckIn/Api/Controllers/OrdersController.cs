@@ -44,4 +44,11 @@ public sealed class OrdersController(ISender sender) : ControllerBase
         var status = await sender.Send(new GetOrderStatusQuery(orderId), cancellationToken);
         return status is null ? NotFound() : Ok(status);
     }
+
+    [HttpPost("{orderId:guid}/check-in")]
+    public async Task<IActionResult> CheckIn(Guid orderId, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new CheckInOrderCommand(orderId), cancellationToken);
+        return result.IsSuccess ? Ok(new { checkedInCount = result.Value }) : BadRequest(new { error = result.Error });
+    }
 }
