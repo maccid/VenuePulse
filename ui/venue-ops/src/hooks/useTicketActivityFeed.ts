@@ -12,7 +12,7 @@ function loadFromStorage(eventId: string): ActivityEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + eventId)
     if (!raw) return []
-    const entries: ActivityEntry[] = JSON.parse(raw)
+    const entries: ActivityEntry[] = JSON.parse(raw).map((e: Partial<ActivityEntry>) => ({ ticketIds: [], ...e }))
     const cutoff = Date.now() - STORAGE_MAX_AGE_MS
     return entries.filter((e) => new Date(e.atUtc).getTime() > cutoff)
   } catch {
@@ -111,6 +111,7 @@ export function useTicketActivityFeed(
         ticketId: update.ticketId,
         ticketCount: 1,
         ticketTypeSummary: null,
+        ticketIds: [],
         zoneName: zone?.name ?? 'Zona desconocida',
         status: update.status,
         rejectionReason: update.rejectionReason,
@@ -157,6 +158,7 @@ export function useTicketActivityFeed(
         ticketId: null,
         ticketCount: update.tickets.length,
         ticketTypeSummary: buildTicketTypeSummary(update.tickets, ticketTypesRef.current),
+        ticketIds: update.tickets.map((t) => t.ticketId),
         zoneName: zone?.name ?? 'Zona desconocida',
         status: resolvedStatus,
         rejectionReason: update.rejectionReason,
