@@ -31,7 +31,7 @@ export default function SalesLayout({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
         <section className="card">
           <h2 className="flex items-center gap-2">
             <MapPin className="size-[18px] text-accent" aria-hidden="true" />
