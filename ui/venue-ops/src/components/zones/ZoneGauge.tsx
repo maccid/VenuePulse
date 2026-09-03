@@ -1,15 +1,25 @@
 import type { ZoneOccupancy } from '@venue/core/domain'
+import { occupancyRatio, occupancyTier } from '@venue/core/domain'
 
 interface Props {
   zone: ZoneOccupancy
 }
 
+const TIER_BORDER: Record<string, string> = {
+  low: 'border-t-green-500',
+  mid: 'border-t-amber-500',
+  high: 'border-t-red-500',
+}
+
 export default function ZoneGauge({ zone }: Props) {
   const pct = zone.capacity > 0 ? Math.round((zone.checkedIn / zone.capacity) * 100) : 0
   const noShows = Math.max(0, zone.confirmedSold - zone.checkedIn)
+  const tier = occupancyTier(occupancyRatio(zone, 'checkin'))
 
   return (
-    <div className="card">
+    <div
+      className={`rounded-md border border-border border-t-[3px] bg-bg p-3 ${TIER_BORDER[tier]}`}
+    >
       <h3 className="mb-3">{zone.name}</h3>
       <div className="h-2.5 overflow-hidden rounded-full bg-accent-bg">
         <div
