@@ -109,6 +109,15 @@ public sealed class ZoneService(IZoneRepository zoneRepository, IOccupancySnapsh
         await snapshotRepository.ClearForEventAsync(eventId, cancellationToken);
     }
 
+    public async Task ResetArrivalsSimulationAsync(Guid eventId, CancellationToken cancellationToken)
+    {
+        var zones = await zoneRepository.GetAllAsync(eventId, cancellationToken);
+        foreach (var zone in zones)
+            await ExecuteWithRetryAsync(zone.Id, z => z.ResetCheckIns(), cancellationToken);
+
+        await snapshotRepository.ClearForEventAsync(eventId, cancellationToken);
+    }
+
     private async Task<T> ExecuteWithRetryAsync<T>(
         Guid zoneId, Func<Domain.Zone, (bool ShouldSave, T Result)> mutate, CancellationToken cancellationToken)
     {

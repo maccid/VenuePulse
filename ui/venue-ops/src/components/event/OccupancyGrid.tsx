@@ -12,10 +12,8 @@ interface Props {
 }
 
 export default function OccupancyGrid({ event, zones, onZonesReload }: Props) {
-  const hasConfirmedSales = zones.some((zone) => zone.confirmedSold > 0)
-
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
         <section className="card">
           <h2 className="flex items-center gap-2">
@@ -29,13 +27,12 @@ export default function OccupancyGrid({ event, zones, onZonesReload }: Props) {
           eventStartsAtUtc={event.startsAtUtc}
           onSimulationEnded={onZonesReload}
           defaultMode="Arrivals"
+          resetScope="arrivals"
         />
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
-        <ZonesDashboard zones={zones} />
-        {hasConfirmedSales && <PredictionPanel eventId={event.id} eventStartsAtUtc={event.startsAtUtc} />}
-      </div>
+      <ZonesDashboard zones={zones} />
+      <PredictionPanel eventId={event.id} eventStartsAtUtc={event.startsAtUtc} />
     </div>
   )
 }

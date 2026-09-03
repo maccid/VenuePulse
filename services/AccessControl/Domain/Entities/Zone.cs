@@ -107,4 +107,9 @@ public sealed class Zone : Entity<Guid>
         ConfirmedSold = 0;
         CheckedIn = 0;
     }
+
+    public void ResetCheckIns()
+    {
+        CheckedIn = 0;
+    }
 }

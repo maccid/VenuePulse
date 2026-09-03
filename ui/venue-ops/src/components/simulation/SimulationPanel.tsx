@@ -11,9 +11,16 @@ interface Props {
   eventStartsAtUtc: string
   onSimulationEnded: () => void
   defaultMode?: SimulationMode
+  resetScope?: 'full' | 'arrivals'
 }
 
-export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulationEnded, defaultMode = 'Sales' }: Props) {
+export default function SimulationPanel({
+  eventId,
+  eventStartsAtUtc,
+  onSimulationEnded,
+  defaultMode = 'Sales',
+  resetScope = 'full',
+}: Props) {
   const [config, setConfig] = useState<SimulationConfig>({
     mode: defaultMode,
     durationSeconds: 20,
@@ -49,7 +56,8 @@ export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulatio
           setError((await response.json().catch(() => null))?.error ?? 'No se pudo iniciar la simulación')
         }
       } else {
-        const response = await fetch(`/api/access-control/api/simulation/events/${eventId}/${kind}`, {
+        const action = kind === 'reset' && resetScope === 'arrivals' ? 'reset-arrivals' : kind
+        const response = await fetch(`/api/access-control/api/simulation/events/${eventId}/${action}`, {
           method: 'POST',
         })
         if (!response.ok && kind === 'stop') {
@@ -94,8 +102,8 @@ export default function SimulationPanel({ eventId, eventStartsAtUtc, onSimulatio
           onClick={() => control('reset')}
           disabled={busy || (running && status?.progress !== 0)}
           className="flex size-11 items-center justify-center !p-0 bg-border-strong text-text hover:bg-border disabled:cursor-not-allowed disabled:opacity-[0.55]"
-          title="Reiniciar aforo"
-          aria-label="Reiniciar aforo"
+          title={resetScope === 'arrivals' ? 'Reiniciar llegadas' : 'Reiniciar aforo'}
+          aria-label={resetScope === 'arrivals' ? 'Reiniciar llegadas' : 'Reiniciar aforo'}
         >
           <RotateCw className="size-5" aria-hidden="true" />
         </button>

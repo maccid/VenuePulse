@@ -27,4 +27,6 @@ public interface IZoneService
     Task<ZoneOccupancyDto> ApplySimulatedCheckInsAsync(Guid zoneId, int quantity, CancellationToken cancellationToken);
 
     Task ResetSimulationAsync(Guid eventId, CancellationToken cancellationToken);
+
+    Task ResetArrivalsSimulationAsync(Guid eventId, CancellationToken cancellationToken);
 }

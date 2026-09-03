@@ -67,6 +67,17 @@ public class SimulationEngineTests
             await Task.CompletedTask;
         }
 
+        public async Task ResetArrivalsSimulationAsync(Guid eventId, CancellationToken cancellationToken)
+        {
+            for (var i = 0; i < _zones.Count; i++)
+            {
+                var zone = _zones[i];
+                _zones[i] = zone with { CheckedIn = 0 };
+            }
+
+            await Task.CompletedTask;
+        }
+
         private async Task<ZoneOccupancyDto> MutateAsync(Guid zoneId, Func<ZoneOccupancyDto, ZoneOccupancyDto> mutate, CancellationToken cancellationToken)
         {
             var index = _zones.FindIndex(z => z.ZoneId == zoneId);

@@ -49,4 +49,12 @@ public sealed class SimulationController(ISimulationEngine engine, IZoneService 
         await publishEndpoint.Publish(new SimulationReset(eventId), cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("events/{eventId:guid}/reset-arrivals")]
+    public async Task<IActionResult> ResetArrivals(Guid eventId, CancellationToken cancellationToken)
+    {
+        engine.Stop(eventId);
+        await zoneService.ResetArrivalsSimulationAsync(eventId, cancellationToken);
+        return NoContent();
+    }
 }
