@@ -50,7 +50,7 @@ export default function SalesLayout({
         )}
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
         <RevenueWidget revenue={revenue} error={revenueError} estimatedRevenue={estimatedRevenue} sold={totalSold} />
         <section className="card">
           <ActivityFeed entries={activity} />
