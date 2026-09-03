@@ -71,7 +71,7 @@ export default function SimulationPanel({
   }
 
   return (
-    <section className="card mb-6">
+    <section className="card">
       <h2 className="mb-4">Simulación de demo</h2>
 
       <SimulationControls config={config} onChange={updateConfig} running={running} />
